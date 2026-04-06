@@ -4,6 +4,9 @@ export enum ProviderCategory {
   FINANCIAL = "financial",
   SOCIAL_IMPACT = "social_impact",
   ENVIRONMENT = "environment",
+  AI = "ai",
+  MAPS = "maps",
+  CLOUD = "cloud",
 }
 
 export interface ActionInfo {
