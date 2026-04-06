@@ -2,6 +2,9 @@
   "name": "procurement-labs-mcp",
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "procurement-labs-mcp": "dist/index.js"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -10,11 +13,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "dotenv": "^16.4.7",
     "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "@vercel/node": "^5.1.8",
+    "dotenv": "^16.4.7",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }

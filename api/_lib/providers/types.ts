@@ -24,22 +24,17 @@ export interface ProviderInfo {
   category: ProviderCategory;
   description: string;
   availableActions: ActionInfo[];
-  costPerQuery: number;
-  rateLimitPerMinute: number;
   requiresApiKey: boolean;
-  apiKeyEnvVar?: string;
 }
 
 export interface QueryResult {
   success: boolean;
   data?: unknown;
   error?: string;
-  creditsUsed: number;
 }
 
 export interface Provider {
   info: ProviderInfo;
-  initialize(): Promise<void>;
   isAvailable(): boolean;
   query(action: string, params: Record<string, unknown>): Promise<QueryResult>;
 }

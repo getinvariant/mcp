@@ -80,57 +80,50 @@ export class MentalHealthProvider implements Provider {
     id: "mental_health",
     name: "Mental Health Crisis Resources",
     category: ProviderCategory.MENTAL_HEALTH,
-    description:
-      "Curated database of mental health crisis hotlines, text lines, and resources across the US.",
+    description: "Curated database of mental health crisis hotlines, text lines, and resources across the US.",
     availableActions: [
       {
         action: "crisis_resources",
         description: "List all crisis resources, optionally filtered by type (hotline, text, resource)",
         parameters: {
-          type: { type: "string" as const, description: "Filter by type: hotline, text, or resource", required: false },
+          type: { type: "string", description: "Filter by type: hotline, text, or resource", required: false },
         },
       },
       {
         action: "resource_search",
         description: "Search resources by keyword (e.g., anxiety, veterans, substance abuse)",
         parameters: {
-          keyword: { type: "string" as const, description: "Keyword to search for", required: true },
+          keyword: { type: "string", description: "Keyword to search for", required: true },
         },
       },
     ],
-    costPerQuery: 0,
-    rateLimitPerMinute: 120,
     requiresApiKey: false,
   };
 
-  async initialize(): Promise<void> {}
-
   isAvailable(): boolean {
-    return true; // Static data, always available
+    return true;
   }
 
   async query(action: string, params: Record<string, unknown>): Promise<QueryResult> {
     switch (action) {
       case "crisis_resources": {
         const type = params.type as string | undefined;
-        const results = type
-          ? CRISIS_RESOURCES.filter((r) => r.type === type)
-          : CRISIS_RESOURCES;
-        return { success: true, data: results, creditsUsed: 0 };
+        const results = type ? CRISIS_RESOURCES.filter((r) => r.type === type) : CRISIS_RESOURCES;
+        return { success: true, data: results };
       }
       case "resource_search": {
         const keyword = (params.keyword as string)?.toLowerCase();
-        if (!keyword) return { success: false, error: "Missing required parameter: keyword", creditsUsed: 0 };
+        if (!keyword) return { success: false, error: "Missing required parameter: keyword" };
         const results = CRISIS_RESOURCES.filter(
           (r) =>
             r.categories.some((c) => c.includes(keyword)) ||
             r.name.toLowerCase().includes(keyword) ||
             r.description.toLowerCase().includes(keyword)
         );
-        return { success: true, data: results, creditsUsed: 0 };
+        return { success: true, data: results };
       }
       default:
-        return { success: false, error: `Unknown action: ${action}`, creditsUsed: 0 };
+        return { success: false, error: `Unknown action: ${action}` };
     }
   }
 }

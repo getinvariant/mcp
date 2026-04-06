@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getProvider } from "../providers/registry.js";
+import { backendRequest } from "../client.js";
 
 export function registerQuery(server: McpServer): void {
   server.tool(
@@ -16,35 +16,26 @@ export function registerQuery(server: McpServer): void {
         .describe("Parameters for the action as a JSON object"),
     },
     async ({ provider_id, action, params }) => {
-      const provider = getProvider(provider_id);
-      if (!provider) {
+      const result = await backendRequest("query", "POST", {
+        provider_id,
+        action,
+        params,
+      });
+
+      if (!result.ok) {
         return {
-          content: [{ type: "text", text: `Provider '${provider_id}' not found. Use list_providers to see available providers.` }],
+          content: [{ type: "text", text: `Error: ${result.error}` }],
           isError: true,
         };
       }
 
-      if (!provider.isAvailable()) {
-        return {
-          content: [{ type: "text", text: `Provider '${provider.info.name}' is not configured. The required API key has not been set up.` }],
-          isError: true,
-        };
-      }
-
-      const result = await provider.query(action, params);
-
-      if (!result.success) {
-        return {
-          content: [{ type: "text", text: `Query failed: ${result.error}` }],
-          isError: true,
-        };
-      }
+      const { data } = result.data as { data: unknown };
 
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(result.data, null, 2),
+            text: JSON.stringify(data, null, 2),
           },
         ],
       };

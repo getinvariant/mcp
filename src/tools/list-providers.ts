@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getAllProviders } from "../providers/registry.js";
+import { backendRequest } from "../client.js";
 
 export function registerListProviders(server: McpServer): void {
   server.tool(
@@ -10,33 +10,39 @@ export function registerListProviders(server: McpServer): void {
       category: z.string().optional().describe("Filter by category"),
     },
     async ({ category }) => {
-      let providers = getAllProviders();
+      const query = category ? `providers?category=${encodeURIComponent(category)}` : "providers";
+      const result = await backendRequest(query, "GET");
 
-      if (category) {
-        providers = providers.filter((p) => p.info.category === category);
+      if (!result.ok) {
+        return {
+          content: [{ type: "text", text: `Error: ${result.error}` }],
+          isError: true,
+        };
       }
 
-      if (providers.length === 0) {
+      const { providers } = result.data as { providers: any[] };
+
+      if (!providers || providers.length === 0) {
         return {
           content: [{ type: "text", text: `No providers found${category ? ` for category: ${category}` : ""}.` }],
         };
       }
 
-      const lines = providers.map((p) => {
-        const actions = p.info.availableActions
-          .map((a) => {
+      const lines = providers.map((p: any) => {
+        const actions = p.availableActions
+          .map((a: any) => {
             const params = Object.entries(a.parameters)
-              .map(([k, v]) => `${k} (${v.type}${v.required ? ", required" : ""})`)
+              .map(([k, v]: [string, any]) => `${k} (${v.type}${v.required ? ", required" : ""})`)
               .join(", ");
             return `    - ${a.action}: ${a.description} [${params}]`;
           })
           .join("\n");
-        const status = p.info.requiresApiKey ? (p.isAvailable() ? "Ready" : "Not configured") : "Ready";
+        const status = p.available ? "Ready" : "Not configured";
         return [
-          `## ${p.info.name} (${p.info.id})`,
-          `Category: ${p.info.category}`,
+          `## ${p.name} (${p.id})`,
+          `Category: ${p.category}`,
           `Status: ${status}`,
-          `Description: ${p.info.description}`,
+          `Description: ${p.description}`,
           `Actions:\n${actions}`,
         ].join("\n");
       });

@@ -7,7 +7,8 @@ import { EnvironmentProvider } from "./environment.js";
 
 const providers = new Map<string, Provider>();
 
-export async function initializeRegistry(): Promise<void> {
+function ensureInitialized() {
+  if (providers.size > 0) return;
   const all: Provider[] = [
     new OpenFDAProvider(),
     new MentalHealthProvider(),
@@ -15,17 +16,17 @@ export async function initializeRegistry(): Promise<void> {
     new CharityProvider(),
     new EnvironmentProvider(),
   ];
-
-  for (const provider of all) {
-    await provider.initialize();
-    providers.set(provider.info.id, provider);
+  for (const p of all) {
+    providers.set(p.info.id, p);
   }
 }
 
 export function getProvider(id: string): Provider | undefined {
+  ensureInitialized();
   return providers.get(id);
 }
 
 export function getAllProviders(): Provider[] {
+  ensureInitialized();
   return Array.from(providers.values());
 }
