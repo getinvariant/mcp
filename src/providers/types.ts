@@ -40,5 +40,6 @@ export interface QueryResult {
 export interface Provider {
   info: ProviderInfo;
   initialize(): Promise<void>;
+  isAvailable(): boolean;
   query(action: string, params: Record<string, unknown>): Promise<QueryResult>;
 }

@@ -105,6 +105,10 @@ export class MentalHealthProvider implements Provider {
 
   async initialize(): Promise<void> {}
 
+  isAvailable(): boolean {
+    return true; // Static data, always available
+  }
+
   async query(action: string, params: Record<string, unknown>): Promise<QueryResult> {
     switch (action) {
       case "crisis_resources": {

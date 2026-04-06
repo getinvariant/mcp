@@ -32,10 +32,10 @@ export class EnvironmentProvider implements Provider {
     apiKeyEnvVar: "OPENWEATHER_API_KEY",
   };
 
-  async initialize(): Promise<void> {
-    if (!config.openWeatherKey) {
-      console.error("Warning: OPENWEATHER_API_KEY not set. Environment queries will fail.");
-    }
+  async initialize(): Promise<void> {}
+
+  isAvailable(): boolean {
+    return !!config.openWeatherKey;
   }
 
   async query(action: string, params: Record<string, unknown>): Promise<QueryResult> {

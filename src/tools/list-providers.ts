@@ -23,14 +23,20 @@ export function registerListProviders(server: McpServer): void {
       }
 
       const lines = providers.map((p) => {
-        const actions = p.info.availableActions.map((a) => `    - ${a.action}: ${a.description}`).join("\n");
+        const actions = p.info.availableActions
+          .map((a) => {
+            const params = Object.entries(a.parameters)
+              .map(([k, v]) => `${k} (${v.type}${v.required ? ", required" : ""})`)
+              .join(", ");
+            return `    - ${a.action}: ${a.description} [${params}]`;
+          })
+          .join("\n");
+        const status = p.info.requiresApiKey ? (p.isAvailable() ? "Ready" : "Not configured") : "Ready";
         return [
           `## ${p.info.name} (${p.info.id})`,
           `Category: ${p.info.category}`,
+          `Status: ${status}`,
           `Description: ${p.info.description}`,
-          `Cost: ${p.info.costPerQuery} credits/query`,
-          `Rate limit: ${p.info.rateLimitPerMinute} req/min`,
-          `API key required: ${p.info.requiresApiKey ? "Yes" : "No"}`,
           `Actions:\n${actions}`,
         ].join("\n");
       });

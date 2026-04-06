@@ -24,10 +24,10 @@ export class CharityProvider implements Provider {
     apiKeyEnvVar: "EVERY_ORG_API_KEY",
   };
 
-  async initialize(): Promise<void> {
-    if (!config.everyOrgKey) {
-      console.error("Warning: EVERY_ORG_API_KEY not set. Charity queries will fail.");
-    }
+  async initialize(): Promise<void> {}
+
+  isAvailable(): boolean {
+    return !!config.everyOrgKey;
   }
 
   async query(action: string, params: Record<string, unknown>): Promise<QueryResult> {

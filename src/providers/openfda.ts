@@ -42,6 +42,10 @@ export class OpenFDAProvider implements Provider {
 
   async initialize(): Promise<void> {}
 
+  isAvailable(): boolean {
+    return true; // OpenFDA works without an API key
+  }
+
   async query(action: string, params: Record<string, unknown>): Promise<QueryResult> {
     const base = "https://api.fda.gov";
     const limit = (params.limit as number) || 5;

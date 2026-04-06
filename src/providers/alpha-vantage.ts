@@ -38,10 +38,10 @@ export class AlphaVantageProvider implements Provider {
     apiKeyEnvVar: "ALPHA_VANTAGE_API_KEY",
   };
 
-  async initialize(): Promise<void> {
-    if (!config.alphaVantageKey) {
-      console.error("Warning: ALPHA_VANTAGE_API_KEY not set. Alpha Vantage queries will fail.");
-    }
+  async initialize(): Promise<void> {}
+
+  isAvailable(): boolean {
+    return !!config.alphaVantageKey;
   }
 
   async query(action: string, params: Record<string, unknown>): Promise<QueryResult> {

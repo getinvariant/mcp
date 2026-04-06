@@ -1,73 +1,32 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { validateKey } from "../auth/keys.js";
 import { getProvider } from "../providers/registry.js";
-import { checkRateLimit, trackUsage } from "../usage/tracker.js";
 
 export function registerQuery(server: McpServer): void {
   server.tool(
     "query",
-    "Execute a real API call to a provisioned provider. You must provision the provider first using the 'provision' tool.",
+    "Execute a real API call to any available provider. Use list_providers to see available providers and their actions.",
     {
-      provider_id: z.string().describe("The provider ID to query"),
-      action: z.string().describe("The action to perform (see list_providers for available actions)"),
+      provider_id: z.string().describe("The provider ID to query (e.g., 'openfda', 'alpha_vantage', 'mental_health', 'charity', 'environment')"),
+      action: z.string().describe("The action to perform (see list_providers for available actions per provider)"),
       params: z
         .record(z.unknown())
         .optional()
         .default({})
         .describe("Parameters for the action as a JSON object"),
-      api_key: z.string().describe("Your Procurement Labs API key"),
     },
-    async ({ provider_id, action, params, api_key }) => {
-      const user = validateKey(api_key);
-      if (!user) {
-        return {
-          content: [{ type: "text", text: "Invalid API key." }],
-          isError: true,
-        };
-      }
-
+    async ({ provider_id, action, params }) => {
       const provider = getProvider(provider_id);
       if (!provider) {
         return {
-          content: [{ type: "text", text: `Provider '${provider_id}' not found.` }],
+          content: [{ type: "text", text: `Provider '${provider_id}' not found. Use list_providers to see available providers.` }],
           isError: true,
         };
       }
 
-      if (!user.provisionedProviders.includes(provider_id)) {
+      if (!provider.isAvailable()) {
         return {
-          content: [
-            {
-              type: "text",
-              text: `Provider '${provider_id}' is not provisioned. Use the 'provision' tool first.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      const rateLimit = checkRateLimit(api_key);
-      if (!rateLimit.allowed) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Rate limit exceeded. Try again in ${Math.ceil(rateLimit.resetIn / 1000)} seconds.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      if (user.balance < provider.info.costPerQuery) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Insufficient balance. Need ${provider.info.costPerQuery} credits, have ${user.balance}.`,
-            },
-          ],
+          content: [{ type: "text", text: `Provider '${provider.info.name}' is not configured. The required API key has not been set up.` }],
           isError: true,
         };
       }
@@ -80,8 +39,6 @@ export function registerQuery(server: McpServer): void {
           isError: true,
         };
       }
-
-      trackUsage(api_key, provider_id, action, result.creditsUsed);
 
       return {
         content: [
