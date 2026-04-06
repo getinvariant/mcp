@@ -7,41 +7,32 @@ An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that g
 The project has two distinct layers:
 
 **Backend (Vercel serverless)** — lives in `api/`
-- `api/providers.ts` — `GET /api/providers` — lists available providers, optionally filtered by category
-- `api/query.ts` — `POST /api/query` — executes an action on a specific provider
+- `api/mcp.ts` — `POST /api/mcp` — MCP JSON-RPC endpoint (recommended, no local install needed)
+- `api/providers.ts` — `GET /api/providers` — REST: list providers
+- `api/query.ts` — `POST /api/query` — REST: execute a provider action
 - `api/_lib/auth.ts` — validates `x-pl-key` headers against a comma-separated allowlist in `PL_VALID_KEYS`
 - `api/_lib/providers/` — one class per integration, all implementing the `Provider` interface
 
-**MCP Server (local stdio process)** — lives in `src/`
-- Runs on the participant's machine, connects to Claude Desktop / Cursor / any MCP-compatible client via stdio
-- Exposes two MCP tools: `list_providers` and `query`
-- Forwards every tool call to the Vercel backend, authenticating with `PL_API_KEY`
-- Keeps no secrets locally — API keys for third-party services are only on the backend
+**MCP Server (local stdio process)** — lives in `src/` (optional, for older clients)
+- Runs on the participant's machine and proxies to the Vercel backend via the REST endpoints
+- Only needed if your MCP client doesn't support remote HTTP connections
 
 ```
-┌─────────────────────┐         ┌──────────────────────────────────────┐
-│   AI Client         │  stdio  │  MCP Server (local)                  │
-│  (Claude Desktop,   │◄───────►│  src/index.ts                        │
-│   Cursor, etc.)     │         │  tools: list_providers, query         │
-└─────────────────────┘         │  authenticates via PL_API_KEY         │
-                                └──────────────┬───────────────────────┘
-                                               │ HTTPS + x-pl-key
-                                               ▼
-                                ┌──────────────────────────────────────┐
-                                │  Vercel Backend                      │
-                                │  GET  /api/providers                 │
-                                │  POST /api/query                     │
-                                │                                      │
-                                │  Providers:                          │
-                                │  health:    OpenFDA, Mental Health   │
-                                │  financial: Alpha Vantage            │
-                                │  impact:    Charity/Every.org        │
-                                │  env:       OpenWeather              │
-                                │  ai:        Claude, OpenAI, Gemini,  │
-                                │             HuggingFace              │
-                                │  cloud:     AWS Comprehend, GCloud   │
-                                │  maps:      Google Maps, OSM         │
-                                └──────────────────────────────────────┘
+Option A — Remote MCP (recommended)
+┌─────────────────────┐   HTTPS + x-pl-key   ┌──────────────────────────────────────┐
+│   AI Client         │──────────────────────►│  Vercel Backend                      │
+│  (Claude Desktop,   │◄──────────────────────│  POST /api/mcp  ← MCP JSON-RPC       │
+│   Cursor, etc.)     │                       │                                      │
+└─────────────────────┘                       │  Providers:                          │
+                                              │  health:    OpenFDA, Mental Health   │
+Option B — Local stdio (legacy)               │  financial: Alpha Vantage            │
+┌─────────────────────┐  stdio  ┌──────────┐  │  impact:    Charity/Every.org        │
+│   AI Client         │◄───────►│  src/    │  │  env:       OpenWeather              │
+│                     │         │  index.ts│  │  ai:        Claude, OpenAI, Gemini,  │
+└─────────────────────┘         └────┬─────┘  │             HuggingFace              │
+                                     │ HTTPS  │  cloud:     AWS Comprehend, GCloud   │
+                                     └───────►│  maps:      Google Maps, OSM         │
+                                              └──────────────────────────────────────┘
 ```
 
 ## Setup
@@ -74,14 +65,36 @@ npx vercel dev               # runs on http://localhost:3000
 
 ---
 
-### 2. Install & Configure the MCP Server
+### 2. Configure Your MCP Client
+
+**Option A — Remote HTTP (recommended, no local install)**
+
+Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "procurement-labs": {
+      "type": "http",
+      "url": "https://your-app.vercel.app/api/mcp",
+      "headers": {
+        "x-pl-key": "pl_your_key_here"
+      }
+    }
+  }
+}
+```
+
+That's it — no cloning, no building, no Node.js required on the participant's machine.
+
+---
+
+**Option B — Local stdio (for older clients)**
 
 ```bash
 npm install
 npm run build
 ```
-
-Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json`):
 
 ```json
 {
@@ -98,9 +111,7 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 }
 ```
 
-> `PL_BACKEND_URL` defaults to `https://procurementlabs.vercel.app` if omitted.
-
-**Or run directly for development:**
+**Or run locally for development:**
 
 ```bash
 PL_API_KEY=pl_demo_key_2026 npm run dev
@@ -143,12 +154,14 @@ Add it (comma-separated) to the `PL_VALID_KEYS` environment variable on your bac
 
 Providers without a configured key will appear as `Status: Not configured` in `list_providers` and return a 503 if queried.
 
-### MCP Client (local)
+### MCP Client — local stdio only (Option B)
 
 | Variable | Required | Description |
 |---|---|---|
 | `PL_API_KEY` | **Yes** | Your `pl_` key |
 | `PL_BACKEND_URL` | No | Override backend URL (default: `https://procurementlabs.vercel.app`) |
+
+Not needed when using the remote HTTP connection (Option A).
 
 ---
 
