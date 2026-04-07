@@ -1,3 +1,8 @@
 {
-  "version": 2
+  "version": 2,
+  "builds": [
+    { "src": "api/providers.ts", "use": "@vercel/node" },
+    { "src": "api/query.ts", "use": "@vercel/node" },
+    { "src": "api/mcp.ts", "use": "@vercel/node" }
+  ]
 }
