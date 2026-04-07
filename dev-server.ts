@@ -833,6 +833,7 @@ function renderDashboard(): string {
     .provider-title { flex-direction: column; gap: 0.125rem; }
     .create-key-form { flex-direction: column; }
     .accounts-table { font-size: 0.7rem; }
+    #usage-logged-out > div:first-child { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -893,17 +894,32 @@ function renderDashboard(): string {
       <div class="usage-breakdown" id="usage-breakdown"></div>
     </div>
 
-    <!-- Usage: logged-out state -->
-    <div id="usage-logged-out" class="usage-key-form" style="display:none">
-      <h2>Your Usage</h2>
-      <p style="font-size:0.8rem;color:#525252;margin-bottom:0.75rem">Enter your API key to view usage</p>
-      <div style="display:flex;gap:0.75rem;align-items:flex-end">
-        <div class="form-field" style="flex:1">
-          <input type="text" id="usage-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s">
+    <!-- Logged-out: sign in or sign up -->
+    <div id="usage-logged-out" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <!-- Sign in -->
+        <div class="usage-key-form">
+          <h2>Sign In</h2>
+          <p style="font-size:0.8rem;color:#525252;margin-bottom:0.75rem">Already have a key?</p>
+          <input type="text" id="usage-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;margin-bottom:0.75rem">
+          <button id="usage-lookup-btn" style="width:100%;background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s">Sign in</button>
+          <div id="usage-error" class="admin-error"></div>
         </div>
-        <button id="usage-lookup-btn" style="background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1.25rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap">Sign in</button>
+        <!-- Sign up -->
+        <div class="usage-key-form">
+          <h2>Create Account</h2>
+          <p style="font-size:0.8rem;color:#525252;margin-bottom:0.75rem">Get a free API key — 500 requests/month</p>
+          <input type="email" id="signup-email" placeholder="you@example.com" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;outline:none;transition:border-color .15s;margin-bottom:0.75rem">
+          <button id="signup-btn" style="width:100%;background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s">Create key</button>
+          <div id="signup-error" class="admin-error"></div>
+        </div>
       </div>
-      <div id="usage-error" class="admin-error"></div>
+      <!-- New key flash -->
+      <div id="signup-flash" class="flash" style="margin-top:1rem">
+        <div class="flash-label">Your API key — copy it now, it won't be shown again</div>
+        <div id="signup-flash-key" class="flash-key"></div>
+        <div class="flash-sub" style="margin-top:0.5rem">Add this to your MCP client config as <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;background:#1c1c1c;padding:0.1rem 0.3rem;border-radius:0.25rem">x-pl-key</code> header.</div>
+      </div>
     </div>
 
     <div class="endpoints">
@@ -1072,6 +1088,38 @@ function renderDashboard(): string {
     document.getElementById('usage-key').value = '';
     showLoggedOut();
   });
+
+  // Sign up
+  document.getElementById('signup-btn').addEventListener('click', doSignup);
+  document.getElementById('signup-email').addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
+
+  async function doSignup() {
+    const email = document.getElementById('signup-email').value.trim();
+    const errEl = document.getElementById('signup-error');
+    const btn = document.getElementById('signup-btn');
+    errEl.textContent = '';
+    if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email'; return; }
+    btn.disabled = true; btn.textContent = '...';
+    try {
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Signup failed'; return; }
+      // Show the key
+      const flash = document.getElementById('signup-flash');
+      const flashKey = document.getElementById('signup-flash-key');
+      flashKey.textContent = data.key;
+      flashKey.onclick = () => { navigator.clipboard.writeText(data.key); var t = document.getElementById('copied-toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); };
+      flash.classList.add('visible');
+      // Auto-load usage (cookie already set by server)
+      const u = await fetchUsage(data.key);
+      if (u) { setTimeout(() => showUsagePanel(u, data.key), 1500); }
+    } catch (e) { errEl.textContent = 'Connection error'; }
+    finally { btn.disabled = false; btn.textContent = 'Create key'; }
+  }
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
@@ -1368,6 +1416,26 @@ const server = http.createServer(async (req, res) => {
     }
     res.writeHead(201, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ account: { key: account.pl_key, email: account.email, tier: account.tier, quota: account.monthly_quota, perMinuteRate: account.per_minute_rate } }));
+  }
+
+  // ── Public signup ─────────────────────────────────────────────────────────
+  if (path === "/api/signup" && req.method === "POST") {
+    const email = (body.email || "").trim();
+    if (!email || !email.includes("@")) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Valid email is required" }));
+    }
+    const plKey = "pl_" + crypto.randomBytes(12).toString("hex");
+    const account = await createAccount({ plKey, email });
+    if (!account) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Failed to create account" }));
+    }
+    res.writeHead(201, {
+      "Content-Type": "application/json",
+      "Set-Cookie": `pl_key=${plKey}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+    });
+    return res.end(JSON.stringify({ key: plKey, tier: account.tier, quota: account.monthly_quota }));
   }
 
   res.statusCode = 404;
