@@ -8,7 +8,7 @@ import queryHandler from "./api/query.js";
 import mcpHandler from "./api/mcp.js";
 import usageHandler from "./api/usage.js";
 import { getAllProviders } from "./lib/providers/registry.js";
-import { getAccount, getUsage } from "./lib/db.js";
+import { getAccount, getUsage, getAllAccounts, createAccount } from "./lib/db.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -157,6 +157,17 @@ interface UsageData {
   resets: string;
   breakdown: { provider: string; count: number }[];
   perMinuteRate: number;
+}
+
+interface AccountWithUsage {
+  key: string;
+  email: string | null;
+  tier: string;
+  quota: number;
+  used: number;
+  remaining: number;
+  perMinuteRate: number;
+  createdAt: string;
 }
 
 function renderDashboard(usage?: UsageData): string {
@@ -568,10 +579,252 @@ function renderDashboard(usage?: UsageData): string {
     border-radius: 0.25rem;
   }
 
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #262626;
+  }
+  .tab {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #525252;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tab:hover { color: #a3a3a3; }
+  .tab.active { color: #e5e5e5; border-bottom-color: #e5e5e5; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Admin */
+  .admin-login {
+    background: #111;
+    border: 1px solid #262626;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    max-width: 380px;
+  }
+  .admin-login h2 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #e5e5e5;
+    margin-bottom: 0.75rem;
+  }
+  .admin-login input {
+    width: 100%;
+    background: #0a0a0a;
+    border: 1px solid #262626;
+    border-radius: 0.5rem;
+    padding: 0.6rem 1rem;
+    color: #e5e5e5;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+    outline: none;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.15s;
+  }
+  .admin-login input:focus { border-color: #525252; }
+  .admin-login button {
+    background: #e5e5e5;
+    color: #0a0a0a;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .admin-login button:hover { background: #fff; }
+  .admin-error {
+    color: #f87171;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .accounts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  .accounts-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #525252;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #262626;
+  }
+  .accounts-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #1c1c1c;
+    color: #a3a3a3;
+    vertical-align: middle;
+  }
+  .accounts-table tr:hover td { background: #111; }
+  .key-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: #737373;
+    transition: color 0.15s;
+  }
+  .key-cell:hover { color: #e5e5e5; }
+  .key-cell .copy-hint {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    color: #404040;
+    margin-left: 0.5rem;
+  }
+  .mini-bar {
+    width: 80px;
+    height: 4px;
+    background: #1c1c1c;
+    border-radius: 2px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+  }
+  .mini-bar-inner {
+    height: 100%;
+    background: #d4d4d4;
+    border-radius: 2px;
+  }
+  .mini-bar-inner.warn { background: #a3a3a3; }
+  .mini-bar-inner.critical { background: #737373; }
+  .tier-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    background: rgba(255,255,255,0.06);
+    color: #a3a3a3;
+    border: 1px solid #333;
+  }
+
+  /* Create key form */
+  .create-key {
+    background: #111;
+    border: 1px solid #262626;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .create-key h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #737373;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+  .create-key-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .form-field label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #525252;
+  }
+  .form-field input, .form-field select {
+    background: #0a0a0a;
+    border: 1px solid #262626;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    color: #e5e5e5;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: #525252; }
+  .form-field select { cursor: pointer; }
+  .create-btn {
+    background: #e5e5e5;
+    color: #0a0a0a;
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    height: fit-content;
+  }
+  .create-btn:hover { background: #fff; }
+
+  /* Flash */
+  .flash {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #333;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+  .flash.visible { display: block; }
+  .flash-label {
+    font-size: 0.7rem;
+    color: #525252;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.375rem;
+  }
+  .flash-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: #e5e5e5;
+    cursor: pointer;
+    word-break: break-all;
+  }
+  .flash-key:hover { color: #fff; }
+  .flash-sub {
+    font-size: 0.7rem;
+    color: #404040;
+    margin-top: 0.375rem;
+  }
+
+  .copied-toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: #e5e5e5;
+    color: #0a0a0a;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .copied-toast.show { opacity: 1; }
+
   @media (max-width: 640px) {
     .stats { flex-direction: column; }
     .endpoint-desc { display: none; }
     .provider-title { flex-direction: column; gap: 0.125rem; }
+    .create-key-form { flex-direction: column; }
+    .accounts-table { font-size: 0.7rem; }
   }
 </style>
 </head>
@@ -582,64 +835,252 @@ function renderDashboard(usage?: UsageData): string {
     <p>Unified API gateway for AI agents — ${total} providers across ${Object.keys(grouped).length} categories</p>
   </header>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-value">${total}</div>
-      <div class="stat-label">Total Providers</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value green">${live}</div>
-      <div class="stat-label">Live</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value amber">${total - live}</div>
-      <div class="stat-label">Needs API Key</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">${noKey}</div>
-      <div class="stat-label">Free (No Key)</div>
-    </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="home">Home</div>
+    <div class="tab" data-tab="admin">Admin</div>
   </div>
 
-  ${usage ? `
-  <div class="usage-panel">
-    <h2>Your Usage — ${usage.tier} tier</h2>
-    <div class="usage-meta">
-      <div>Quota: <span>${usage.used} / ${usage.quota}</span></div>
-      <div>Rate limit: <span>${usage.perMinuteRate} req/min</span></div>
-      <div>Resets: <span>${usage.resets}</span></div>
+  <!-- Home Tab -->
+  <div id="tab-home" class="tab-content active">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">${total}</div>
+        <div class="stat-label">Total Providers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value green">${live}</div>
+        <div class="stat-label">Live</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value amber">${total - live}</div>
+        <div class="stat-label">Needs API Key</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${noKey}</div>
+        <div class="stat-label">Free (No Key)</div>
+      </div>
     </div>
-    <div class="quota-bar-outer">
-      <div class="quota-bar-inner${usage.used / usage.quota > 0.9 ? ' critical' : usage.used / usage.quota > 0.7 ? ' warn' : ''}" style="width: ${Math.min(100, (usage.used / usage.quota) * 100)}%"></div>
-    </div>
-    <div class="usage-numbers">
-      <span>${usage.remaining} remaining</span>
-      <span>${Math.round((usage.used / usage.quota) * 100)}% used</span>
-    </div>
-    ${usage.breakdown.length > 0 ? `
-    <div class="usage-breakdown">
-      ${usage.breakdown.map(b => `<span class="usage-chip">${b.provider}<span class="chip-count">${b.count}</span></span>`).join("")}
-    </div>` : ""}
-  </div>` : `
-  <div class="usage-login">
-    View your usage by adding your key: <code>?key=pl_your_key</code>
-  </div>`}
 
-  <div class="endpoints">
-    <h2>Endpoints</h2>
-    <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/providers</span><span class="endpoint-desc">list available providers</span></div>
-    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/query</span><span class="endpoint-desc">execute a provider action</span></div>
-    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/mcp</span><span class="endpoint-desc">MCP protocol (JSON-RPC)</span></div>
-    <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/usage</span><span class="endpoint-desc">check quota and usage breakdown</span></div>
+    ${usage ? `
+    <div class="usage-panel">
+      <h2>Your Usage — ${usage.tier} tier</h2>
+      <div class="usage-meta">
+        <div>Quota: <span>${usage.used} / ${usage.quota}</span></div>
+        <div>Rate limit: <span>${usage.perMinuteRate} req/min</span></div>
+        <div>Resets: <span>${usage.resets}</span></div>
+      </div>
+      <div class="quota-bar-outer">
+        <div class="quota-bar-inner${usage.used / usage.quota > 0.9 ? ' critical' : usage.used / usage.quota > 0.7 ? ' warn' : ''}" style="width: ${Math.min(100, (usage.used / usage.quota) * 100)}%"></div>
+      </div>
+      <div class="usage-numbers">
+        <span>${usage.remaining} remaining</span>
+        <span>${Math.round((usage.used / usage.quota) * 100)}% used</span>
+      </div>
+      ${usage.breakdown.length > 0 ? `
+      <div class="usage-breakdown">
+        ${usage.breakdown.map(b => `<span class="usage-chip">${b.provider}<span class="chip-count">${b.count}</span></span>`).join("")}
+      </div>` : ""}
+    </div>` : `
+    <div class="usage-login">
+      View your usage by adding your key: <code>?key=pl_your_key</code>
+    </div>`}
+
+    <div class="endpoints">
+      <h2>Endpoints</h2>
+      <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/providers</span><span class="endpoint-desc">list available providers</span></div>
+      <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/query</span><span class="endpoint-desc">execute a provider action</span></div>
+      <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/mcp</span><span class="endpoint-desc">MCP protocol (JSON-RPC)</span></div>
+      <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/usage</span><span class="endpoint-desc">check quota and usage breakdown</span></div>
+    </div>
+
+    ${categoryCards}
   </div>
 
-  ${categoryCards}
+  <!-- Admin Tab -->
+  <div id="tab-admin" class="tab-content">
+    <div id="admin-login" class="admin-login">
+      <h2>Admin Access</h2>
+      <input type="password" id="admin-pass" placeholder="password" autocomplete="off">
+      <button id="admin-login-btn">Unlock</button>
+      <div id="admin-error" class="admin-error"></div>
+    </div>
+
+    <div id="admin-panel" style="display:none">
+      <div id="key-flash" class="flash">
+        <div class="flash-label">New key created — click to copy</div>
+        <div id="flash-key" class="flash-key"></div>
+        <div class="flash-sub">This is the only time the full key is shown.</div>
+      </div>
+
+      <div class="create-key">
+        <h2>Create Key</h2>
+        <div class="create-key-form">
+          <div class="form-field">
+            <label>Email (optional)</label>
+            <input type="text" id="key-email" placeholder="user@example.com">
+          </div>
+          <div class="form-field">
+            <label>Tier</label>
+            <select id="key-tier">
+              <option value="free">free</option>
+              <option value="pro">pro</option>
+              <option value="unlimited">unlimited</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Monthly Quota</label>
+            <input type="number" id="key-quota" value="500" min="1" style="width:100px">
+          </div>
+          <div class="form-field">
+            <label>Rate (req/min)</label>
+            <input type="number" id="key-rate" value="10" min="1" style="width:80px">
+          </div>
+          <button class="create-btn" id="create-key-btn">Create</button>
+        </div>
+      </div>
+
+      <table class="accounts-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Email</th>
+            <th>Tier</th>
+            <th>Usage</th>
+            <th>Quota</th>
+            <th>Rate</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="accounts-body"></tbody>
+      </table>
+    </div>
+  </div>
 
   <footer>
     <span>procurement labs v0.1.0</span>
     <a href="https://github.com/tobasummandal/procurementlabs">github</a>
   </footer>
 </div>
+
+<div class="copied-toast" id="copied-toast">Copied</div>
+
+<script>
+(function() {
+  let adminPass = null;
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Copy to clipboard
+  function copyKey(key) {
+    navigator.clipboard.writeText(key);
+    const toast = document.getElementById('copied-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1200);
+  }
+
+  // Mask key: pl_abcd...wxyz
+  function maskKey(key) {
+    if (key.length <= 10) return key;
+    return key.slice(0, 6) + '...' + key.slice(-4);
+  }
+
+  // Usage bar class
+  function barClass(used, quota) {
+    const r = used / quota;
+    if (r > 0.9) return 'critical';
+    if (r > 0.7) return 'warn';
+    return '';
+  }
+
+  // Render accounts table
+  function renderAccounts(accounts) {
+    const tbody = document.getElementById('accounts-body');
+    tbody.innerHTML = accounts.map(a => {
+      const pct = Math.min(100, (a.used / a.quota) * 100);
+      const cls = barClass(a.used, a.quota);
+      const date = new Date(a.createdAt).toLocaleDateString();
+      return '<tr>'
+        + '<td class="key-cell" data-key="' + a.key + '" title="Click to copy">' + maskKey(a.key) + '<span class="copy-hint">copy</span></td>'
+        + '<td>' + (a.email || '<span style="color:#404040">—</span>') + '</td>'
+        + '<td><span class="tier-badge">' + a.tier + '</span></td>'
+        + '<td><span class="mini-bar"><span class="mini-bar-inner ' + cls + '" style="width:' + pct + '%"></span></span>' + a.used + ' / ' + a.quota + '</td>'
+        + '<td>' + a.remaining + ' left</td>'
+        + '<td>' + a.perMinuteRate + '/min</td>'
+        + '<td style="color:#525252">' + date + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  // Click-to-copy on key cells
+  document.getElementById('accounts-body').addEventListener('click', e => {
+    const cell = e.target.closest('.key-cell');
+    if (cell) copyKey(cell.dataset.key);
+  });
+
+  // Admin login
+  document.getElementById('admin-login-btn').addEventListener('click', tryLogin);
+  document.getElementById('admin-pass').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+  async function tryLogin() {
+    const pass = document.getElementById('admin-pass').value;
+    const errEl = document.getElementById('admin-error');
+    errEl.textContent = '';
+    try {
+      const res = await fetch('/api/admin/accounts', { headers: { 'x-admin-pass': pass } });
+      if (!res.ok) { errEl.textContent = 'Wrong password'; return; }
+      adminPass = pass;
+      const data = await res.json();
+      document.getElementById('admin-login').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      renderAccounts(data.accounts);
+    } catch (e) { errEl.textContent = 'Connection error'; }
+  }
+
+  // Create key
+  document.getElementById('create-key-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('create-key-btn');
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      const res = await fetch('/api/admin/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-pass': adminPass },
+        body: JSON.stringify({
+          email: document.getElementById('key-email').value || undefined,
+          tier: document.getElementById('key-tier').value,
+          monthly_quota: Number(document.getElementById('key-quota').value),
+          per_minute_rate: Number(document.getElementById('key-rate').value),
+        }),
+      });
+      if (!res.ok) { alert('Failed to create key'); return; }
+      const data = await res.json();
+      // Show flash
+      const flash = document.getElementById('key-flash');
+      const flashKey = document.getElementById('flash-key');
+      flashKey.textContent = data.account.key;
+      flashKey.onclick = () => copyKey(data.account.key);
+      flash.classList.add('visible');
+      // Clear form
+      document.getElementById('key-email').value = '';
+      document.getElementById('key-tier').value = 'free';
+      document.getElementById('key-quota').value = '500';
+      document.getElementById('key-rate').value = '10';
+      // Reload accounts
+      const acRes = await fetch('/api/admin/accounts', { headers: { 'x-admin-pass': adminPass } });
+      if (acRes.ok) { const d = await acRes.json(); renderAccounts(d.accounts); }
+    } catch (e) { alert('Error: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = 'Create'; }
+  });
+})();
+</script>
 </body>
 </html>`;
 }
@@ -792,6 +1233,55 @@ const server = http.createServer(async (req, res) => {
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
   if (path === "/api/mcp") return mcpHandler(fakeReq, fakeRes);
   if (path === "/api/usage") return usageHandler(fakeReq, fakeRes);
+
+  // ── Admin API ────────────────────────────────────────────────────────────
+  const adminPass = process.env.ADMIN_PASSWORD || "mantis-shrimp";
+  const checkAdmin = () => req.headers["x-admin-pass"] === adminPass;
+
+  if (path === "/api/admin/accounts" && req.method === "GET") {
+    if (!checkAdmin()) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Invalid admin password" }));
+    }
+    const accounts = await getAllAccounts();
+    const withUsage = await Promise.all(accounts.map(async (a) => {
+      const breakdown = await getUsage(a.id);
+      const used = breakdown.reduce((sum, r) => sum + r.count, 0);
+      return {
+        key: a.pl_key,
+        email: a.email,
+        tier: a.tier,
+        quota: a.monthly_quota,
+        used,
+        remaining: Math.max(0, a.monthly_quota - used),
+        perMinuteRate: a.per_minute_rate,
+        createdAt: a.created_at,
+      };
+    }));
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ accounts: withUsage }));
+  }
+
+  if (path === "/api/admin/keys" && req.method === "POST") {
+    if (!checkAdmin()) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Invalid admin password" }));
+    }
+    const plKey = "pl_" + crypto.randomBytes(12).toString("hex");
+    const account = await createAccount({
+      plKey,
+      email: body.email,
+      tier: body.tier,
+      monthlyQuota: body.monthly_quota ? Number(body.monthly_quota) : undefined,
+      perMinuteRate: body.per_minute_rate ? Number(body.per_minute_rate) : undefined,
+    });
+    if (!account) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Failed to create account" }));
+    }
+    res.writeHead(201, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ account: { key: account.pl_key, email: account.email, tier: account.tier, quota: account.monthly_quota, perMinuteRate: account.per_minute_rate } }));
+  }
 
   res.statusCode = 404;
   res.end("Not found");

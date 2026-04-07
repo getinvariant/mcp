@@ -49,6 +49,36 @@ export async function logUsage(
   ]);
 }
 
+export async function getAllAccounts(): Promise<Account[]> {
+  const { data } = await supabase
+    .from("accounts")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data as Account[]) || [];
+}
+
+export async function createAccount(opts: {
+  plKey: string;
+  email?: string;
+  tier?: string;
+  monthlyQuota?: number;
+  perMinuteRate?: number;
+}): Promise<Account | null> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .insert({
+      pl_key: opts.plKey,
+      email: opts.email || null,
+      tier: opts.tier || "free",
+      monthly_quota: opts.monthlyQuota ?? 500,
+      per_minute_rate: opts.perMinuteRate ?? 10,
+    })
+    .select("*")
+    .single();
+  if (error || !data) return null;
+  return data as Account;
+}
+
 export async function getUsage(
   accountId: string,
   month?: string
