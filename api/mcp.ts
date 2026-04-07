@@ -1,6 +1,7 @@
 import { authenticateRequest } from "../lib/auth.js";
 import { logUsage } from "../lib/db.js";
 import { getAllProviders, getProvider } from "../lib/providers/registry.js";
+import { recommend, compareProviders } from "../lib/reasoning/engine.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
@@ -79,6 +80,48 @@ async function handleMessage(msg: any, accountId: string): Promise<object | null
               required: ["provider_id", "action"],
             },
           },
+          {
+            name: "recommend",
+            description:
+              "Get intelligent recommendations for which API provider to use based on your needs. Compares pricing, rate limits, reliability, and capabilities.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                need: {
+                  type: "string",
+                  description: "Describe what you need — e.g. 'I need real-time stock prices'",
+                },
+                priorities: {
+                  type: "array",
+                  items: { type: "string", enum: ["cost", "reliability", "speed", "data-quality", "no-auth"] },
+                  description: "What matters most to you",
+                },
+                budget: {
+                  type: "string",
+                  enum: ["free", "low", "any"],
+                  description: "Budget constraint",
+                },
+              },
+              required: ["need"],
+            },
+          },
+          {
+            name: "compare",
+            description:
+              "Compare two or more providers side by side on pricing, rate limits, strengths, weaknesses, and capabilities.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                provider_ids: {
+                  type: "array",
+                  items: { type: "string" },
+                  minItems: 2,
+                  description: "Provider IDs to compare — e.g. ['claude', 'gemini']",
+                },
+              },
+              required: ["provider_ids"],
+            },
+          },
         ],
       });
 
@@ -154,6 +197,38 @@ async function handleMessage(msg: any, accountId: string): Promise<object | null
         }
 
         return ok({ content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] });
+      }
+
+      if (name === "recommend") {
+        const { need, priorities, budget } = args;
+        if (!need) {
+          return ok({ content: [{ type: "text", text: "Error: Missing 'need' parameter" }], isError: true });
+        }
+        const results = recommend({ need, priorities, budget });
+        if (results.length === 0) {
+          return ok({ content: [{ type: "text", text: "No matching providers found. Try rephrasing or use list_providers to browse all available APIs." }] });
+        }
+        const text = results.map((r: any, i: number) => [
+          `## ${i + 1}. ${r.provider_name} (${r.provider_id}) — Score: ${r.score}/100`,
+          `${r.reasoning}`,
+          `Actions: ${r.actions.join(", ")}`,
+          `Pricing: ${r.pricing.model}${r.pricing.freeTier ? ` (free tier: ${r.pricing.freeTier})` : ""}`,
+          `Rate limits: ${r.rateLimits.free || "N/A"}`,
+          `Available: ${r.available ? "✅ Ready" : "❌ Needs API key"}`,
+        ].join("\n")).join("\n\n---\n\n");
+        return ok({ content: [{ type: "text", text }] });
+      }
+
+      if (name === "compare") {
+        const { provider_ids } = args;
+        if (!Array.isArray(provider_ids) || provider_ids.length < 2) {
+          return ok({ content: [{ type: "text", text: "Error: Provide at least 2 provider_ids" }], isError: true });
+        }
+        const results = compareProviders(provider_ids);
+        if (results.length === 0) {
+          return ok({ content: [{ type: "text", text: "No matching providers found." }], isError: true });
+        }
+        return ok({ content: [{ type: "text", text: JSON.stringify(results, null, 2) }] });
       }
 
       return err(-32601, `Unknown tool: ${name}`);

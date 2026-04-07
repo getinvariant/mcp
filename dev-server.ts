@@ -8,7 +8,9 @@ import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
 import mcpHandler from "./api/mcp.js";
 import usageHandler from "./api/usage.js";
+import recommendHandler from "./api/recommend.js";
 import { getAllProviders, getProvider } from "./lib/providers/registry.js";
+import { recommend, compareProviders } from "./lib/reasoning/engine.js";
 import { getAccount, getUsage, getAllAccounts, createAccount, addToWaitlist, logUsage } from "./lib/db.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -75,6 +77,47 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
         return { content: [{ type: "text", text: `Error: ${result.error}` }], isError: true };
       }
       return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "recommend",
+    "Get intelligent recommendations for which API provider to use based on your needs. Compares pricing, rate limits, reliability, and capabilities. Use this before querying to pick the best provider.",
+    {
+      need: z.string().describe("Describe what you need — e.g. 'I need real-time stock prices' or 'cheapest way to do sentiment analysis'"),
+      priorities: z.array(z.enum(["cost", "reliability", "speed", "data-quality", "no-auth"])).optional()
+        .describe("What matters most to you"),
+      budget: z.enum(["free", "low", "any"]).optional().describe("Budget constraint"),
+    },
+    async ({ need, priorities, budget }) => {
+      const results = recommend({ need, priorities, budget });
+      if (results.length === 0) {
+        return { content: [{ type: "text", text: "No matching providers found for that need. Try rephrasing or use list_providers to browse all available APIs." }] };
+      }
+      const text = results.map((r, i) => [
+        `## ${i + 1}. ${r.provider_name} (${r.provider_id}) — Score: ${r.score}/100`,
+        `${r.reasoning}`,
+        `Actions: ${r.actions.join(", ")}`,
+        `Pricing: ${r.pricing.model}${r.pricing.freeTier ? ` (free tier: ${r.pricing.freeTier})` : ""}`,
+        `Rate limits: ${r.rateLimits.free || "N/A"}`,
+        `Available: ${r.available ? "✅ Ready" : "❌ Needs API key"}`,
+      ].join("\n")).join("\n\n---\n\n");
+      return { content: [{ type: "text", text }] };
+    }
+  );
+
+  server.tool(
+    "compare",
+    "Compare two or more providers side by side on pricing, rate limits, strengths, weaknesses, and capabilities.",
+    {
+      provider_ids: z.array(z.string()).min(2).describe("Provider IDs to compare — e.g. ['claude', 'gemini']"),
+    },
+    async ({ provider_ids }) => {
+      const results = compareProviders(provider_ids);
+      if (results.length === 0) {
+        return { content: [{ type: "text", text: "No matching providers found. Use list_providers to see valid IDs." }], isError: true };
+      }
+      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
     }
   );
 
@@ -512,6 +555,22 @@ ${renderNav("how")}
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-body">
+        <h3>Get smart recommendations</h3>
+        <p>Not sure which API to use? The reasoning layer analyzes your needs and compares providers on cost, rate limits, reliability, and capabilities.</p>
+        <pre>POST /api/recommend
+{ "need": "I need real-time stock data",
+  "priorities": ["cost", "reliability"],
+  "budget": "free" }
+
+→ Recommends Finnhub (score: 85/100)
+  "Free tier: 60 calls/min. High reliability."</pre>
+        <p>Also available as the <code>recommend</code> and <code>compare</code> MCP tools.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
         <h3>Use it</h3>
         <p>Ask your AI agent naturally. It will call the right provider automatically.</p>
         <pre>"what's the weather in tokyo?"          → OpenWeatherMap
@@ -522,7 +581,7 @@ ${renderNav("how")}
     </div>
 
     <div class="step">
-      <div class="step-num">4</div>
+      <div class="step-num">5</div>
       <div class="step-body">
         <h3>Track usage</h3>
         <p>Visit the <a href="/dashboard">dashboard</a> to see your quota, per-provider breakdown, and rate limits in real time. Your key is remembered — no need to sign in again.</p>
@@ -1414,6 +1473,7 @@ function renderDashboard(): string {
       <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/query</span><span class="endpoint-desc">execute a provider action</span></div>
       <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/mcp</span><span class="endpoint-desc">MCP protocol (JSON-RPC)</span></div>
       <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/usage</span><span class="endpoint-desc">check quota and usage breakdown</span></div>
+      <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/recommend</span><span class="endpoint-desc">AI-powered provider recommendations</span></div>
     </div>
 
     ${categoryCards}
@@ -1821,6 +1881,7 @@ const server = http.createServer(async (req, res) => {
 
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
+  if (path === "/api/recommend") return recommendHandler(fakeReq, fakeRes);
   if (path === "/api/mcp") {
     // Authenticate
     const plKey = req.headers["x-pl-key"] as string;
