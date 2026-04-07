@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import "dotenv/config";
 import http from "node:http";
 import querystring from "node:querystring";
 import crypto from "node:crypto";
@@ -69,7 +70,7 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
         return { content: [{ type: "text", text: `Error: Provider '${provider.info.name}' is not configured on the server` }], isError: true };
       }
       const result = await provider.query(action, queryParams || {});
-      logUsage(accountId, provider_id, action, result.success).catch(() => {});
+      logUsage(accountId, provider_id, action, result.success).catch(() => { });
       if (!result.success) {
         return { content: [{ type: "text", text: `Error: ${result.error}` }], isError: true };
       }
@@ -244,23 +245,24 @@ const SHARED_HEAD = `<meta charset="utf-8">
 
 const SHARED_STYLES = `
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Inter',-apple-system,sans-serif;background:#0a0a0a;color:#e5e5e5;line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:#a3a3a3;text-decoration:none;transition:color .15s}
-  a:hover{color:#fff}
-  .container{max-width:960px;margin:0 auto;padding:0 1.5rem}
-  nav{border-bottom:1px solid #1c1c1c;padding:1rem 0}
+  body{font-family:'Inter',-apple-system,sans-serif;background-color:#050505;background-image:radial-gradient(circle at 50% 0%, #1a1a1a 0%, transparent 800px), radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);background-size:100% 100%, 20px 20px;color:#ededed;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  a{color:#888;text-decoration:none;transition:color .2s ease, text-shadow .2s ease}
+  a:hover{color:#fff;text-shadow:0 0 8px rgba(255,255,255,0.3)}
+  .container{max-width:1000px;margin:0 auto;padding:0 2rem}
+  nav{border-bottom:1px solid rgba(255,255,255,0.05);padding:1.25rem 0;backdrop-filter:blur(10px);position:sticky;top:0;z-index:50;}
   nav .container{display:flex;justify-content:space-between;align-items:center}
-  nav .logo{font-weight:600;color:#fff;font-size:0.95rem;letter-spacing:-0.02em}
-  nav .links{display:flex;gap:1.5rem;font-size:0.8rem}
-  nav .links a{color:#525252}
-  nav .links a:hover{color:#e5e5e5}
-  nav .links a.active{color:#e5e5e5}
-  .btn{display:inline-block;padding:0.6rem 1.5rem;border-radius:0.5rem;font-size:0.85rem;font-weight:600;transition:all .15s;cursor:pointer;border:none}
-  .btn-primary{background:#e5e5e5;color:#0a0a0a}
-  .btn-primary:hover{background:#fff;color:#0a0a0a}
-  .btn-ghost{background:transparent;border:1px solid #333;color:#a3a3a3}
-  .btn-ghost:hover{border-color:#525252;color:#e5e5e5}
-  .page-footer{border-top:1px solid #1c1c1c;padding:2rem 0;margin-top:4rem;display:flex;justify-content:space-between;font-size:0.75rem;color:#404040}
+  nav .logo{font-weight:700;color:#fff;font-size:1rem;letter-spacing:-0.03em;text-transform:lowercase;display:flex;align-items:center;gap:0.5rem;}
+  nav .logo::after{content:'alpha';font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;background:rgba(74, 222, 128, 0.1);color:#4ade80;padding:0.1rem 0.4rem;border-radius:0.25rem;font-weight:800;}
+  nav .links{display:flex;gap:2rem;font-size:0.85rem;font-weight:500;}
+  nav .links a{color:#777}
+  nav .links a:hover{color:#fff}
+  nav .links a.active{color:#fff}
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:0.75rem 1.75rem;border-radius:0.5rem;font-size:0.9rem;font-weight:600;letter-spacing:-0.01em;transition:all .2s ease;cursor:pointer;border:1px solid transparent;text-decoration:none;}
+  .btn-primary{background:#fff;color:#000;box-shadow:0 4px 14px rgba(255,255,255,0.1)}
+  .btn-primary:hover{background:#4ade80;color:#000;transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,222,128,0.3)}
+  .btn-ghost{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.1);color:#ccc}
+  .btn-ghost:hover{border-color:rgba(74,222,128,0.4);color:#fff;background:rgba(74,222,128,0.05);text-shadow: 0 0 8px rgba(74,222,128,0.4)}
+  .page-footer{border-top:1px solid rgba(255,255,255,0.05);padding:3rem 0;margin-top:5rem;display:flex;justify-content:space-between;font-size:0.8rem;color:#555}
 `;
 
 function renderNav(active?: string): string {
@@ -296,52 +298,55 @@ ${SHARED_HEAD}
 <title>Procurement Labs — API Gateway for AI Agents</title>
 <style>
 ${SHARED_STYLES}
-  .hero{padding:6rem 0 4rem;text-align:center}
-  .hero h1{font-size:2.5rem;font-weight:700;color:#fff;letter-spacing:-0.04em;margin-bottom:1rem}
-  .hero .tagline{font-size:1.1rem;color:#737373;max-width:500px;margin:0 auto 2.5rem}
-  .hero .ctas{display:flex;gap:1rem;justify-content:center}
+  .hero{padding:8rem 0 5rem;text-align:center;position:relative;}
+  .hero::before{content:'';position:absolute;top:-50%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 60%);pointer-events:none;}
+  .hero h1{font-size:3.5rem;font-weight:800;color:#fff;letter-spacing:-0.05em;margin-bottom:1.25rem;line-height:1.1;background:linear-gradient(135deg, #fff 30%, #4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero .tagline{font-size:1.15rem;color:#888;max-width:560px;margin:0 auto 3rem;line-height:1.6;}
+  .hero .ctas{display:flex;gap:1rem;justify-content:center;position:relative;z-index:10;}
 
-  .ascii-art{font-family:'JetBrains Mono',monospace;font-size:0.65rem;line-height:1.3;color:#333;text-align:center;margin-bottom:3rem;white-space:pre;user-select:none}
+  .pitch{text-align:center;max-width:680px;margin:0 auto 5rem;font-size:1.05rem;color:#777;line-height:1.8;letter-spacing:-0.01em;}
+  .pitch strong{color:#fff;font-weight:600;}
 
-  .pitch{text-align:center;max-width:600px;margin:0 auto 4rem;font-size:0.9rem;color:#525252;line-height:1.8}
-  .pitch strong{color:#a3a3a3}
+  .stats-row{display:flex;gap:1px;background:rgba(255,255,255,0.05);border-radius:1rem;overflow:hidden;border:1px solid rgba(255,255,255,0.08);margin-bottom:5rem;box-shadow:0 20px 40px rgba(0,0,0,0.4)}
+  .stats-row .s{flex:1;padding:2rem 1.5rem;background:rgba(10,10,10,0.8);text-align:center;backdrop-filter:blur(10px);transition:background 0.3s}
+  .stats-row .s:hover{background:rgba(20,20,20,0.9)}
+  .stats-row .sv{font-size:2rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-0.03em;}
+  .stats-row .sl{font-size:0.75rem;color:#666;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.5rem;font-weight:600;}
 
-  .stats-row{display:flex;gap:1px;background:#1c1c1c;border-radius:0.75rem;overflow:hidden;border:1px solid #262626;margin-bottom:3rem}
-  .stats-row .s{flex:1;padding:1.25rem 1.5rem;background:#111;text-align:center}
-  .stats-row .sv{font-size:1.5rem;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
-  .stats-row .sl{font-size:0.7rem;color:#525252;text-transform:uppercase;letter-spacing:0.05em;margin-top:0.25rem}
+  .categories{margin-bottom:5rem}
+  .categories h2{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;color:#666;margin-bottom:1.5rem;text-align:center;font-weight:600;}
+  .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+  .cat-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:0.75rem;padding:1.25rem;display:flex;align-items:center;gap:1rem;transition:all .2s ease;cursor:default;}
+  .cat-card:hover{border-color:rgba(74,222,128,0.3);transform:translateY(-2px);background:rgba(74,222,128,0.02);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+  .cat-icon{width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border-radius:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:#4ade80;flex-shrink:0;border:1px solid rgba(255,255,255,0.05)}
+  .cat-label{font-size:0.9rem;font-weight:500;color:#ccc;flex:1}
+  .cat-count{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#555;background:rgba(0,0,0,0.5);padding:0.2rem 0.5rem;border-radius:1rem;}
 
-  .categories{margin-bottom:4rem}
-  .categories h2{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#525252;margin-bottom:1rem;text-align:center}
-  .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem}
-  .cat-card{background:#111;border:1px solid #262626;border-radius:0.5rem;padding:1rem;display:flex;align-items:center;gap:0.75rem;transition:border-color .15s}
-  .cat-card:hover{border-color:#333}
-  .cat-icon{width:1.75rem;height:1.75rem;display:flex;align-items:center;justify-content:center;background:#1c1c1c;border-radius:0.375rem;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#525252;flex-shrink:0}
-  .cat-label{font-size:0.8rem;color:#a3a3a3;flex:1}
-  .cat-count{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#404040}
+  .terminal{background:#000;border:1px solid rgba(255,255,255,0.1);border-radius:1rem;padding:2rem;max-width:680px;margin:0 auto 5rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;line-height:1.6;box-shadow:0 20px 40px rgba(0,0,0,0.5);position:relative;overflow:hidden;}
+  .terminal .prompt{color:#666}
+  .terminal .cmd{color:#eee}
+  .terminal .out{color:#888;margin-top:1rem;border-top:1px dashed rgba(255,255,255,0.1);padding-top:1rem;}
 
-  .terminal{background:#111;border:1px solid #262626;border-radius:0.75rem;padding:1.5rem 2rem;max-width:600px;margin:0 auto 4rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem}
-  .terminal .prompt{color:#525252}
-  .terminal .cmd{color:#e5e5e5}
-  .terminal .out{color:#404040;margin-top:0.5rem}
+  .waitlist{text-align:center;padding:4rem 0;margin-bottom:2rem;border-top:1px solid rgba(255,255,255,0.05);background:radial-gradient(ellipse at top, rgba(74,222,128,0.08) 0%, transparent 60%);}
+  .waitlist h2{font-size:1.5rem;color:#fff;font-weight:700;letter-spacing:-0.03em;margin-bottom:0.75rem}
+  .waitlist p{font-size:0.95rem;color:#888;max-width:460px;margin:0 auto 2rem;line-height:1.6}
+  .waitlist form{display:flex;gap:0.75rem;max-width:440px;margin:0 auto}
+  .waitlist input[type="email"]{flex:1;padding:0.8rem 1.25rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;color:#fff;font-size:0.9rem;outline:none;font-family:inherit;transition:all 0.2s}
+  .waitlist input[type="email"]:focus{border-color:rgba(74,222,128,0.5);background:rgba(74,222,128,0.05);box-shadow:0 0 0 3px rgba(74,222,128,0.15)}
+  .waitlist .btn-wait{padding:0.8rem 1.5rem;background:#fff;color:#000;border:none;border-radius:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 4px 14px rgba(255,255,255,0.1)}
+  .waitlist .btn-wait:hover{background:#4ade80;color:#000;transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,222,128,0.3)}
+  .waitlist .msg{font-size:0.85rem;margin-top:1rem;min-height:1.2em;font-weight:500;}
+  .waitlist .msg.ok{color:#4ade80}
+  .waitlist .msg.err{color:#f87171}
 
-  .waitlist{text-align:center;padding:3rem 0;margin-bottom:2rem;border-top:1px solid #1c1c1c}
-  .waitlist h2{font-size:1.1rem;color:#fff;font-weight:600;margin-bottom:0.5rem}
-  .waitlist p{font-size:0.85rem;color:#525252;max-width:420px;margin:0 auto 1.5rem;line-height:1.6}
-  .waitlist form{display:flex;gap:0.5rem;max-width:400px;margin:0 auto}
-  .waitlist input[type="email"]{flex:1;padding:0.6rem 1rem;background:#111;border:1px solid #262626;border-radius:0.5rem;color:#e5e5e5;font-size:0.85rem;outline:none;font-family:inherit}
-  .waitlist input[type="email"]:focus{border-color:#404040}
-  .waitlist .btn-wait{padding:0.6rem 1.25rem;background:#fff;color:#0a0a0a;border:none;border-radius:0.5rem;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap}
-  .waitlist .btn-wait:hover{background:#d4d4d4}
-  .waitlist .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em}
-  .waitlist .msg.ok{color:#22c55e}
-  .waitlist .msg.err{color:#ef4444}
-
-  @media(max-width:640px){
-    .hero h1{font-size:1.75rem}
+  @media(max-width:768px){
     .cat-grid{grid-template-columns:repeat(2,1fr)}
     .stats-row{flex-direction:column}
+  }
+  @media(max-width:640px){
+    .hero h1{font-size:2.5rem}
     .hero .ctas{flex-direction:column;align-items:center}
+    .waitlist form{flex-direction:column}
   }
 </style>
 </head>
@@ -349,14 +354,6 @@ ${SHARED_STYLES}
 ${renderNav()}
 <div class="container">
   <div class="hero">
-    <div class="ascii-art">
-    ┌─────────────────────────────────────┐
-    │  ╱╲    procurement    ╱╲           │
-    │ ╱  ╲     labs        ╱  ╲          │
-    │╱    ╲   ─────────   ╱    ╲         │
-    │ ▓▓▓▓ ╲  api gateway ╱ ▓▓▓▓         │
-    │ ▓▓▓▓  ╲  for agents╱  ▓▓▓▓         │
-    └─────────────────────────────────────┘</div>
     <h1>One key. Every API.<br>Zero friction.</h1>
     <p class="tagline">Give your AI agents access to weather, finance, health, maps and more — through a single API key. No credential juggling. No provider accounts.</p>
     <div class="ctas">
@@ -497,6 +494,8 @@ ${renderNav("how")}
         <pre>claude mcp add procurement-labs \\
   --transport http https://pclabs.dev/api/mcp \\
   --header "x-pl-key: pl_your_key"</pre>
+        <p>For <strong>Codex</strong>, run this command:</p>
+        <pre>codex mcp add procurement-labs --url https://pclabs.dev/api/mcp</pre>
         <p>For <strong>Cursor</strong>, add to <code>~/.cursor/mcp.json</code>:</p>
         <pre>{
   "mcpServers": {
@@ -759,24 +758,7 @@ function renderDashboard(): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Procurement Labs</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Inter', -apple-system, sans-serif;
-    background: #0a0a0a;
-    color: #e5e5e5;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .container {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 3rem 1.5rem 4rem;
-  }
-
+  ${SHARED_STYLES}
   /* Header */
   header {
     margin-bottom: 3rem;
@@ -797,24 +779,26 @@ function renderDashboard(): string {
   .stats {
     display: flex;
     gap: 1px;
-    background: #1c1c1c;
-    border-radius: 0.75rem;
+    background: rgba(255,255,255,0.05);
+    border-radius: 1rem;
     overflow: hidden;
     margin-bottom: 2.5rem;
-    border: 1px solid #262626;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   }
   .stat {
     flex: 1;
-    padding: 1.25rem 1.5rem;
-    background: #111;
+    padding: 1.5rem;
+    background: rgba(10,10,10,0.6);
+    backdrop-filter: blur(10px);
   }
   .stat-value {
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 1.75rem;
+    font-weight: 700;
     color: #fff;
     font-variant-numeric: tabular-nums;
   }
-  .stat-value.green { color: #d4d4d4; }
+  .stat-value.green { color: #4ade80; }
   .stat-value.amber { color: #a3a3a3; }
   .stat-label {
     font-size: 0.75rem;
@@ -826,11 +810,11 @@ function renderDashboard(): string {
 
   /* Endpoints */
   .endpoints {
-    background: #111;
-    border: 1px solid #262626;
-    border-radius: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 2.5rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
   }
@@ -872,17 +856,18 @@ function renderDashboard(): string {
     border-bottom: 1px solid #1c1c1c;
   }
   .category-icon {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #1c1c1c;
-    border-radius: 0.375rem;
+    background: rgba(74,222,128,0.1);
+    border-radius: 0.5rem;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    font-weight: 500;
-    color: #525252;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #4ade80;
+    border: 1px solid rgba(74,222,128,0.2);
   }
   .category-header h2 {
     font-size: 0.8rem;
@@ -902,15 +887,18 @@ function renderDashboard(): string {
 
   /* Provider cards */
   .provider {
-    background: #111;
-    border: 1px solid #262626;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
     border-radius: 0.75rem;
     padding: 1.25rem 1.5rem;
-    margin-bottom: 0.5rem;
-    transition: border-color 0.15s;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
   }
   .provider:hover {
-    border-color: #333;
+    border-color: rgba(74,222,128,0.4);
+    background: rgba(74,222,128,0.02);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
   }
   .provider-header {
     display: flex;
@@ -966,7 +954,8 @@ function renderDashboard(): string {
     gap: 0.5rem;
   }
   .action {
-    background: #0a0a0a;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.03);
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
   }
@@ -1023,11 +1012,12 @@ function renderDashboard(): string {
 
   /* Usage panel */
   .usage-panel {
-    background: #111;
-    border: 1px solid #262626;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 1rem;
+    padding: 2rem;
     margin-bottom: 2.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
   }
   .usage-panel h2 {
     font-size: 0.75rem;
@@ -1055,7 +1045,7 @@ function renderDashboard(): string {
   }
   .quota-bar-inner {
     height: 100%;
-    background: #d4d4d4;
+    background: #4ade80;
     border-radius: 3px;
     transition: width 0.3s;
   }
@@ -1122,8 +1112,8 @@ function renderDashboard(): string {
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  .tab:hover { color: #a3a3a3; }
-  .tab.active { color: #e5e5e5; border-bottom-color: #e5e5e5; }
+  .tab:hover { color: #fff; }
+  .tab.active { color: #4ade80; border-bottom-color: #4ade80; }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
