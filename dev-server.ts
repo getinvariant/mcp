@@ -875,7 +875,7 @@ function renderDashboard(): string {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
         <h2 id="usage-title" style="margin:0"></h2>
         <div style="display:flex;align-items:center;gap:1rem">
-          <span id="usage-key-display" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#525252;cursor:pointer" title="Click to copy full key"></span>
+          <button id="usage-key-display" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#a3a3a3;cursor:pointer;background:#1c1c1c;border:1px solid #262626;border-radius:0.375rem;padding:0.3rem 0.75rem;transition:border-color .15s" title="Click to copy full key"></button>
           <button id="usage-signout" style="background:none;border:1px solid #262626;border-radius:0.375rem;padding:0.3rem 0.75rem;color:#525252;font-size:0.7rem;cursor:pointer;transition:color .15s">sign out</button>
         </div>
       </div>
@@ -1026,7 +1026,7 @@ function renderDashboard(): string {
   // Usage rendering
   function showUsagePanel(u, key) {
     document.getElementById('usage-title').textContent = 'Your Usage — ' + u.tier + ' tier';
-    document.getElementById('usage-key-display').textContent = maskKey(key);
+    document.getElementById('usage-key-display').textContent = maskKey(key) + '  copy';
     document.getElementById('usage-quota-text').textContent = u.used + ' / ' + u.quota;
     document.getElementById('usage-rate-text').textContent = (u.per_minute_rate || 10) + ' req/min';
     document.getElementById('usage-resets-text').textContent = u.resets;
@@ -1084,14 +1084,14 @@ function renderDashboard(): string {
 
   // Sign out
   // Copy full key from logged-in display
-  document.getElementById('usage-key-display').addEventListener('click', () => {
-    const key = getCookie('pl_key');
-    if (key) {
-      navigator.clipboard.writeText(key);
-      var t = document.getElementById('copied-toast');
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 1200);
-    }
+  document.getElementById('usage-key-display').addEventListener('click', function() {
+    var el = this;
+    var key = getCookie('pl_key');
+    if (!key) return;
+    navigator.clipboard.writeText(key).then(function() {
+      el.textContent = 'copied!';
+      setTimeout(function() { el.textContent = maskKey(key) + '  copy'; }, 1500);
+    });
   });
 
   document.getElementById('usage-signout').addEventListener('click', () => {
