@@ -1105,9 +1105,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (path === "/register" && req.method === "POST") {
+    const regBody = await parseBody(req);
     res.writeHead(201, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({
       client_id: crypto.randomBytes(16).toString("hex"),
+      redirect_uris: regBody.redirect_uris ?? [],
       grant_types: ["authorization_code"],
       response_types: ["code"],
       token_endpoint_auth_method: "none",

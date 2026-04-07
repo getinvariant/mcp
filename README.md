@@ -65,11 +65,30 @@ npx vercel dev               # runs on http://localhost:3000
 
 ---
 
-### 2. Configure Your MCP Client
+### 2. Connect Your AI Client
 
-**Option A — Remote HTTP (recommended, no local install)**
+All clients connect to the same remote endpoint — no cloning, no building, no Node.js required.
 
-Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json`):
+```
+URL:    https://your-app.vercel.app/api/mcp
+Header: x-pl-key: pl_your_key_here
+```
+
+---
+
+#### Claude Code (CLI)
+
+One command, no file editing:
+
+```bash
+claude mcp add procurement-labs --transport http https://your-app.vercel.app/api/mcp --header "x-pl-key: pl_your_key_here"
+```
+
+---
+
+#### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -85,11 +104,144 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 }
 ```
 
-That's it — no cloning, no building, no Node.js required on the participant's machine.
+Restart Claude Desktop after saving.
 
 ---
 
-**Option B — Local stdio (for older clients)**
+#### claude.ai (web)
+
+Settings → Integrations → Add custom integration. Paste the URL and set the `x-pl-key` header in the form. No file editing needed.
+
+---
+
+#### Cursor
+
+Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "procurement-labs": {
+      "url": "https://your-app.vercel.app/api/mcp",
+      "headers": {
+        "x-pl-key": "pl_your_key_here"
+      }
+    }
+  }
+}
+```
+
+Or via UI: Settings → Tools & Integrations → MCP → Add Server.
+
+---
+
+#### Windsurf
+
+Edit `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "procurement-labs": {
+      "url": "https://your-app.vercel.app/api/mcp",
+      "headers": {
+        "x-pl-key": "pl_your_key_here"
+      }
+    }
+  }
+}
+```
+
+Or via UI: Cascade panel → MCP Servers → Configure.
+
+---
+
+#### Cline (VS Code extension)
+
+Best UI of the bunch — no file editing needed:
+
+1. Open the Cline sidebar
+2. Click the MCP Servers tab (plug icon)
+3. Add Server → select HTTP type
+4. Paste `https://your-app.vercel.app/api/mcp` as the URL
+5. Add header `x-pl-key: pl_your_key_here`
+
+---
+
+#### Continue.dev
+
+Edit `~/.continue/config.json`:
+
+```json
+{
+  "mcpServers": [
+    {
+      "name": "procurement-labs",
+      "transport": {
+        "type": "http",
+        "url": "https://your-app.vercel.app/api/mcp",
+        "headers": {
+          "x-pl-key": "pl_your_key_here"
+        }
+      }
+    }
+  ]
+}
+```
+
+---
+
+#### OpenAI Codex CLI
+
+Edit `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.procurement-labs]
+type = "http"
+url = "https://your-app.vercel.app/api/mcp"
+
+[mcp_servers.procurement-labs.headers]
+x-pl-key = "pl_your_key_here"
+```
+
+---
+
+#### OpenAI Responses API (building your own app)
+
+Pass the MCP server directly as a tool in your API call — no config file needed:
+
+```python
+response = client.responses.create(
+    model="codex-mini-latest",
+    tools=[{
+        "type": "mcp",
+        "server_url": "https://your-app.vercel.app/api/mcp",
+        "headers": { "x-pl-key": "pl_your_key_here" }
+    }],
+    input="What crypto prices are available?"
+)
+```
+
+---
+
+#### Goose (Block)
+
+Edit `~/.config/goose/config.yaml`:
+
+```yaml
+extensions:
+  procurement-labs:
+    type: mcp
+    enabled: true
+    transport: http
+    url: https://your-app.vercel.app/api/mcp
+    headers:
+      x-pl-key: pl_your_key_here
+```
+
+---
+
+**Fallback — Local stdio (for clients that don't support HTTP MCP)**
 
 ```bash
 npm install
