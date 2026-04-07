@@ -18,7 +18,7 @@ const PORT = Number(process.env.PORT) || 3000;
 // ─── Streamable HTTP MCP ────────────────────────────────────────────────────
 const mcpSessions = new Map<string, { transport: StreamableHTTPServerTransport; server: McpServer }>();
 
-function createMcpSession(accountId: string): { transport: StreamableHTTPServerTransport; server: McpServer } {
+async function createMcpSession(accountId: string): Promise<{ transport: StreamableHTTPServerTransport; server: McpServer }> {
   const server = new McpServer({ name: "procurement-labs", version: "0.1.0" });
 
   server.tool(
@@ -84,11 +84,7 @@ function createMcpSession(accountId: string): { transport: StreamableHTTPServerT
     if (sid) mcpSessions.delete(sid);
   };
 
-  server.connect(transport);
-
-  if (transport.sessionId) {
-    mcpSessions.set(transport.sessionId, { transport, server });
-  }
+  await server.connect(transport);
 
   return { transport, server };
 }
@@ -1854,8 +1850,13 @@ const server = http.createServer(async (req, res) => {
 
     // New session (must be initialize request or POST without session)
     if (req.method === "POST") {
-      const { transport } = createMcpSession(account.id);
-      return transport.handleRequest(req, res, body);
+      const session = await createMcpSession(account.id);
+      await session.transport.handleRequest(req, res, body);
+      // Store session after initialize sets the session ID
+      if (session.transport.sessionId) {
+        mcpSessions.set(session.transport.sessionId, session);
+      }
+      return;
     }
 
     // GET for SSE stream on existing session
