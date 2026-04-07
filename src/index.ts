@@ -8,7 +8,7 @@ import { registerQuery } from "./tools/query.js";
 async function main() {
   if (!config.apiKey) {
     console.error("Error: PL_API_KEY environment variable is required.");
-    console.error("Get your key at https://procurementlabs.vercel.app");
+    console.error("Get your key at https://procurementlabs.up.railway.app");
     process.exit(1);
   }
 
