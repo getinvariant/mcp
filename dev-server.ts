@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import http from "node:http";
 import querystring from "node:querystring";
+import crypto from "node:crypto";
 
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
@@ -8,6 +9,91 @@ import mcpHandler from "./api/mcp.js";
 import { getAllProviders } from "./lib/providers/registry.js";
 
 const PORT = Number(process.env.PORT) || 3000;
+
+// ─── OAuth 2.0 ──────────────────────────────────────────────────────────────
+
+type PendingCode = { apiKey: string; redirectUri: string; codeChallenge: string; expiresAt: number };
+const pendingCodes = new Map<string, PendingCode>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, data] of pendingCodes) if (data.expiresAt < now) pendingCodes.delete(code);
+}, 60_000);
+
+function getBaseUrl(req: http.IncomingMessage): string {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/$/, "");
+  const proto = (req.headers["x-forwarded-proto"] as string) || "http";
+  return `${proto}://${req.headers.host || `localhost:${PORT}`}`;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function verifyPKCE(verifier: string, challenge: string): boolean {
+  const hash = crypto.createHash("sha256").update(verifier).digest("base64url");
+  return hash === challenge;
+}
+
+function parseFormBody(req: http.IncomingMessage): Promise<Record<string, string>> {
+  return new Promise((resolve) => {
+    let data = "";
+    req.on("data", (chunk) => (data += chunk));
+    req.on("end", () => {
+      const parsed = querystring.parse(data);
+      const result: Record<string, string> = {};
+      for (const [k, v] of Object.entries(parsed)) result[k] = Array.isArray(v) ? v[0]! : (v ?? "");
+      resolve(result);
+    });
+  });
+}
+
+function renderAuthorizeForm(opts: {
+  clientId: string; redirectUri: string; state: string;
+  codeChallenge: string; codeChallengeMethod: string; error?: string;
+}): string {
+  const { clientId, redirectUri, state, codeChallenge, codeChallengeMethod, error } = opts;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Procurement Labs — Connect</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',-apple-system,sans-serif;background:#0a0a0a;color:#e5e5e5;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem}
+  .card{width:100%;max-width:380px}
+  h1{font-size:1.1rem;font-weight:600;color:#fff;margin-bottom:.25rem}
+  .sub{font-size:.85rem;color:#737373;margin-bottom:1.5rem}
+  .error{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#f87171;font-size:.8rem;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem}
+  input{width:100%;background:#111;border:1px solid #262626;border-radius:.5rem;padding:.75rem 1rem;color:#e5e5e5;font-size:.9rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;margin-bottom:.75rem}
+  input:focus{border-color:#525252}
+  input::placeholder{color:#404040}
+  button{width:100%;background:#e5e5e5;color:#0a0a0a;border:none;border-radius:.5rem;padding:.75rem;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s}
+  button:hover{background:#fff}
+  .hint{font-size:.75rem;color:#404040;margin-top:1rem;text-align:center}
+  .hint a{color:#525252;text-decoration:none}
+  .hint a:hover{color:#a3a3a3}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Procurement Labs</h1>
+  <p class="sub">Enter your API key to connect</p>
+  ${error ? `<div class="error">${escapeHtml(error)}</div>` : ""}
+  <form method="POST" action="/authorize">
+    <input type="hidden" name="client_id" value="${escapeHtml(clientId)}">
+    <input type="hidden" name="redirect_uri" value="${escapeHtml(redirectUri)}">
+    <input type="hidden" name="state" value="${escapeHtml(state)}">
+    <input type="hidden" name="code_challenge" value="${escapeHtml(codeChallenge)}">
+    <input type="hidden" name="code_challenge_method" value="${escapeHtml(codeChallengeMethod)}">
+    <input name="api_key" placeholder="pl_…" autofocus autocomplete="off" spellcheck="false">
+    <button type="submit">Authorize</button>
+  </form>
+  <p class="hint">Need a key? Contact your administrator.</p>
+</div>
+</body>
+</html>`;
+}
 
 function parseBody(req: http.IncomingMessage): Promise<any> {
   return new Promise((resolve) => {
@@ -440,7 +526,105 @@ function renderDashboard(): string {
 
 const server = http.createServer(async (req, res) => {
   const [path, qs] = (req.url || "").split("?");
+
+  // ── OAuth endpoints ────────────────────────────────────────────────────────
+  if (path === "/.well-known/oauth-authorization-server") {
+    const base = getBaseUrl(req);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({
+      issuer: base,
+      authorization_endpoint: `${base}/authorize`,
+      token_endpoint: `${base}/token`,
+      registration_endpoint: `${base}/register`,
+      response_types_supported: ["code"],
+      grant_types_supported: ["authorization_code"],
+      code_challenge_methods_supported: ["S256"],
+      token_endpoint_auth_methods_supported: ["none"],
+    }));
+  }
+
+  if (path === "/register" && req.method === "POST") {
+    // Dynamic client registration — accept any client
+    res.writeHead(201, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({
+      client_id: crypto.randomBytes(16).toString("hex"),
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+    }));
+  }
+
+  if (path === "/authorize") {
+    if (req.method === "GET") {
+      const params = querystring.parse(qs || "");
+      const get = (k: string) => (Array.isArray(params[k]) ? params[k]![0] : params[k] as string) ?? "";
+      if (get("response_type") !== "code") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "unsupported_response_type" }));
+      }
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      return res.end(renderAuthorizeForm({
+        clientId: get("client_id"), redirectUri: get("redirect_uri"),
+        state: get("state"), codeChallenge: get("code_challenge"),
+        codeChallengeMethod: get("code_challenge_method") || "S256",
+      }));
+    }
+    if (req.method === "POST") {
+      const body = await parseFormBody(req);
+      const { client_id, redirect_uri, state, code_challenge, code_challenge_method, api_key } = body;
+      const { validatePlKey } = await import("./lib/auth.js");
+      if (!validatePlKey(api_key)) {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        return res.end(renderAuthorizeForm({
+          clientId: client_id ?? "", redirectUri: redirect_uri ?? "",
+          state: state ?? "", codeChallenge: code_challenge ?? "",
+          codeChallengeMethod: code_challenge_method ?? "S256",
+          error: "Invalid API key. Check your key and try again.",
+        }));
+      }
+      const code = crypto.randomBytes(20).toString("hex");
+      pendingCodes.set(code, {
+        apiKey: api_key, redirectUri: redirect_uri ?? "",
+        codeChallenge: code_challenge ?? "", expiresAt: Date.now() + 5 * 60_000,
+      });
+      const callback = new URL(redirect_uri ?? "");
+      if (state) callback.searchParams.set("state", state);
+      callback.searchParams.set("code", code);
+      res.writeHead(302, { Location: callback.toString() });
+      return res.end();
+    }
+  }
+
+  if (path === "/token" && req.method === "POST") {
+    const body = await parseFormBody(req);
+    const { grant_type, code, redirect_uri, code_verifier } = body;
+    if (grant_type !== "authorization_code") {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "unsupported_grant_type" }));
+    }
+    const pending = code ? pendingCodes.get(code) : undefined;
+    if (!pending || pending.expiresAt < Date.now()) {
+      pendingCodes.delete(code ?? "");
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "invalid_grant", error_description: "Code expired or not found" }));
+    }
+    if (pending.redirectUri !== redirect_uri || !code_verifier || !verifyPKCE(code_verifier, pending.codeChallenge)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "invalid_grant", error_description: "PKCE or redirect_uri mismatch" }));
+    }
+    pendingCodes.delete(code!);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ access_token: pending.apiKey, token_type: "bearer" }));
+  }
+
+  // ── API routes ─────────────────────────────────────────────────────────────
   const body = await parseBody(req);
+
+  // Lift Bearer token → x-pl-key so existing handlers validate it transparently
+  const auth = req.headers["authorization"];
+  if (auth?.toLowerCase().startsWith("bearer ") && !req.headers["x-pl-key"]) {
+    (req.headers as any)["x-pl-key"] = auth.slice(7);
+  }
 
   const fakeReq: any = {
     method: req.method,
