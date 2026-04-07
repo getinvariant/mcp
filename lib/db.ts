@@ -79,6 +79,11 @@ export async function createAccount(opts: {
   return data as Account;
 }
 
+export async function addToWaitlist(email: string): Promise<boolean> {
+  const { error } = await supabase.from("waitlist").insert({ email });
+  return !error;
+}
+
 export async function getUsage(
   accountId: string,
   month?: string

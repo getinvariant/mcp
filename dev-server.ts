@@ -8,7 +8,7 @@ import queryHandler from "./api/query.js";
 import mcpHandler from "./api/mcp.js";
 import usageHandler from "./api/usage.js";
 import { getAllProviders } from "./lib/providers/registry.js";
-import { getAccount, getUsage, getAllAccounts, createAccount } from "./lib/db.js";
+import { getAccount, getUsage, getAllAccounts, createAccount, addToWaitlist } from "./lib/db.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -248,6 +248,18 @@ ${SHARED_STYLES}
   .terminal .cmd{color:#e5e5e5}
   .terminal .out{color:#404040;margin-top:0.5rem}
 
+  .waitlist{text-align:center;padding:3rem 0;margin-bottom:2rem;border-top:1px solid #1c1c1c}
+  .waitlist h2{font-size:1.1rem;color:#fff;font-weight:600;margin-bottom:0.5rem}
+  .waitlist p{font-size:0.85rem;color:#525252;max-width:420px;margin:0 auto 1.5rem;line-height:1.6}
+  .waitlist form{display:flex;gap:0.5rem;max-width:400px;margin:0 auto}
+  .waitlist input[type="email"]{flex:1;padding:0.6rem 1rem;background:#111;border:1px solid #262626;border-radius:0.5rem;color:#e5e5e5;font-size:0.85rem;outline:none;font-family:inherit}
+  .waitlist input[type="email"]:focus{border-color:#404040}
+  .waitlist .btn-wait{padding:0.6rem 1.25rem;background:#fff;color:#0a0a0a;border:none;border-radius:0.5rem;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  .waitlist .btn-wait:hover{background:#d4d4d4}
+  .waitlist .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em}
+  .waitlist .msg.ok{color:#22c55e}
+  .waitlist .msg.err{color:#ef4444}
+
   @media(max-width:640px){
     .hero h1{font-size:1.75rem}
     .cat-grid{grid-template-columns:repeat(2,1fr)}
@@ -299,6 +311,16 @@ ${renderNav()}
     <div class="out">✓ Added. Restart your session to use ${total} providers.</div>
   </div>
 
+  <div class="waitlist">
+    <h2>Alpha drops soon.</h2>
+    <p>We're opening full access to a small first wave. One email. First in line. No spam — just the key when it's ready.</p>
+    <form id="waitlist-form">
+      <input type="email" name="email" placeholder="you@example.com" required>
+      <button type="submit" class="btn-wait">Get Early Access</button>
+    </form>
+    <div class="msg" id="waitlist-msg"></div>
+  </div>
+
   <footer class="page-footer">
     <span>procurement labs v0.1.0</span>
     <a href="https://github.com/tobasummandal/procurementlabs">github</a>
@@ -310,6 +332,38 @@ ${renderNav()}
     var links = document.querySelectorAll('nav .links a');
     links.forEach(function(a) { if (a.textContent === 'Login') { a.href = '/dashboard'; a.textContent = 'Dashboard'; } });
   }
+  // Waitlist form
+  document.getElementById('waitlist-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var msg = document.getElementById('waitlist-msg');
+    var btn = this.querySelector('.btn-wait');
+    var email = this.email.value.trim();
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      var r = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email})
+      });
+      if (r.ok) {
+        msg.className = 'msg ok';
+        msg.textContent = "You're in. We'll reach out soon.";
+        btn.textContent = 'Done';
+      } else {
+        var d = await r.json();
+        msg.className = 'msg err';
+        msg.textContent = d.error || 'Something went wrong';
+        btn.textContent = 'Get Early Access';
+        btn.disabled = false;
+      }
+    } catch(err) {
+      msg.className = 'msg err';
+      msg.textContent = 'Network error — try again';
+      btn.textContent = 'Get Early Access';
+      btn.disabled = false;
+    }
+  });
 </script>
 </body>
 </html>`;
@@ -1768,6 +1822,21 @@ const server = http.createServer(async (req, res) => {
       "Set-Cookie": `pl_key=${plKey}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
     });
     return res.end(JSON.stringify({ key: plKey, tier: account.tier, quota: account.monthly_quota }));
+  }
+
+  if (path === "/api/waitlist" && req.method === "POST") {
+    const email = (body.email || "").trim();
+    if (!email || !email.includes("@")) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Valid email is required" }));
+    }
+    const ok = await addToWaitlist(email);
+    if (!ok) {
+      res.writeHead(409, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Already on the list" }));
+    }
+    res.writeHead(201, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ ok: true }));
   }
 
   res.statusCode = 404;
