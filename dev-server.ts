@@ -51,14 +51,14 @@ function getHealthData() {
 }
 
 const CATEGORY_META: Record<string, { label: string; icon: string }> = {
-  physical_health: { label: "Health", icon: "+" },
-  mental_health: { label: "Mental Health", icon: "♡" },
-  ai: { label: "AI", icon: "◆" },
-  financial: { label: "Finance", icon: "$" },
-  social_impact: { label: "Social Impact", icon: "★" },
-  environment: { label: "Environment", icon: "●" },
-  maps: { label: "Maps", icon: "◎" },
-  cloud: { label: "Cloud", icon: "☁" },
+  physical_health: { label: "Health", icon: "H" },
+  mental_health: { label: "Mental Health", icon: "M" },
+  ai: { label: "AI", icon: "A" },
+  financial: { label: "Finance", icon: "F" },
+  social_impact: { label: "Social Impact", icon: "S" },
+  environment: { label: "Environment", icon: "E" },
+  maps: { label: "Maps", icon: "G" },
+  cloud: { label: "Cloud", icon: "C" },
 };
 
 function renderDashboard(): string {
@@ -180,8 +180,8 @@ function renderDashboard(): string {
     color: #fff;
     font-variant-numeric: tabular-nums;
   }
-  .stat-value.green { color: #10b978; }
-  .stat-value.amber { color: #dab718; }
+  .stat-value.green { color: #d4d4d4; }
+  .stat-value.amber { color: #a3a3a3; }
   .stat-label {
     font-size: 0.75rem;
     color: #737373;
@@ -220,8 +220,8 @@ function renderDashboard(): string {
     font-weight: 500;
     min-width: 3rem;
   }
-  .method.get { color: #10b978; }
-  .method.post { color: #5d79df; }
+  .method.get { color: #a3a3a3; }
+  .method.post { color: #a3a3a3; }
   .endpoint-path { color: #e5e5e5; }
   .endpoint-desc { color: #525252; margin-left: auto; font-family: 'Inter', sans-serif; font-size: 0.75rem; }
 
@@ -245,8 +245,10 @@ function renderDashboard(): string {
     justify-content: center;
     background: #1c1c1c;
     border-radius: 0.375rem;
-    font-size: 0.75rem;
-    color: #737373;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: #525252;
   }
   .category-header h2 {
     font-size: 0.8rem;
@@ -313,14 +315,14 @@ function renderDashboard(): string {
     border-radius: 1rem;
   }
   .badge.live {
-    background: rgba(16, 185, 120, 0.12);
-    color: #10b978;
-    border: 1px solid rgba(16, 185, 120, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: #a3a3a3;
+    border: 1px solid #333;
   }
   .badge.no-key {
-    background: rgba(218, 183, 24, 0.1);
-    color: #dab718;
-    border: 1px solid rgba(218, 183, 24, 0.15);
+    background: rgba(255, 255, 255, 0.03);
+    color: #525252;
+    border: 1px solid #262626;
   }
 
   /* Actions */
@@ -337,8 +339,8 @@ function renderDashboard(): string {
   .action code {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
-    color: #5d79df;
-    font-weight: 500;
+    color: #d4d4d4;
+    font-weight: 400;
   }
   .action-desc {
     font-size: 0.75rem;
@@ -361,7 +363,7 @@ function renderDashboard(): string {
   }
   .param.required {
     color: #a3a3a3;
-    border: 1px solid #333;
+    background: #1c1c1c;
   }
 
   /* Footer */
