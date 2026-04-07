@@ -84,6 +84,52 @@ export async function addToWaitlist(email: string): Promise<boolean> {
   return !error;
 }
 
+export async function logRouting(opts: {
+  accountId: string;
+  requestedProvider: string;
+  actualProvider: string;
+  action: string;
+  reason: string;
+  fallback: boolean;
+  success: boolean;
+}): Promise<void> {
+  await supabase.from("routing_log").insert({
+    account_id: opts.accountId,
+    requested_provider: opts.requestedProvider,
+    actual_provider: opts.actualProvider,
+    action: opts.action,
+    reason: opts.reason,
+    fallback: opts.fallback,
+    success: opts.success,
+  });
+}
+
+export async function getRoutingStats(accountId?: string): Promise<{
+  total: number;
+  fallbacks: number;
+  smartRoutes: number;
+  byProvider: { provider: string; count: number }[];
+}> {
+  let query = supabase.from("routing_log").select("*");
+  if (accountId) query = query.eq("account_id", accountId);
+  const { data } = await query;
+  const rows = (data || []) as any[];
+  const fallbacks = rows.filter((r) => r.fallback).length;
+  const smartRoutes = rows.filter((r) => r.requested_provider !== r.actual_provider).length;
+  const byCounts: Record<string, number> = {};
+  for (const r of rows) {
+    byCounts[r.actual_provider] = (byCounts[r.actual_provider] || 0) + 1;
+  }
+  return {
+    total: rows.length,
+    fallbacks,
+    smartRoutes,
+    byProvider: Object.entries(byCounts)
+      .map(([provider, count]) => ({ provider, count }))
+      .sort((a, b) => b.count - a.count),
+  };
+}
+
 export async function getUsage(
   accountId: string,
   month?: string
