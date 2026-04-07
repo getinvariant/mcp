@@ -5,6 +5,7 @@ import querystring from "node:querystring";
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
 import mcpHandler from "./api/mcp.js";
+import usageHandler from "./api/usage.js";
 import { getAllProviders } from "./lib/providers/registry.js";
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -425,6 +426,7 @@ function renderDashboard(): string {
     <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/providers</span><span class="endpoint-desc">list available providers</span></div>
     <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/query</span><span class="endpoint-desc">execute a provider action</span></div>
     <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/mcp</span><span class="endpoint-desc">MCP protocol (JSON-RPC)</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/usage</span><span class="endpoint-desc">check quota and usage breakdown</span></div>
   </div>
 
   ${categoryCards}
@@ -465,6 +467,7 @@ const server = http.createServer(async (req, res) => {
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
   if (path === "/api/mcp") return mcpHandler(fakeReq, fakeRes);
+  if (path === "/api/usage") return usageHandler(fakeReq, fakeRes);
 
   res.statusCode = 404;
   res.end("Not found");

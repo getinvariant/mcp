@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { validatePlKey } from "../lib/auth.js";
+import { authenticateRequest } from "../lib/auth.js";
+import { logUsage } from "../lib/db.js";
 import { getAllProviders, getProvider } from "../lib/providers/registry.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -7,26 +8,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = req.headers["x-pl-key"] as string;
-  if (!validatePlKey(apiKey)) {
-    return res.status(401).json({ error: "Invalid Procurement Labs API key" });
+  const auth = await authenticateRequest(req.headers["x-pl-key"] as string);
+  if (!auth.ok) {
+    return res.status(auth.status || 401).json({ error: auth.error });
   }
 
   const body = req.body;
 
   // Handle batch requests
   if (Array.isArray(body)) {
-    const responses = (await Promise.all(body.map(handleMessage))).filter(Boolean);
+    const accountId = auth.account!.id;
+    const responses = (await Promise.all(body.map((m: any) => handleMessage(m, accountId)))).filter(Boolean);
     if (responses.length === 0) return res.status(202).end();
     return res.status(200).json(responses.length === 1 ? responses[0] : responses);
   }
 
-  const response = await handleMessage(body);
+  const response = await handleMessage(body, auth.account!.id);
   if (response === null) return res.status(202).end();
   return res.status(200).json(response);
 }
 
-async function handleMessage(msg: any): Promise<object | null> {
+async function handleMessage(msg: any, accountId: string): Promise<object | null> {
   const { id, method, params } = msg;
   const isNotification = !("id" in msg);
 
@@ -145,6 +147,8 @@ async function handleMessage(msg: any): Promise<object | null> {
         }
 
         const result = await provider.query(action, queryParams);
+
+        logUsage(accountId, provider_id, action, result.success).catch(() => {});
 
         if (!result.success) {
           return ok({ content: [{ type: "text", text: `Error: ${result.error}` }], isError: true });
