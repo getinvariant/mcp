@@ -160,6 +160,410 @@ interface AccountWithUsage {
   createdAt: string;
 }
 
+const SHARED_HEAD = `<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">`;
+
+const SHARED_STYLES = `
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',-apple-system,sans-serif;background:#0a0a0a;color:#e5e5e5;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:#a3a3a3;text-decoration:none;transition:color .15s}
+  a:hover{color:#fff}
+  .container{max-width:960px;margin:0 auto;padding:0 1.5rem}
+  nav{border-bottom:1px solid #1c1c1c;padding:1rem 0}
+  nav .container{display:flex;justify-content:space-between;align-items:center}
+  nav .logo{font-weight:600;color:#fff;font-size:0.95rem;letter-spacing:-0.02em}
+  nav .links{display:flex;gap:1.5rem;font-size:0.8rem}
+  nav .links a{color:#525252}
+  nav .links a:hover{color:#e5e5e5}
+  nav .links a.active{color:#e5e5e5}
+  .btn{display:inline-block;padding:0.6rem 1.5rem;border-radius:0.5rem;font-size:0.85rem;font-weight:600;transition:all .15s;cursor:pointer;border:none}
+  .btn-primary{background:#e5e5e5;color:#0a0a0a}
+  .btn-primary:hover{background:#fff;color:#0a0a0a}
+  .btn-ghost{background:transparent;border:1px solid #333;color:#a3a3a3}
+  .btn-ghost:hover{border-color:#525252;color:#e5e5e5}
+  .page-footer{border-top:1px solid #1c1c1c;padding:2rem 0;margin-top:4rem;display:flex;justify-content:space-between;font-size:0.75rem;color:#404040}
+`;
+
+function renderNav(active?: string): string {
+  return `<nav><div class="container">
+    <a href="/" class="logo">procurement labs</a>
+    <div class="links">
+      <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>How It Works</a>
+      <a href="/login"${active === "login" ? ' class="active"' : ""}>Login</a>
+    </div>
+  </div></nav>`;
+}
+
+function renderHomepage(): string {
+  const providers = getHealthData();
+  const total = providers.length;
+  const live = providers.filter((p) => p.available).length;
+  const categories = Object.keys(CATEGORY_META);
+
+  const categoryGrid = categories.map(cat => {
+    const meta = CATEGORY_META[cat] || { label: cat, icon: "·" };
+    const count = providers.filter(p => p.category === cat).length;
+    return `<div class="cat-card">
+      <span class="cat-icon">${meta.icon}</span>
+      <span class="cat-label">${meta.label}</span>
+      <span class="cat-count">${count}</span>
+    </div>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Procurement Labs — API Gateway for AI Agents</title>
+<style>
+${SHARED_STYLES}
+  .hero{padding:6rem 0 4rem;text-align:center}
+  .hero h1{font-size:2.5rem;font-weight:700;color:#fff;letter-spacing:-0.04em;margin-bottom:1rem}
+  .hero .tagline{font-size:1.1rem;color:#737373;max-width:500px;margin:0 auto 2.5rem}
+  .hero .ctas{display:flex;gap:1rem;justify-content:center}
+
+  .ascii-art{font-family:'JetBrains Mono',monospace;font-size:0.65rem;line-height:1.3;color:#333;text-align:center;margin-bottom:3rem;white-space:pre;user-select:none}
+
+  .pitch{text-align:center;max-width:600px;margin:0 auto 4rem;font-size:0.9rem;color:#525252;line-height:1.8}
+  .pitch strong{color:#a3a3a3}
+
+  .stats-row{display:flex;gap:1px;background:#1c1c1c;border-radius:0.75rem;overflow:hidden;border:1px solid #262626;margin-bottom:3rem}
+  .stats-row .s{flex:1;padding:1.25rem 1.5rem;background:#111;text-align:center}
+  .stats-row .sv{font-size:1.5rem;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+  .stats-row .sl{font-size:0.7rem;color:#525252;text-transform:uppercase;letter-spacing:0.05em;margin-top:0.25rem}
+
+  .categories{margin-bottom:4rem}
+  .categories h2{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#525252;margin-bottom:1rem;text-align:center}
+  .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem}
+  .cat-card{background:#111;border:1px solid #262626;border-radius:0.5rem;padding:1rem;display:flex;align-items:center;gap:0.75rem;transition:border-color .15s}
+  .cat-card:hover{border-color:#333}
+  .cat-icon{width:1.75rem;height:1.75rem;display:flex;align-items:center;justify-content:center;background:#1c1c1c;border-radius:0.375rem;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#525252;flex-shrink:0}
+  .cat-label{font-size:0.8rem;color:#a3a3a3;flex:1}
+  .cat-count{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#404040}
+
+  .terminal{background:#111;border:1px solid #262626;border-radius:0.75rem;padding:1.5rem 2rem;max-width:600px;margin:0 auto 4rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem}
+  .terminal .prompt{color:#525252}
+  .terminal .cmd{color:#e5e5e5}
+  .terminal .out{color:#404040;margin-top:0.5rem}
+
+  @media(max-width:640px){
+    .hero h1{font-size:1.75rem}
+    .cat-grid{grid-template-columns:repeat(2,1fr)}
+    .stats-row{flex-direction:column}
+    .hero .ctas{flex-direction:column;align-items:center}
+  }
+</style>
+</head>
+<body>
+${renderNav()}
+<div class="container">
+  <div class="hero">
+    <div class="ascii-art">
+    ┌─────────────────────────────────────┐
+    │  ╱╲    procurement    ╱╲           │
+    │ ╱  ╲     labs        ╱  ╲          │
+    │╱    ╲   ─────────   ╱    ╲         │
+    │ ▓▓▓▓ ╲  api gateway ╱ ▓▓▓▓         │
+    │ ▓▓▓▓  ╲  for agents╱  ▓▓▓▓         │
+    └─────────────────────────────────────┘</div>
+    <h1>One key. Every API.<br>Zero friction.</h1>
+    <p class="tagline">Give your AI agents access to weather, finance, health, maps and more — through a single API key. No credential juggling. No provider accounts.</p>
+    <div class="ctas">
+      <a href="/login" class="btn btn-primary">Get Started</a>
+      <a href="/how-it-works" class="btn btn-ghost">How It Works</a>
+    </div>
+  </div>
+
+  <div class="pitch">
+    Procurement Labs is an <strong>MCP-compatible API gateway</strong> that sits between your AI agent and ${total} data providers. You get one key. We handle authentication, rate limiting, and usage tracking for every provider behind the scenes.
+  </div>
+
+  <div class="stats-row">
+    <div class="s"><div class="sv">${total}</div><div class="sl">Providers</div></div>
+    <div class="s"><div class="sv">${live}</div><div class="sl">Live</div></div>
+    <div class="s"><div class="sv">${categories.length}</div><div class="sl">Categories</div></div>
+    <div class="s"><div class="sv">500</div><div class="sl">Free Requests/mo</div></div>
+  </div>
+
+  <div class="categories">
+    <h2>Available Categories</h2>
+    <div class="cat-grid">${categoryGrid}</div>
+  </div>
+
+  <div class="terminal">
+    <div><span class="prompt">$</span> <span class="cmd">claude mcp add procurement-labs \\</span></div>
+    <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
+    <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
+    <div class="out">✓ Added. Restart your session to use ${total} providers.</div>
+  </div>
+
+  <footer class="page-footer">
+    <span>procurement labs v0.1.0</span>
+    <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+  </footer>
+</div>
+<script>
+  // If user has cookie, swap "Login" to "Dashboard"
+  if (document.cookie.match(/pl_key=/)) {
+    var links = document.querySelectorAll('nav .links a');
+    links.forEach(function(a) { if (a.textContent === 'Login') { a.href = '/dashboard'; a.textContent = 'Dashboard'; } });
+  }
+</script>
+</body>
+</html>`;
+}
+
+function renderHowItWorks(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>How It Works — Procurement Labs</title>
+<style>
+${SHARED_STYLES}
+  .page-title{padding:3rem 0 1rem}
+  .page-title h1{font-size:1.5rem;font-weight:600;color:#fff;letter-spacing:-0.02em}
+  .page-title p{color:#525252;font-size:0.85rem;margin-top:0.5rem}
+
+  .steps{padding:2rem 0}
+  .step{display:flex;gap:1.5rem;margin-bottom:2.5rem}
+  .step-num{width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;background:#1c1c1c;border-radius:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:#525252;flex-shrink:0;margin-top:0.1rem}
+  .step-body h3{font-size:0.95rem;font-weight:500;color:#e5e5e5;margin-bottom:0.5rem}
+  .step-body p{font-size:0.85rem;color:#737373;margin-bottom:0.75rem}
+  .step-body pre{background:#111;border:1px solid #262626;border-radius:0.5rem;padding:1rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;overflow-x:auto;margin-bottom:0.5rem}
+  .step-body code{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;background:#1c1c1c;padding:0.1rem 0.4rem;border-radius:0.25rem}
+
+  .cta-box{background:#111;border:1px solid #262626;border-radius:0.75rem;padding:2rem;text-align:center;margin-top:2rem}
+  .cta-box p{color:#525252;font-size:0.85rem;margin-bottom:1rem}
+
+  @media(max-width:640px){.step{flex-direction:column;gap:0.75rem}}
+</style>
+</head>
+<body>
+${renderNav("how")}
+<div class="container">
+  <div class="page-title">
+    <h1>How It Works</h1>
+    <p>From zero to querying APIs in under a minute.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Create an account</h3>
+        <p>Enter your email on the <a href="/login">sign up page</a>. You'll get a unique API key instantly — no credit card, no approval process. The free tier gives you 500 requests per month.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Add to your AI tool</h3>
+        <p>Works with any MCP-compatible client. One command for Claude Code:</p>
+        <pre>claude mcp add procurement-labs \\
+  --transport http https://pclabs.dev/api/mcp \\
+  --header "x-pl-key: pl_your_key"</pre>
+        <p>For <strong>Cursor</strong>, add to <code>~/.cursor/mcp.json</code>:</p>
+        <pre>{
+  "mcpServers": {
+    "procurement-labs": {
+      "url": "https://pclabs.dev/api/mcp",
+      "headers": { "x-pl-key": "pl_your_key" }
+    }
+  }
+}</pre>
+        <p>Works the same way in Windsurf, Claude Desktop, and claude.ai.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Use it</h3>
+        <p>Ask your AI agent naturally. It will call the right provider automatically.</p>
+        <pre>"what's the weather in tokyo?"          → OpenWeatherMap
+"look up adverse events for ibuprofen"  → OpenFDA
+"get the BTC price"                     → CoinGecko
+"find nonprofits for climate change"    → Every.org</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Track usage</h3>
+        <p>Visit the <a href="/dashboard">dashboard</a> to see your quota, per-provider breakdown, and rate limits in real time. Your key is remembered — no need to sign in again.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <p>Ready to get started?</p>
+    <a href="/login" class="btn btn-primary">Create your key</a>
+  </div>
+
+  <footer class="page-footer">
+    <span>procurement labs v0.1.0</span>
+    <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+  </footer>
+</div>
+<script>
+  if (document.cookie.match(/pl_key=/)) {
+    var links = document.querySelectorAll('nav .links a');
+    links.forEach(function(a) { if (a.textContent === 'Login') { a.href = '/dashboard'; a.textContent = 'Dashboard'; } });
+  }
+</script>
+</body>
+</html>`;
+}
+
+function renderLogin(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Sign In — Procurement Labs</title>
+<style>
+${SHARED_STYLES}
+  .login-page{padding:4rem 0;max-width:420px;margin:0 auto}
+  .login-page h1{font-size:1.25rem;font-weight:600;color:#fff;margin-bottom:0.5rem}
+  .login-page .sub{color:#525252;font-size:0.85rem;margin-bottom:2rem}
+
+  .login-panel{background:#111;border:1px solid #262626;border-radius:0.75rem;padding:1.5rem;margin-bottom:1.5rem}
+  .login-panel h2{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#737373;margin-bottom:0.75rem;font-weight:500}
+  .login-panel p{font-size:0.8rem;color:#525252;margin-bottom:0.75rem}
+  .login-panel input{width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.65rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;margin-bottom:0.75rem}
+  .login-panel input[type="email"]{font-family:'Inter',sans-serif}
+  .login-panel input:focus{border-color:#525252}
+  .login-panel button{width:100%;padding:0.65rem;font-size:0.85rem}
+  .login-error{color:#f87171;font-size:0.75rem;margin-top:0.5rem}
+  .or-divider{text-align:center;color:#333;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin:1.5rem 0;position:relative}
+  .or-divider::before,.or-divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:#1c1c1c}
+  .or-divider::before{left:0}
+  .or-divider::after{right:0}
+
+  .flash{background:rgba(255,255,255,0.04);border:1px solid #333;border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:1.5rem;display:none}
+  .flash.visible{display:block}
+  .flash-label{font-size:0.7rem;color:#525252;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
+  .flash-key{font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:#e5e5e5;cursor:pointer;word-break:break-all}
+  .flash-key:hover{color:#fff}
+  .flash-sub{font-size:0.7rem;color:#404040;margin-top:0.375rem}
+
+  .copied-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#e5e5e5;color:#0a0a0a;padding:0.5rem 1rem;border-radius:0.375rem;font-size:0.75rem;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+  .copied-toast.show{opacity:1}
+</style>
+</head>
+<body>
+${renderNav("login")}
+<div class="container">
+  <div class="login-page">
+    <h1>Welcome</h1>
+    <p class="sub">Sign in with your existing key or create a new account.</p>
+
+    <div id="key-flash" class="flash">
+      <div class="flash-label">Your API key — click to copy</div>
+      <div id="flash-key" class="flash-key"></div>
+      <div class="flash-sub">Save this key. Add it to your MCP client as <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;background:#1c1c1c;padding:0.1rem 0.3rem;border-radius:0.25rem">x-pl-key</code> header.</div>
+    </div>
+
+    <div class="login-panel">
+      <h2>Create Account</h2>
+      <p>Free — 500 requests/month</p>
+      <input type="email" id="signup-email" placeholder="you@example.com">
+      <button class="btn btn-primary" id="signup-btn">Create key</button>
+      <div id="signup-error" class="login-error"></div>
+    </div>
+
+    <div class="or-divider">or</div>
+
+    <div class="login-panel">
+      <h2>Sign In</h2>
+      <p>Already have a key?</p>
+      <input type="text" id="signin-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false">
+      <button class="btn btn-ghost" id="signin-btn" style="width:100%;padding:0.65rem;font-size:0.85rem">Sign in</button>
+      <div id="signin-error" class="login-error"></div>
+    </div>
+
+    <footer class="page-footer">
+      <span>procurement labs v0.1.0</span>
+      <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+    </footer>
+  </div>
+</div>
+<div class="copied-toast" id="copied-toast">Copied</div>
+<script>
+(function() {
+  // If already signed in, go to dashboard
+  if (document.cookie.match(/pl_key=/)) {
+    window.location.href = '/dashboard';
+    return;
+  }
+
+  function setCookie(name, val) {
+    document.cookie = name + '=' + encodeURIComponent(val) + '; path=/; max-age=' + (365*86400) + '; samesite=lax';
+  }
+
+  // Sign up
+  document.getElementById('signup-btn').addEventListener('click', doSignup);
+  document.getElementById('signup-email').addEventListener('keydown', function(e) { if (e.key === 'Enter') doSignup(); });
+
+  async function doSignup() {
+    var email = document.getElementById('signup-email').value.trim();
+    var errEl = document.getElementById('signup-error');
+    var btn = document.getElementById('signup-btn');
+    errEl.textContent = '';
+    if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email'; return; }
+    btn.disabled = true; btn.textContent = '...';
+    try {
+      var res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      var data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Signup failed'; return; }
+      // Show key
+      var flash = document.getElementById('key-flash');
+      var flashKey = document.getElementById('flash-key');
+      flashKey.textContent = data.key;
+      flashKey.onclick = function() {
+        navigator.clipboard.writeText(data.key);
+        var t = document.getElementById('copied-toast');
+        t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 1200);
+      };
+      flash.classList.add('visible');
+      // Redirect to dashboard after 3s
+      setTimeout(function() { window.location.href = '/dashboard'; }, 3000);
+    } catch (e) { errEl.textContent = 'Connection error'; }
+    finally { btn.disabled = false; btn.textContent = 'Create key'; }
+  }
+
+  // Sign in
+  document.getElementById('signin-btn').addEventListener('click', doSignin);
+  document.getElementById('signin-key').addEventListener('keydown', function(e) { if (e.key === 'Enter') doSignin(); });
+
+  async function doSignin() {
+    var key = document.getElementById('signin-key').value.trim();
+    var errEl = document.getElementById('signin-error');
+    errEl.textContent = '';
+    if (!key) { errEl.textContent = 'Enter your API key'; return; }
+    try {
+      var res = await fetch('/api/usage', { headers: { 'x-pl-key': key } });
+      if (!res.ok) { errEl.textContent = 'Invalid key'; return; }
+      setCookie('pl_key', key);
+      window.location.href = '/dashboard';
+    } catch (e) { errEl.textContent = 'Connection error'; }
+  }
+})();
+</script>
+</body>
+</html>`;
+}
+
 function renderDashboard(): string {
   const providers = getHealthData();
   const total = providers.length;
@@ -569,24 +973,6 @@ function renderDashboard(): string {
     border-radius: 0.25rem;
   }
 
-  /* Usage key form */
-  .usage-section { margin-bottom: 2.5rem; }
-  .usage-key-form {
-    background: #111;
-    border: 1px solid #262626;
-    border-radius: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1rem;
-  }
-  .usage-key-form h2 {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #737373;
-    margin-bottom: 0.75rem;
-    font-weight: 500;
-  }
-
   /* Tabs */
   .tabs {
     display: flex;
@@ -833,19 +1219,26 @@ function renderDashboard(): string {
     .provider-title { flex-direction: column; gap: 0.125rem; }
     .create-key-form { flex-direction: column; }
     .accounts-table { font-size: 0.7rem; }
-    #usage-logged-out > div:first-child { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
+<script>if(!document.cookie.match(/pl_key=/))window.location.href='/login';</script>
+<nav style="border-bottom:1px solid #1c1c1c;padding:1rem 0"><div style="max-width:960px;margin:0 auto;padding:0 1.5rem;display:flex;justify-content:space-between;align-items:center">
+  <a href="/" style="font-weight:600;color:#fff;font-size:0.95rem;text-decoration:none">procurement labs</a>
+  <div style="display:flex;gap:1.5rem;font-size:0.8rem">
+    <a href="/how-it-works" style="color:#525252;text-decoration:none">How It Works</a>
+    <a href="/dashboard" style="color:#e5e5e5;text-decoration:none">Dashboard</a>
+  </div>
+</div></nav>
 <div class="container">
   <header>
-    <h1>Procurement Labs</h1>
-    <p>Unified API gateway for AI agents — ${total} providers across ${Object.keys(grouped).length} categories</p>
+    <h1>Dashboard</h1>
+    <p>${total} providers across ${Object.keys(grouped).length} categories</p>
   </header>
 
   <div class="tabs">
-    <div class="tab active" data-tab="home">Home</div>
+    <div class="tab active" data-tab="home">Usage</div>
     <div class="tab" data-tab="admin">Admin</div>
   </div>
 
@@ -892,34 +1285,6 @@ function renderDashboard(): string {
         <span id="usage-pct-text"></span>
       </div>
       <div class="usage-breakdown" id="usage-breakdown"></div>
-    </div>
-
-    <!-- Logged-out: sign in or sign up -->
-    <div id="usage-logged-out" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <!-- Sign in -->
-        <div class="usage-key-form">
-          <h2>Sign In</h2>
-          <p style="font-size:0.8rem;color:#525252;margin-bottom:0.75rem">Already have a key?</p>
-          <input type="text" id="usage-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;margin-bottom:0.75rem">
-          <button id="usage-lookup-btn" style="width:100%;background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s">Sign in</button>
-          <div id="usage-error" class="admin-error"></div>
-        </div>
-        <!-- Sign up -->
-        <div class="usage-key-form">
-          <h2>Create Account</h2>
-          <p style="font-size:0.8rem;color:#525252;margin-bottom:0.75rem">Get a free API key — 500 requests/month</p>
-          <input type="email" id="signup-email" placeholder="you@example.com" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;outline:none;transition:border-color .15s;margin-bottom:0.75rem">
-          <button id="signup-btn" style="width:100%;background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s">Create key</button>
-          <div id="signup-error" class="admin-error"></div>
-        </div>
-      </div>
-      <!-- New key flash -->
-      <div id="signup-flash" class="flash" style="margin-top:1rem">
-        <div class="flash-label">Your API key — copy it now, it won't be shown again</div>
-        <div id="signup-flash-key" class="flash-key"></div>
-        <div class="flash-sub" style="margin-top:0.5rem">Add this to your MCP client config as <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;background:#1c1c1c;padding:0.1rem 0.3rem;border-radius:0.25rem">x-pl-key</code> header.</div>
-      </div>
     </div>
 
     <div class="endpoints">
@@ -1040,12 +1405,6 @@ function renderDashboard(): string {
       return '<span class="usage-chip">' + b.provider + '<span class="chip-count">' + b.count + '</span></span>';
     }).join('');
     document.getElementById('usage-logged-in').style.display = 'block';
-    document.getElementById('usage-logged-out').style.display = 'none';
-  }
-
-  function showLoggedOut() {
-    document.getElementById('usage-logged-in').style.display = 'none';
-    document.getElementById('usage-logged-out').style.display = 'block';
   }
 
   async function fetchUsage(key) {
@@ -1054,35 +1413,15 @@ function renderDashboard(): string {
     return await res.json();
   }
 
-  // Auto-load from cookie on page load
+  // Auto-load from cookie
   const savedKey = getCookie('pl_key');
   if (savedKey) {
     fetchUsage(savedKey).then(u => {
       if (u) showUsagePanel(u, savedKey);
-      else { deleteCookie('pl_key'); showLoggedOut(); }
-    }).catch(() => showLoggedOut());
-  } else {
-    showLoggedOut();
+      else { deleteCookie('pl_key'); window.location.href = '/login'; }
+    }).catch(() => {});
   }
 
-  // Manual sign in
-  document.getElementById('usage-lookup-btn').addEventListener('click', signIn);
-  document.getElementById('usage-key').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
-
-  async function signIn() {
-    const key = document.getElementById('usage-key').value.trim();
-    const errEl = document.getElementById('usage-error');
-    errEl.textContent = '';
-    if (!key) { errEl.textContent = 'Enter your API key'; return; }
-    try {
-      const u = await fetchUsage(key);
-      if (!u) { errEl.textContent = 'Invalid key'; return; }
-      setCookie('pl_key', key);
-      showUsagePanel(u, key);
-    } catch (e) { errEl.textContent = 'Connection error'; }
-  }
-
-  // Sign out
   // Copy full key from logged-in display
   document.getElementById('usage-key-display').addEventListener('click', function() {
     var el = this;
@@ -1094,43 +1433,11 @@ function renderDashboard(): string {
     });
   });
 
+  // Sign out → redirect to login
   document.getElementById('usage-signout').addEventListener('click', () => {
     deleteCookie('pl_key');
-    document.getElementById('usage-key').value = '';
-    showLoggedOut();
+    window.location.href = '/login';
   });
-
-  // Sign up
-  document.getElementById('signup-btn').addEventListener('click', doSignup);
-  document.getElementById('signup-email').addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
-
-  async function doSignup() {
-    const email = document.getElementById('signup-email').value.trim();
-    const errEl = document.getElementById('signup-error');
-    const btn = document.getElementById('signup-btn');
-    errEl.textContent = '';
-    if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email'; return; }
-    btn.disabled = true; btn.textContent = '...';
-    try {
-      const res = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email }),
-      });
-      const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || 'Signup failed'; return; }
-      // Show the key
-      const flash = document.getElementById('signup-flash');
-      const flashKey = document.getElementById('signup-flash-key');
-      flashKey.textContent = data.key;
-      flashKey.onclick = () => { navigator.clipboard.writeText(data.key); var t = document.getElementById('copied-toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); };
-      flash.classList.add('visible');
-      // Auto-load usage after a moment (cookie already set by server)
-      const u = await fetchUsage(data.key);
-      if (u) { showUsagePanel(u, data.key); }
-    } catch (e) { errEl.textContent = 'Connection error'; }
-    finally { btn.disabled = false; btn.textContent = 'Create key'; }
-  }
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
@@ -1365,7 +1672,23 @@ const server = http.createServer(async (req, res) => {
 
   const fakeRes = makeRes(res);
 
+  // ── Pages ───────────────────────────────────────────────────────────────
   if (path === "/") {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderHomepage());
+  }
+
+  if (path === "/how-it-works") {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderHowItWorks());
+  }
+
+  if (path === "/login") {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderLogin());
+  }
+
+  if (path === "/dashboard") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderDashboard());
   }
