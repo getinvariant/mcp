@@ -875,7 +875,7 @@ function renderDashboard(): string {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
         <h2 id="usage-title" style="margin:0"></h2>
         <div style="display:flex;align-items:center;gap:1rem">
-          <span id="usage-key-display" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#525252"></span>
+          <span id="usage-key-display" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#525252;cursor:pointer" title="Click to copy full key"></span>
           <button id="usage-signout" style="background:none;border:1px solid #262626;border-radius:0.375rem;padding:0.3rem 0.75rem;color:#525252;font-size:0.7rem;cursor:pointer;transition:color .15s">sign out</button>
         </div>
       </div>
@@ -1083,6 +1083,17 @@ function renderDashboard(): string {
   }
 
   // Sign out
+  // Copy full key from logged-in display
+  document.getElementById('usage-key-display').addEventListener('click', () => {
+    const key = getCookie('pl_key');
+    if (key) {
+      navigator.clipboard.writeText(key);
+      var t = document.getElementById('copied-toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1200);
+    }
+  });
+
   document.getElementById('usage-signout').addEventListener('click', () => {
     deleteCookie('pl_key');
     document.getElementById('usage-key').value = '';
@@ -1114,9 +1125,9 @@ function renderDashboard(): string {
       flashKey.textContent = data.key;
       flashKey.onclick = () => { navigator.clipboard.writeText(data.key); var t = document.getElementById('copied-toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); };
       flash.classList.add('visible');
-      // Auto-load usage (cookie already set by server)
+      // Auto-load usage after a moment (cookie already set by server)
       const u = await fetchUsage(data.key);
-      if (u) { setTimeout(() => showUsagePanel(u, data.key), 1500); }
+      if (u) { showUsagePanel(u, data.key); }
     } catch (e) { errEl.textContent = 'Connection error'; }
     finally { btn.disabled = false; btn.textContent = 'Create key'; }
   }
