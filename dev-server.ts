@@ -7,6 +7,7 @@ import queryHandler from "./api/query.js";
 import mcpHandler from "./api/mcp.js";
 import usageHandler from "./api/usage.js";
 import { getAllProviders } from "./lib/providers/registry.js";
+import { getAccount, getUsage } from "./lib/db.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -62,7 +63,17 @@ const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   cloud: { label: "Cloud", icon: "C" },
 };
 
-function renderDashboard(): string {
+interface UsageData {
+  tier: string;
+  quota: number;
+  used: number;
+  remaining: number;
+  resets: string;
+  breakdown: { provider: string; count: number }[];
+  perMinuteRate: number;
+}
+
+function renderDashboard(usage?: UsageData): string {
   const providers = getHealthData();
   const total = providers.length;
   const live = providers.filter((p) => p.available).length;
@@ -388,6 +399,89 @@ function renderDashboard(): string {
   }
   footer a:hover { color: #a3a3a3; }
 
+  /* Usage panel */
+  .usage-panel {
+    background: #111;
+    border: 1px solid #262626;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  .usage-panel h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #737373;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+  .usage-meta {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: #737373;
+  }
+  .usage-meta span { color: #a3a3a3; }
+  .quota-bar-outer {
+    width: 100%;
+    height: 6px;
+    background: #1c1c1c;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .quota-bar-inner {
+    height: 100%;
+    background: #d4d4d4;
+    border-radius: 3px;
+    transition: width 0.3s;
+  }
+  .quota-bar-inner.warn { background: #a3a3a3; }
+  .quota-bar-inner.critical { background: #737373; }
+  .usage-numbers {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #525252;
+    margin-bottom: 1.25rem;
+  }
+  .usage-numbers span { font-variant-numeric: tabular-nums; }
+  .usage-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .usage-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.75rem;
+    background: #0a0a0a;
+    border-radius: 0.375rem;
+    color: #737373;
+  }
+  .usage-chip .chip-count {
+    color: #d4d4d4;
+    margin-left: 0.375rem;
+  }
+  .usage-login {
+    background: #111;
+    border: 1px solid #262626;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2.5rem;
+    font-size: 0.8rem;
+    color: #525252;
+  }
+  .usage-login code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #a3a3a3;
+    background: #1c1c1c;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+  }
+
   @media (max-width: 640px) {
     .stats { flex-direction: column; }
     .endpoint-desc { display: none; }
@@ -420,6 +514,30 @@ function renderDashboard(): string {
       <div class="stat-label">Free (No Key)</div>
     </div>
   </div>
+
+  ${usage ? `
+  <div class="usage-panel">
+    <h2>Your Usage — ${usage.tier} tier</h2>
+    <div class="usage-meta">
+      <div>Quota: <span>${usage.used} / ${usage.quota}</span></div>
+      <div>Rate limit: <span>${usage.perMinuteRate} req/min</span></div>
+      <div>Resets: <span>${usage.resets}</span></div>
+    </div>
+    <div class="quota-bar-outer">
+      <div class="quota-bar-inner${usage.used / usage.quota > 0.9 ? ' critical' : usage.used / usage.quota > 0.7 ? ' warn' : ''}" style="width: ${Math.min(100, (usage.used / usage.quota) * 100)}%"></div>
+    </div>
+    <div class="usage-numbers">
+      <span>${usage.remaining} remaining</span>
+      <span>${Math.round((usage.used / usage.quota) * 100)}% used</span>
+    </div>
+    ${usage.breakdown.length > 0 ? `
+    <div class="usage-breakdown">
+      ${usage.breakdown.map(b => `<span class="usage-chip">${b.provider}<span class="chip-count">${b.count}</span></span>`).join("")}
+    </div>` : ""}
+  </div>` : `
+  <div class="usage-login">
+    View your usage by adding your key: <code>?key=pl_your_key</code>
+  </div>`}
 
   <div class="endpoints">
     <h2>Endpoints</h2>
@@ -455,8 +573,31 @@ const server = http.createServer(async (req, res) => {
   const fakeRes = makeRes(res);
 
   if (path === "/") {
+    const key = fakeReq.query.key as string | undefined;
+    let usage: UsageData | undefined;
+
+    if (key && key.startsWith("pl_")) {
+      const account = await getAccount(key);
+      if (account) {
+        const breakdown = await getUsage(account.id);
+        const used = breakdown.reduce((sum, r) => sum + r.count, 0);
+        const now = new Date();
+        const resets = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+          .toISOString().slice(0, 10);
+        usage = {
+          tier: account.tier,
+          quota: account.monthly_quota,
+          used,
+          remaining: Math.max(0, account.monthly_quota - used),
+          resets,
+          breakdown: breakdown.map(r => ({ provider: r.provider_id, count: r.count })),
+          perMinuteRate: account.per_minute_rate,
+        };
+      }
+    }
+
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.end(renderDashboard());
+    return res.end(renderDashboard(usage));
   }
 
   if (path === "/api/health") {
