@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { validatePlKey } from "./_lib/auth.js";
-import { getAllProviders, getProvider } from "./_lib/providers/registry.js";
+import { validatePlKey } from "../lib/auth.js";
+import { getAllProviders, getProvider } from "../lib/providers/registry.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
