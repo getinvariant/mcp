@@ -7,10 +7,91 @@ import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
 import mcpHandler from "./api/mcp.js";
 import usageHandler from "./api/usage.js";
-import { getAllProviders } from "./lib/providers/registry.js";
-import { getAccount, getUsage, getAllAccounts, createAccount, addToWaitlist } from "./lib/db.js";
+import { getAllProviders, getProvider } from "./lib/providers/registry.js";
+import { getAccount, getUsage, getAllAccounts, createAccount, addToWaitlist, logUsage } from "./lib/db.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { z } from "zod";
 
 const PORT = Number(process.env.PORT) || 3000;
+
+// ─── Streamable HTTP MCP ────────────────────────────────────────────────────
+const mcpSessions = new Map<string, { transport: StreamableHTTPServerTransport; server: McpServer }>();
+
+function createMcpSession(accountId: string): { transport: StreamableHTTPServerTransport; server: McpServer } {
+  const server = new McpServer({ name: "procurement-labs", version: "0.1.0" });
+
+  server.tool(
+    "list_providers",
+    "Browse all available API providers. Optionally filter by category.",
+    { category: z.string().optional() },
+    async ({ category }) => {
+      let providers = getAllProviders();
+      if (category) providers = providers.filter((p) => p.info.category === category);
+      if (providers.length === 0) {
+        return { content: [{ type: "text", text: `No providers found${category ? ` for category: ${category}` : ""}.` }] };
+      }
+      const lines = providers.map((p) => {
+        const actions = p.info.availableActions
+          .map((a) => {
+            const paramStr = Object.entries(a.parameters)
+              .map(([k, v]) => `${k} (${(v as any).type}${(v as any).required ? ", required" : ""})`)
+              .join(", ");
+            return `    - ${a.action}: ${a.description} [${paramStr}]`;
+          })
+          .join("\n");
+        return [
+          `## ${p.info.name} (${p.info.id})`,
+          `Category: ${p.info.category}`,
+          `Status: ${p.isAvailable() ? "Ready" : "Not configured"}`,
+          `Description: ${p.info.description}`,
+          `Actions:\n${actions}`,
+        ].join("\n");
+      });
+      return { content: [{ type: "text", text: lines.join("\n\n---\n\n") }] };
+    }
+  );
+
+  server.tool(
+    "query",
+    "Execute a real API call to any available provider. Use list_providers first to see available providers and their actions.",
+    {
+      provider_id: z.string(),
+      action: z.string(),
+      params: z.record(z.unknown()).optional(),
+    },
+    async ({ provider_id, action, params: queryParams }) => {
+      const provider = getProvider(provider_id);
+      if (!provider) {
+        return { content: [{ type: "text", text: `Error: Provider '${provider_id}' not found` }], isError: true };
+      }
+      if (!provider.isAvailable()) {
+        return { content: [{ type: "text", text: `Error: Provider '${provider.info.name}' is not configured on the server` }], isError: true };
+      }
+      const result = await provider.query(action, queryParams || {});
+      logUsage(accountId, provider_id, action, result.success).catch(() => {});
+      if (!result.success) {
+        return { content: [{ type: "text", text: `Error: ${result.error}` }], isError: true };
+      }
+      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
+    }
+  );
+
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID() });
+
+  transport.onclose = () => {
+    const sid = transport.sessionId;
+    if (sid) mcpSessions.delete(sid);
+  };
+
+  server.connect(transport);
+
+  if (transport.sessionId) {
+    mcpSessions.set(transport.sessionId, { transport, server });
+  }
+
+  return { transport, server };
+}
 
 // ─── OAuth 2.0 ──────────────────────────────────────────────────────────────
 
@@ -1754,7 +1835,49 @@ const server = http.createServer(async (req, res) => {
 
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
-  if (path === "/api/mcp") return mcpHandler(fakeReq, fakeRes);
+  if (path === "/api/mcp") {
+    // Authenticate
+    const plKey = req.headers["x-pl-key"] as string;
+    if (!plKey) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Missing x-pl-key header" }));
+    }
+    const account = await getAccount(plKey);
+    if (!account) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Invalid API key" }));
+    }
+
+    // Check for existing session
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    if (sessionId && mcpSessions.has(sessionId)) {
+      return mcpSessions.get(sessionId)!.transport.handleRequest(req, res, body);
+    }
+
+    // New session (must be initialize request or POST without session)
+    if (req.method === "POST") {
+      const { transport } = createMcpSession(account.id);
+      return transport.handleRequest(req, res, body);
+    }
+
+    // GET for SSE stream on existing session
+    if (req.method === "GET" && sessionId) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Session not found" }));
+    }
+
+    // DELETE to close session
+    if (req.method === "DELETE" && sessionId && mcpSessions.has(sessionId)) {
+      const session = mcpSessions.get(sessionId)!;
+      await session.transport.close();
+      mcpSessions.delete(sessionId);
+      res.writeHead(200);
+      return res.end();
+    }
+
+    res.writeHead(405, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ error: "Method not allowed" }));
+  }
   if (path === "/api/usage") return usageHandler(fakeReq, fakeRes);
 
   // ── Admin API ────────────────────────────────────────────────────────────
