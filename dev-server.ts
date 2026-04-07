@@ -869,35 +869,41 @@ function renderDashboard(): string {
       </div>
     </div>
 
-    <div class="usage-section">
-      <div class="usage-key-form">
-        <h2>Your Usage</h2>
-        <div style="display:flex;gap:0.75rem;align-items:flex-end">
-          <div class="form-field" style="flex:1">
-            <input type="text" id="usage-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s">
-          </div>
-          <button id="usage-lookup-btn" style="background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1.25rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap">Look up</button>
-        </div>
-        <div id="usage-error" class="admin-error"></div>
-      </div>
-      <div id="usage-result" style="display:none">
-        <div class="usage-panel">
-          <h2 id="usage-title"></h2>
-          <div class="usage-meta">
-            <div>Quota: <span id="usage-quota-text"></span></div>
-            <div>Rate limit: <span id="usage-rate-text"></span></div>
-            <div>Resets: <span id="usage-resets-text"></span></div>
-          </div>
-          <div class="quota-bar-outer">
-            <div class="quota-bar-inner" id="usage-bar"></div>
-          </div>
-          <div class="usage-numbers">
-            <span id="usage-remaining-text"></span>
-            <span id="usage-pct-text"></span>
-          </div>
-          <div class="usage-breakdown" id="usage-breakdown"></div>
+    <!-- Usage: logged-in state -->
+    <div id="usage-logged-in" class="usage-panel" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h2 id="usage-title" style="margin:0"></h2>
+        <div style="display:flex;align-items:center;gap:1rem">
+          <span id="usage-key-display" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#525252"></span>
+          <button id="usage-signout" style="background:none;border:1px solid #262626;border-radius:0.375rem;padding:0.3rem 0.75rem;color:#525252;font-size:0.7rem;cursor:pointer;transition:color .15s">sign out</button>
         </div>
       </div>
+      <div class="usage-meta">
+        <div>Quota: <span id="usage-quota-text"></span></div>
+        <div>Rate limit: <span id="usage-rate-text"></span></div>
+        <div>Resets: <span id="usage-resets-text"></span></div>
+      </div>
+      <div class="quota-bar-outer">
+        <div class="quota-bar-inner" id="usage-bar"></div>
+      </div>
+      <div class="usage-numbers">
+        <span id="usage-remaining-text"></span>
+        <span id="usage-pct-text"></span>
+      </div>
+      <div class="usage-breakdown" id="usage-breakdown"></div>
+    </div>
+
+    <!-- Usage: logged-out state -->
+    <div id="usage-logged-out" class="usage-key-form" style="display:none">
+      <h2>Your Usage</h2>
+      <p style="font-size:0.8rem;color:#525252;margin-bottom:0.75rem">Enter your API key to view usage</p>
+      <div style="display:flex;gap:0.75rem;align-items:flex-end">
+        <div class="form-field" style="flex:1">
+          <input type="text" id="usage-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s">
+        </div>
+        <button id="usage-lookup-btn" style="background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1.25rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap">Sign in</button>
+      </div>
+      <div id="usage-error" class="admin-error"></div>
     </div>
 
     <div class="endpoints">
@@ -983,42 +989,89 @@ function renderDashboard(): string {
 (function() {
   let adminPass = null;
 
-  // Usage lookup
-  document.getElementById('usage-lookup-btn').addEventListener('click', lookupUsage);
-  document.getElementById('usage-key').addEventListener('keydown', e => { if (e.key === 'Enter') lookupUsage(); });
+  // Cookie helpers
+  function getCookie(name) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function setCookie(name, val) {
+    document.cookie = name + '=' + encodeURIComponent(val) + '; path=/; max-age=' + (365*86400) + '; samesite=lax';
+  }
+  function deleteCookie(name) {
+    document.cookie = name + '=; path=/; max-age=0';
+  }
 
-  async function lookupUsage() {
+  // Mask key
+  function maskKey(key) {
+    if (key.length <= 10) return key;
+    return key.slice(0, 6) + '...' + key.slice(-4);
+  }
+
+  // Usage rendering
+  function showUsagePanel(u, key) {
+    document.getElementById('usage-title').textContent = 'Your Usage — ' + u.tier + ' tier';
+    document.getElementById('usage-key-display').textContent = maskKey(key);
+    document.getElementById('usage-quota-text').textContent = u.used + ' / ' + u.quota;
+    document.getElementById('usage-rate-text').textContent = (u.per_minute_rate || 10) + ' req/min';
+    document.getElementById('usage-resets-text').textContent = u.resets;
+    const pct = Math.min(100, (u.used / u.quota) * 100);
+    const bar = document.getElementById('usage-bar');
+    bar.style.width = pct + '%';
+    bar.className = 'quota-bar-inner' + (pct > 90 ? ' critical' : pct > 70 ? ' warn' : '');
+    document.getElementById('usage-remaining-text').textContent = u.remaining + ' remaining';
+    document.getElementById('usage-pct-text').textContent = Math.round(pct) + '% used';
+    document.getElementById('usage-breakdown').innerHTML = (u.breakdown || []).map(function(b) {
+      return '<span class="usage-chip">' + b.provider + '<span class="chip-count">' + b.count + '</span></span>';
+    }).join('');
+    document.getElementById('usage-logged-in').style.display = 'block';
+    document.getElementById('usage-logged-out').style.display = 'none';
+  }
+
+  function showLoggedOut() {
+    document.getElementById('usage-logged-in').style.display = 'none';
+    document.getElementById('usage-logged-out').style.display = 'block';
+  }
+
+  async function fetchUsage(key) {
+    const res = await fetch('/api/usage', { headers: { 'x-pl-key': key } });
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
+  // Auto-load from cookie on page load
+  const savedKey = getCookie('pl_key');
+  if (savedKey) {
+    fetchUsage(savedKey).then(u => {
+      if (u) showUsagePanel(u, savedKey);
+      else { deleteCookie('pl_key'); showLoggedOut(); }
+    }).catch(() => showLoggedOut());
+  } else {
+    showLoggedOut();
+  }
+
+  // Manual sign in
+  document.getElementById('usage-lookup-btn').addEventListener('click', signIn);
+  document.getElementById('usage-key').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
+
+  async function signIn() {
     const key = document.getElementById('usage-key').value.trim();
     const errEl = document.getElementById('usage-error');
-    const resultEl = document.getElementById('usage-result');
     errEl.textContent = '';
-    resultEl.style.display = 'none';
     if (!key) { errEl.textContent = 'Enter your API key'; return; }
     try {
-      const res = await fetch('/api/usage', { headers: { 'x-pl-key': key } });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        errEl.textContent = d.error || 'Invalid key';
-        return;
-      }
-      const u = await res.json();
-      document.getElementById('usage-title').textContent = 'Your Usage — ' + u.tier + ' tier';
-      document.getElementById('usage-quota-text').textContent = u.used + ' / ' + u.quota;
-      document.getElementById('usage-rate-text').textContent = (u.per_minute_rate || 10) + ' req/min';
-      document.getElementById('usage-resets-text').textContent = u.resets;
-      const pct = Math.min(100, (u.used / u.quota) * 100);
-      const bar = document.getElementById('usage-bar');
-      bar.style.width = pct + '%';
-      bar.className = 'quota-bar-inner' + (pct > 90 ? ' critical' : pct > 70 ? ' warn' : '');
-      document.getElementById('usage-remaining-text').textContent = u.remaining + ' remaining';
-      document.getElementById('usage-pct-text').textContent = Math.round(pct) + '% used';
-      const bd = document.getElementById('usage-breakdown');
-      bd.innerHTML = (u.breakdown || []).map(function(b) {
-        return '<span class="usage-chip">' + b.provider + '<span class="chip-count">' + b.count + '</span></span>';
-      }).join('');
-      resultEl.style.display = 'block';
+      const u = await fetchUsage(key);
+      if (!u) { errEl.textContent = 'Invalid key'; return; }
+      setCookie('pl_key', key);
+      showUsagePanel(u, key);
     } catch (e) { errEl.textContent = 'Connection error'; }
   }
+
+  // Sign out
+  document.getElementById('usage-signout').addEventListener('click', () => {
+    deleteCookie('pl_key');
+    document.getElementById('usage-key').value = '';
+    showLoggedOut();
+  });
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
@@ -1204,7 +1257,10 @@ const server = http.createServer(async (req, res) => {
       const callback = new URL(redirect_uri ?? "");
       if (state) callback.searchParams.set("state", state);
       callback.searchParams.set("code", code);
-      res.writeHead(302, { Location: callback.toString() });
+      res.writeHead(302, {
+        Location: callback.toString(),
+        "Set-Cookie": `pl_key=${api_key}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+      });
       return res.end();
     }
   }
