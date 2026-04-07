@@ -24,6 +24,7 @@ export default async function handler(req: any, res: any) {
   return res.status(200).json({
     tier: account.tier,
     quota: account.monthly_quota,
+    per_minute_rate: account.per_minute_rate,
     used,
     remaining: Math.max(0, account.monthly_quota - used),
     resets,

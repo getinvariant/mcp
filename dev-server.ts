@@ -149,16 +149,6 @@ const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   cloud: { label: "Cloud", icon: "C" },
 };
 
-interface UsageData {
-  tier: string;
-  quota: number;
-  used: number;
-  remaining: number;
-  resets: string;
-  breakdown: { provider: string; count: number }[];
-  perMinuteRate: number;
-}
-
 interface AccountWithUsage {
   key: string;
   email: string | null;
@@ -170,7 +160,7 @@ interface AccountWithUsage {
   createdAt: string;
 }
 
-function renderDashboard(usage?: UsageData): string {
+function renderDashboard(): string {
   const providers = getHealthData();
   const total = providers.length;
   const live = providers.filter((p) => p.available).length;
@@ -579,6 +569,24 @@ function renderDashboard(usage?: UsageData): string {
     border-radius: 0.25rem;
   }
 
+  /* Usage key form */
+  .usage-section { margin-bottom: 2.5rem; }
+  .usage-key-form {
+    background: #111;
+    border: 1px solid #262626;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .usage-key-form h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #737373;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+  }
+
   /* Tabs */
   .tabs {
     display: flex;
@@ -861,29 +869,36 @@ function renderDashboard(usage?: UsageData): string {
       </div>
     </div>
 
-    ${usage ? `
-    <div class="usage-panel">
-      <h2>Your Usage — ${usage.tier} tier</h2>
-      <div class="usage-meta">
-        <div>Quota: <span>${usage.used} / ${usage.quota}</span></div>
-        <div>Rate limit: <span>${usage.perMinuteRate} req/min</span></div>
-        <div>Resets: <span>${usage.resets}</span></div>
+    <div class="usage-section">
+      <div class="usage-key-form">
+        <h2>Your Usage</h2>
+        <div style="display:flex;gap:0.75rem;align-items:flex-end">
+          <div class="form-field" style="flex:1">
+            <input type="text" id="usage-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false" style="width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.6rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s">
+          </div>
+          <button id="usage-lookup-btn" style="background:#e5e5e5;color:#0a0a0a;border:none;border-radius:0.5rem;padding:0.6rem 1.25rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap">Look up</button>
+        </div>
+        <div id="usage-error" class="admin-error"></div>
       </div>
-      <div class="quota-bar-outer">
-        <div class="quota-bar-inner${usage.used / usage.quota > 0.9 ? ' critical' : usage.used / usage.quota > 0.7 ? ' warn' : ''}" style="width: ${Math.min(100, (usage.used / usage.quota) * 100)}%"></div>
+      <div id="usage-result" style="display:none">
+        <div class="usage-panel">
+          <h2 id="usage-title"></h2>
+          <div class="usage-meta">
+            <div>Quota: <span id="usage-quota-text"></span></div>
+            <div>Rate limit: <span id="usage-rate-text"></span></div>
+            <div>Resets: <span id="usage-resets-text"></span></div>
+          </div>
+          <div class="quota-bar-outer">
+            <div class="quota-bar-inner" id="usage-bar"></div>
+          </div>
+          <div class="usage-numbers">
+            <span id="usage-remaining-text"></span>
+            <span id="usage-pct-text"></span>
+          </div>
+          <div class="usage-breakdown" id="usage-breakdown"></div>
+        </div>
       </div>
-      <div class="usage-numbers">
-        <span>${usage.remaining} remaining</span>
-        <span>${Math.round((usage.used / usage.quota) * 100)}% used</span>
-      </div>
-      ${usage.breakdown.length > 0 ? `
-      <div class="usage-breakdown">
-        ${usage.breakdown.map(b => `<span class="usage-chip">${b.provider}<span class="chip-count">${b.count}</span></span>`).join("")}
-      </div>` : ""}
-    </div>` : `
-    <div class="usage-login">
-      View your usage by adding your key: <code>?key=pl_your_key</code>
-    </div>`}
+    </div>
 
     <div class="endpoints">
       <h2>Endpoints</h2>
@@ -967,6 +982,43 @@ function renderDashboard(usage?: UsageData): string {
 <script>
 (function() {
   let adminPass = null;
+
+  // Usage lookup
+  document.getElementById('usage-lookup-btn').addEventListener('click', lookupUsage);
+  document.getElementById('usage-key').addEventListener('keydown', e => { if (e.key === 'Enter') lookupUsage(); });
+
+  async function lookupUsage() {
+    const key = document.getElementById('usage-key').value.trim();
+    const errEl = document.getElementById('usage-error');
+    const resultEl = document.getElementById('usage-result');
+    errEl.textContent = '';
+    resultEl.style.display = 'none';
+    if (!key) { errEl.textContent = 'Enter your API key'; return; }
+    try {
+      const res = await fetch('/api/usage', { headers: { 'x-pl-key': key } });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        errEl.textContent = d.error || 'Invalid key';
+        return;
+      }
+      const u = await res.json();
+      document.getElementById('usage-title').textContent = 'Your Usage — ' + u.tier + ' tier';
+      document.getElementById('usage-quota-text').textContent = u.used + ' / ' + u.quota;
+      document.getElementById('usage-rate-text').textContent = (u.per_minute_rate || 10) + ' req/min';
+      document.getElementById('usage-resets-text').textContent = u.resets;
+      const pct = Math.min(100, (u.used / u.quota) * 100);
+      const bar = document.getElementById('usage-bar');
+      bar.style.width = pct + '%';
+      bar.className = 'quota-bar-inner' + (pct > 90 ? ' critical' : pct > 70 ? ' warn' : '');
+      document.getElementById('usage-remaining-text').textContent = u.remaining + ' remaining';
+      document.getElementById('usage-pct-text').textContent = Math.round(pct) + '% used';
+      const bd = document.getElementById('usage-breakdown');
+      bd.innerHTML = (u.breakdown || []).map(function(b) {
+        return '<span class="usage-chip">' + b.provider + '<span class="chip-count">' + b.count + '</span></span>';
+      }).join('');
+      resultEl.style.display = 'block';
+    } catch (e) { errEl.textContent = 'Connection error'; }
+  }
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
@@ -1197,31 +1249,8 @@ const server = http.createServer(async (req, res) => {
   const fakeRes = makeRes(res);
 
   if (path === "/") {
-    const key = fakeReq.query.key as string | undefined;
-    let usage: UsageData | undefined;
-
-    if (key && key.startsWith("pl_")) {
-      const account = await getAccount(key);
-      if (account) {
-        const breakdown = await getUsage(account.id);
-        const used = breakdown.reduce((sum, r) => sum + r.count, 0);
-        const now = new Date();
-        const resets = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-          .toISOString().slice(0, 10);
-        usage = {
-          tier: account.tier,
-          quota: account.monthly_quota,
-          used,
-          remaining: Math.max(0, account.monthly_quota - used),
-          resets,
-          breakdown: breakdown.map(r => ({ provider: r.provider_id, count: r.count })),
-          perMinuteRate: account.per_minute_rate,
-        };
-      }
-    }
-
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.end(renderDashboard(usage));
+    return res.end(renderDashboard());
   }
 
   if (path === "/api/health") {
