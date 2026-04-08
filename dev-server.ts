@@ -594,9 +594,12 @@ ${renderNav()}
   (function() {
     var W = 80, H = 10;
     var sphereX = 12, sphereY = 0, velY = 0, jumping = false;
-    var gravity = 0.4, jumpForce = -2.2;
+    // physics tuned so one hop cycle ≈ one peak-to-peak scroll distance
+    var gravity = 0.012, jumpForce = -0.28;
     var frame = 0;
     var scrollOffset = 0;
+    var scrollSpeed = 0.7;
+    var landCooldown = 0;
 
     // sphere flash colors (warm tones only — no pink/purple/green)
     var colors = ['#fff', '#fff', '#fff', '#fff', '#e8c36a', '#6aace8', '#e8a86a', '#c4c4c4', '#fff', '#fff'];
@@ -618,15 +621,9 @@ ${renderNav()}
 
     function tick() {
       frame++;
-      scrollOffset += 0.35;
+      scrollOffset += scrollSpeed;
 
-      // auto-jump
-      if (!jumping && Math.random() < 0.018) {
-        jumping = true;
-        velY = jumpForce;
-      }
-
-      // physics
+      // physics — continuous hopping, sphere leaps forward peak-to-peak
       if (jumping) {
         sphereY += velY;
         velY += gravity;
@@ -634,7 +631,13 @@ ${renderNav()}
           sphereY = 0;
           jumping = false;
           velY = 0;
+          landCooldown = 3;
         }
+      } else if (landCooldown > 0) {
+        landCooldown--;
+      } else {
+        jumping = true;
+        velY = jumpForce;
       }
 
       // flash color occasionally
