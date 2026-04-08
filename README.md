@@ -10,6 +10,7 @@ The project has two distinct layers:
 - `api/mcp.ts` — `POST /api/mcp` — MCP JSON-RPC endpoint (recommended, no local install needed)
 - `api/providers.ts` — `GET /api/providers` — REST: list providers
 - `api/query.ts` — `POST /api/query` — REST: execute a provider action
+- `api/usage.ts` — `GET /api/usage` — REST: account quota and usage breakdown
 - `api/_lib/auth.ts` — validates `x-pl-key` headers against a comma-separated allowlist in `PL_VALID_KEYS`
 - `api/_lib/providers/` — one class per integration, all implementing the `Provider` interface
 
@@ -300,6 +301,8 @@ Add it (comma-separated) to the `PL_VALID_KEYS` environment variable on your bac
 | `GOOGLE_CLOUD_API_KEY` | No | Translation API enabled |
 | `GOOGLE_MAPS_API_KEY` | No | Maps, Places, Directions APIs enabled |
 | `ALPHA_VANTAGE_API_KEY` | No | [alphavantage.co](https://www.alphavantage.co/support/#api-key) |
+| `FINNHUB_API_KEY` | No | [finnhub.io](https://finnhub.io/dashboard) |
+| `GEOAPIFY_API_KEY` | No | [geoapify.com](https://www.geoapify.com/get-started-with-maps-api) |
 | `OPENWEATHER_API_KEY` | No | [openweathermap.org](https://openweathermap.org/api) |
 | `EVERY_ORG_API_KEY` | No | [partners.every.org](https://partners.every.org) |
 | `OPENFDA_API_KEY` | No | Optional — increases rate limits |
@@ -324,14 +327,105 @@ Browse all providers, optionally filtered by category.
 
 Categories: `physical_health`, `mental_health`, `financial`, `social_impact`, `environment`, `ai`, `maps`, `cloud`
 
-### `query`
-Execute an action against a provider.
+### `get_api_docs`
+View the full API integration documentation — authentication, REST endpoints, provider categories, and examples. Accepts an optional `section` parameter to narrow the output:
+- `overview` — project summary and base URL
+- `authentication` — how to obtain and use `pl_` keys
+- `endpoints` — full REST reference with request/response shapes
+- `providers` — all provider IDs, categories, and required env vars
 
+Omit `section` to receive the complete documentation in one response.
+
+### `recommend`
+Get intelligent recommendations for which provider best fits your needs.
+
+```json
+{
+  "need": "I need real-time stock prices",
+  "priorities": ["speed", "reliability"],
+  "budget": "free"
+}
+```
+
+Scores providers on relevance, your stated priorities, budget, and live availability. Returns ranked results with reasoning, pricing, and rate-limit summaries.
+
+### `compare`
+Compare two or more providers side by side on pricing, rate limits, strengths, weaknesses, and best-fit use cases.
+
+```json
+{ "provider_ids": ["claude", "gemini"] }
+```
+
+---
+
+## REST API Reference
+
+If you are not using MCP and prefer to call the gateway directly via HTTP, use these REST endpoints.
+
+All endpoints require authentication via the `x-pl-key` header.
+- **Base URL:** `https://your-app.vercel.app` (or your local environment)
+- **Header:** `x-pl-key: pl_your_key_here`
+
+### `GET /api/providers`
+List all supported providers and their available actions.
+
+**Query Parameters:**
+- `category` (optional) - Filter by `physical_health`, `mental_health`, `financial`, `social_impact`, `environment`, `ai`, `maps`, or `cloud`.
+
+**Response (200 OK):**
+```json
+{
+  "providers": [
+    {
+      "id": "claude",
+      "name": "Anthropic Claude",
+      "category": "ai",
+      "description": "...",
+      "available": true,
+      "availableActions": [...]
+    }
+  ]
+}
+```
+
+### `POST /api/query`
+Execute a specific action against a provider. The gateway handles the provider's native credentials and rate limits transparently.
+
+**Request Body:**
 ```json
 {
   "provider_id": "claude",
   "action": "chat",
-  "params": { "message": "Summarize this contract clause: ..." }
+  "params": {
+    "message": "Summarize this contract clause: ..."
+  }
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": { ... }
+}
+```
+*Note: This endpoint returns an `X-RateLimit-Remaining` header representing your account's remaining quota balance.*
+
+### `GET /api/usage`
+Check your account's quota, detailed usage breakdown by provider, and renewal date.
+
+**Response (200 OK):**
+```json
+{
+  "tier": "free",
+  "quota": 500,
+  "per_minute_rate": 60,
+  "used": 150,
+  "remaining": 350,
+  "resets": "2026-05-01",
+  "breakdown": [
+    { "provider": "claude", "count": 100 },
+    { "provider": "coingecko", "count": 50 }
+  ]
 }
 ```
 
