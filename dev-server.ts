@@ -388,7 +388,6 @@ const SHARED_STYLES = `
   nav{border-bottom:1px solid rgba(255,255,255,0.05);padding:1.25rem 0;backdrop-filter:blur(10px);position:sticky;top:0;z-index:50;}
   nav .container{display:flex;justify-content:space-between;align-items:center}
   nav .logo{font-weight:700;color:#fff;font-size:1rem;letter-spacing:-0.03em;text-transform:lowercase;display:flex;align-items:center;gap:0.5rem;}
-  nav .logo::after{content:'alpha';font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;background:rgba(74, 222, 128, 0.1);color:#4ade80;padding:0.1rem 0.4rem;border-radius:0.25rem;font-weight:800;}
   nav .links{display:flex;gap:2rem;font-size:0.85rem;font-weight:500;}
   nav .links a{color:#777}
   nav .links a:hover{color:#fff}
