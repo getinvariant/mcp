@@ -11,7 +11,8 @@ import usageHandler from "./api/usage.js";
 import recommendHandler from "./api/recommend.js";
 import { getAllProviders, getProvider } from "./lib/providers/registry.js";
 import { recommend, compareProviders } from "./lib/reasoning/engine.js";
-import { getAccount, getUsage, getAllAccounts, createAccount, addToWaitlist, logUsage } from "./lib/db.js";
+import { providerKnowledge } from "./lib/reasoning/provider-knowledge.js";
+import { getAccount, getAccountByEmail, getUsage, getAllAccounts, createAccount, addToWaitlist, logUsage, logRouting, getRoutingStats } from "./lib/db.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -57,7 +58,7 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
 
   server.tool(
     "query",
-    "Execute a real API call to any available provider. Use list_providers first to see available providers and their actions.",
+    "Execute a real API call to any available provider. Includes smart routing: if the requested provider fails or is unavailable, automatically falls back to an alternative provider.",
     {
       provider_id: z.string(),
       action: z.string(),
@@ -68,15 +69,107 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
       if (!provider) {
         return { content: [{ type: "text", text: `Error: Provider '${provider_id}' not found` }], isError: true };
       }
-      if (!provider.isAvailable()) {
-        return { content: [{ type: "text", text: `Error: Provider '${provider.info.name}' is not configured on the server` }], isError: true };
-      }
-      const result = await provider.query(action, queryParams || {});
-      logUsage(accountId, provider_id, action, result.success).catch(() => { });
-      if (!result.success) {
+
+      // Try the requested provider first
+      if (provider.isAvailable()) {
+        const result = await provider.query(action, queryParams || {});
+        logUsage(accountId, provider_id, action, result.success).catch(() => {});
+        logRouting({ accountId, requestedProvider: provider_id, actualProvider: provider_id, action, reason: "direct", fallback: false, success: result.success }).catch(() => {});
+
+        if (result.success) {
+          return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
+        }
+
+        // Provider failed — try fallbacks
+        const knowledge = providerKnowledge[provider_id];
+        if (knowledge?.alternatives?.length) {
+          for (const altId of knowledge.alternatives) {
+            const alt = getProvider(altId);
+            if (!alt || !alt.isAvailable()) continue;
+            // find a matching action on the alternative
+            const altAction = alt.info.availableActions.find((a) => a.action === action);
+            if (!altAction) continue;
+            const altResult = await alt.query(action, queryParams || {});
+            logUsage(accountId, altId, action, altResult.success).catch(() => {});
+            logRouting({ accountId, requestedProvider: provider_id, actualProvider: altId, action, reason: `${provider_id} failed, routed to ${altId}`, fallback: true, success: altResult.success }).catch(() => {});
+            if (altResult.success) {
+              return { content: [{ type: "text", text: `[Routed: ${provider_id} → ${altId}]\n\n${JSON.stringify(altResult.data, null, 2)}` }] };
+            }
+          }
+        }
+
         return { content: [{ type: "text", text: `Error: ${result.error}` }], isError: true };
       }
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
+
+      // Requested provider unavailable — try alternatives silently
+      const knowledge = providerKnowledge[provider_id];
+      if (knowledge?.alternatives?.length) {
+        for (const altId of knowledge.alternatives) {
+          const alt = getProvider(altId);
+          if (!alt || !alt.isAvailable()) continue;
+          const altAction = alt.info.availableActions.find((a) => a.action === action);
+          if (!altAction) continue;
+          const altResult = await alt.query(action, queryParams || {});
+          logUsage(accountId, altId, action, altResult.success).catch(() => {});
+          logRouting({ accountId, requestedProvider: provider_id, actualProvider: altId, action, reason: `${provider_id} unavailable, routed to ${altId}`, fallback: true, success: altResult.success }).catch(() => {});
+          if (altResult.success) {
+            return { content: [{ type: "text", text: `[Routed: ${provider_id} → ${altId}]\n\n${JSON.stringify(altResult.data, null, 2)}` }] };
+          }
+        }
+      }
+
+      return { content: [{ type: "text", text: `Error: Provider '${provider.info.name}' is not configured and no alternatives are available` }], isError: true };
+    }
+  );
+
+  server.tool(
+    "smart_query",
+    "Describe what data you need in plain language. The system automatically picks the best available provider, optimizing for cost, availability, and reliability. No need to know provider names.",
+    {
+      intent: z.string().describe("What you need — e.g. 'current weather in Tokyo', 'Bitcoin price', 'FDA recalls for ibuprofen'"),
+      params: z.record(z.unknown()).optional().describe("Any specific parameters for the query"),
+    },
+    async ({ intent, params: extraParams }) => {
+      const recommendations = recommend({ need: intent, priorities: ["reliability", "cost"] });
+      const available = recommendations.filter((r) => r.available);
+      if (available.length === 0) {
+        return { content: [{ type: "text", text: `No available providers match "${intent}". Use list_providers to see what's configured.` }], isError: true };
+      }
+
+      // Try each recommended provider in order until one succeeds
+      for (const rec of available) {
+        const provider = getProvider(rec.provider_id);
+        if (!provider) continue;
+
+        // Pick the best matching action
+        const action = rec.actions[0];
+        const actionDef = provider.info.availableActions.find((a) => a.action === action);
+        if (!actionDef) continue;
+
+        // Build params from intent + extraParams
+        const queryParams = { ...(extraParams || {}) };
+        // Auto-extract common params from intent
+        if (!queryParams.query && !queryParams.city && !queryParams.symbol && !queryParams.coins) {
+          // Try to extract the subject from the intent
+          const intentWords = intent.replace(/^(get|find|show|what|what's|whats|the|current|latest|recent)\s+/gi, "").trim();
+          const firstAction = actionDef;
+          const firstRequired = Object.entries(firstAction.parameters).find(([, v]) => (v as any).required);
+          if (firstRequired) {
+            queryParams[firstRequired[0]] = intentWords;
+          }
+        }
+
+        const result = await provider.query(action, queryParams);
+        logUsage(accountId, rec.provider_id, action, result.success).catch(() => {});
+        logRouting({ accountId, requestedProvider: "smart_query", actualProvider: rec.provider_id, action, reason: `smart routing: score ${rec.score}`, fallback: false, success: result.success }).catch(() => {});
+
+        if (result.success) {
+          return { content: [{ type: "text", text: `[Smart Route → ${rec.provider_name} / ${action}]\n\n${JSON.stringify(result.data, null, 2)}` }] };
+        }
+        // Try next provider if this one failed
+      }
+
+      return { content: [{ type: "text", text: `All providers failed for "${intent}". Try being more specific or use query with a specific provider.` }], isError: true };
     }
   );
 
@@ -835,21 +928,31 @@ ${renderNav("login")}
     </div>
 
     <div class="login-panel">
-      <h2>Create Account</h2>
-      <p>Free — 500 requests/month</p>
-      <input type="email" id="signup-email" placeholder="you@example.com">
-      <button class="btn btn-primary" id="signup-btn">Create key</button>
-      <div id="signup-error" class="login-error"></div>
+      <h2>Sign In</h2>
+      <p>Sign in with the email you registered with</p>
+      <input type="email" id="signin-email" placeholder="you@example.com">
+      <button class="btn btn-primary" id="signin-email-btn">Sign in</button>
+      <div id="signin-email-error" class="login-error"></div>
     </div>
 
     <div class="or-divider">or</div>
 
     <div class="login-panel">
-      <h2>Sign In</h2>
-      <p>Already have a key?</p>
+      <h2>Sign In With Key</h2>
+      <p>For teams sharing one key</p>
       <input type="text" id="signin-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false">
       <button class="btn btn-ghost" id="signin-btn" style="width:100%;padding:0.65rem;font-size:0.85rem">Sign in</button>
       <div id="signin-error" class="login-error"></div>
+    </div>
+
+    <div class="or-divider">new here?</div>
+
+    <div class="login-panel">
+      <h2>Create Account</h2>
+      <p>Free — 500 requests/month</p>
+      <input type="email" id="signup-email" placeholder="you@example.com">
+      <button class="btn btn-primary" id="signup-btn">Create key</button>
+      <div id="signup-error" class="login-error"></div>
     </div>
 
     <footer class="page-footer">
@@ -869,6 +972,30 @@ ${renderNav("login")}
 
   function setCookie(name, val) {
     document.cookie = name + '=' + encodeURIComponent(val) + '; path=/; max-age=' + (365*86400) + '; samesite=lax';
+  }
+
+  // Email sign in
+  document.getElementById('signin-email-btn').addEventListener('click', doEmailSignin);
+  document.getElementById('signin-email').addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSignin(); });
+
+  async function doEmailSignin() {
+    var email = document.getElementById('signin-email').value.trim();
+    var errEl = document.getElementById('signin-email-error');
+    var btn = document.getElementById('signin-email-btn');
+    errEl.textContent = '';
+    if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email'; return; }
+    btn.disabled = true; btn.textContent = '...';
+    try {
+      var res = await fetch('/api/signin-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      var data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Sign in failed'; return; }
+      window.location.href = '/dashboard';
+    } catch (e) { errEl.textContent = 'Connection error'; }
+    finally { btn.disabled = false; btn.textContent = 'Sign in'; }
   }
 
   // Sign up
@@ -1042,6 +1169,18 @@ function renderDashboard(): string {
     letter-spacing: 0.05em;
     margin-top: 0.25rem;
   }
+
+  /* Routing Stats */
+  .routing-stats{display:flex;gap:1px;background:#1c1c1c;border-radius:0.75rem;overflow:hidden;border:1px solid #262626}
+  .routing-stat{flex:1;padding:1rem;background:#111;text-align:center}
+  .routing-stat-value{font-size:1.5rem;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+  .routing-stat-label{font-size:0.65rem;color:#525252;text-transform:uppercase;letter-spacing:0.05em;margin-top:0.25rem}
+  .routing-provider{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #1c1c1c;font-size:0.8rem}
+  .routing-provider:last-child{border-bottom:none}
+  .routing-provider .name{color:#a3a3a3}
+  .routing-provider .count{color:#525252;font-family:'JetBrains Mono',monospace;font-size:0.75rem}
+  .routing-provider .bar{height:4px;background:#333;border-radius:2px;flex:1;margin:0 1rem;position:relative}
+  .routing-provider .bar-fill{position:absolute;left:0;top:0;height:100%;background:#fff;border-radius:2px;transition:width .3s}
 
   /* Endpoints */
   .endpoints {
@@ -1643,6 +1782,26 @@ function renderDashboard(): string {
       <div class="usage-breakdown" id="usage-breakdown"></div>
     </div>
 
+    <!-- Smart Routing Stats -->
+    <div id="routing-panel" class="usage-panel" style="display:none">
+      <h2>Smart Routing</h2>
+      <div class="routing-stats">
+        <div class="routing-stat">
+          <div class="routing-stat-value" id="routing-total">0</div>
+          <div class="routing-stat-label">Total Routed</div>
+        </div>
+        <div class="routing-stat">
+          <div class="routing-stat-value" id="routing-fallbacks">0</div>
+          <div class="routing-stat-label">Auto-Fallbacks</div>
+        </div>
+        <div class="routing-stat">
+          <div class="routing-stat-value" id="routing-smart">0</div>
+          <div class="routing-stat-label">Smart Routes</div>
+        </div>
+      </div>
+      <div id="routing-providers" style="margin-top:1rem"></div>
+    </div>
+
     <div class="endpoints">
       <h2>Endpoints</h2>
       <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/providers</span><span class="endpoint-desc">list available providers</span></div>
@@ -1770,6 +1929,25 @@ function renderDashboard(): string {
     return await res.json();
   }
 
+  // Fetch and render routing stats
+  async function loadRoutingStats(key) {
+    try {
+      var res = await fetch('/api/routing-stats', { headers: { 'x-pl-key': key } });
+      if (!res.ok) return;
+      var stats = await res.json();
+      if (stats.total === 0) return;
+      document.getElementById('routing-total').textContent = stats.total;
+      document.getElementById('routing-fallbacks').textContent = stats.fallbacks;
+      document.getElementById('routing-smart').textContent = stats.smartRoutes;
+      var maxCount = stats.byProvider.length ? stats.byProvider[0].count : 1;
+      document.getElementById('routing-providers').innerHTML = stats.byProvider.map(function(p) {
+        var pct = Math.round((p.count / maxCount) * 100);
+        return '<div class="routing-provider"><span class="name">' + p.provider + '</span><div class="bar"><div class="bar-fill" style="width:' + pct + '%"></div></div><span class="count">' + p.count + '</span></div>';
+      }).join('');
+      document.getElementById('routing-panel').style.display = 'block';
+    } catch(e) {}
+  }
+
   // Auto-load from cookie
   const savedKey = getCookie('pl_key');
   if (savedKey) {
@@ -1777,6 +1955,7 @@ function renderDashboard(): string {
       if (u) showUsagePanel(u, savedKey);
       else { deleteCookie('pl_key'); window.location.href = '/login'; }
     }).catch(() => {});
+    loadRoutingStats(savedKey);
   }
 
   // Copy full key from logged-in display
@@ -2175,6 +2354,46 @@ const server = http.createServer(async (req, res) => {
       "Set-Cookie": `pl_key=${plKey}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
     });
     return res.end(JSON.stringify({ key: plKey, tier: account.tier, quota: account.monthly_quota }));
+  }
+
+  if (path === "/api/routing-stats" && req.method === "GET") {
+    const plKey = req.headers["x-pl-key"] as string;
+    const isAdmin = req.headers["x-admin-pass"] === adminPass;
+    if (!plKey && !isAdmin) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Missing x-pl-key or x-admin-pass" }));
+    }
+    let stats;
+    if (isAdmin) {
+      stats = await getRoutingStats();
+    } else {
+      const account = await getAccount(plKey);
+      if (!account) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Invalid key" }));
+      }
+      stats = await getRoutingStats(account.id);
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify(stats));
+  }
+
+  if (path === "/api/signin-email" && req.method === "POST") {
+    const email = (body.email || "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Valid email is required" }));
+    }
+    const account = await getAccountByEmail(email);
+    if (!account) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "No account found for this email" }));
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Set-Cookie": `pl_key=${account.pl_key}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+    });
+    return res.end(JSON.stringify({ ok: true }));
   }
 
   if (path === "/api/waitlist" && req.method === "POST") {
