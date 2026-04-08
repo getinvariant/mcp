@@ -518,10 +518,63 @@ ${SHARED_STYLES}
   .popup-card .msg.ok{color:#4ade80}
   .popup-card .msg.err{color:#f87171}
 
+  /* ── fade zone (black → white transition around the mcp terminal) ── */
+  .fade-zone{background:linear-gradient(to bottom,#050505 0%,#050505 15%,#2a2a2a 45%,#e0e0e0 80%,#ffffff 100%);padding:2rem 0 5rem;}
+  .fade-zone .container{padding-top:2rem;}
+
+  /* ── collab section (light theme, paid tier) ── */
+  .collab{background:#ffffff;color:#0a0a0a;padding:5rem 0 0;position:relative;overflow:hidden;}
+  .collab::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(0,0,0,0.035) 1px, transparent 1px);background-size:20px 20px;pointer-events:none;}
+  .collab-inner{max-width:1000px;margin:0 auto;padding:0 2rem;position:relative;}
+  .collab-eyebrow{display:inline-block;font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.7rem;color:#8a6a1e;background:#fff7e0;border:1px solid #e8c36a;padding:0.35rem 0.85rem;border-radius:999px;text-transform:lowercase;letter-spacing:0.08em;margin-bottom:1.25rem;}
+  .collab-eyebrow .pulse{display:inline-block;width:6px;height:6px;background:#e8c36a;border-radius:50%;margin-right:0.4rem;vertical-align:middle;animation:collab-pulse 2s infinite;}
+  @keyframes collab-pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  .collab-header{text-align:center;margin-bottom:3.5rem;}
+  .collab-header h2{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:2.4rem;font-weight:700;color:#0a0a0a;letter-spacing:-0.04em;line-height:1.15;margin-bottom:1rem;text-transform:lowercase;max-width:780px;margin-left:auto;margin-right:auto;}
+  .collab-header p{font-size:1rem;color:#555;max-width:700px;margin:0 auto;line-height:1.7;}
+  .collab-header p strong{color:#0a0a0a;font-weight:600;}
+
+  .collab-contrast{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:860px;margin:0 auto 4rem;}
+  .collab-col{border:1px solid #e5e5e5;border-radius:0.75rem;padding:1.75rem;background:#fafafa;}
+  .collab-col.after{background:#0a0a0a;color:#e5e5e5;border-color:#0a0a0a;}
+  .collab-col h3{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.7rem;text-transform:lowercase;letter-spacing:0.1em;color:#888;margin-bottom:1rem;font-weight:500;}
+  .collab-col.after h3{color:#999;}
+  .collab-col ul{list-style:none;padding:0;margin:0;}
+  .collab-col li{font-size:0.85rem;line-height:1.7;padding:0.4rem 0;color:#555;display:flex;gap:0.5rem;}
+  .collab-col.after li{color:#d5d5d5;}
+  .collab-col li::before{content:'·';color:#aaa;font-weight:700;flex-shrink:0;}
+  .collab-col.after li::before{color:#e8c36a;content:'→';}
+
+  .collab-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;max-width:860px;margin:0 auto 4rem;}
+  .collab-feat{border:1px solid #e5e5e5;border-radius:0.75rem;padding:1.5rem 1.75rem;background:#fafafa;transition:border-color 0.2s, background 0.2s;}
+  .collab-feat:hover{border-color:#0a0a0a;background:#fff;}
+  .collab-feat h4{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.85rem;color:#0a0a0a;margin-bottom:0.5rem;font-weight:600;text-transform:lowercase;}
+  .collab-feat p{font-size:0.82rem;color:#666;line-height:1.6;margin:0;}
+
+  .collab-cta{max-width:520px;margin:0 auto 2rem;text-align:center;}
+  .collab-cta h3{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:1.1rem;color:#0a0a0a;margin-bottom:0.5rem;font-weight:600;text-transform:lowercase;}
+  .collab-cta p.cta-sub{font-size:0.88rem;color:#666;margin-bottom:1.25rem;line-height:1.6;}
+  .collab-cta form{display:flex;gap:0.5rem;}
+  .collab-cta input[type="email"]{flex:1;padding:0.75rem 1rem;background:#fff;border:1px solid #d5d5d5;border-radius:0.5rem;color:#0a0a0a;font-size:0.9rem;outline:none;font-family:'Geist Mono','JetBrains Mono',monospace;}
+  .collab-cta input[type="email"]:focus{border-color:#0a0a0a;}
+  .collab-cta .btn-team{padding:0.75rem 1.25rem;background:#0a0a0a;color:#fff;border:1px solid #0a0a0a;border-radius:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.2s;}
+  .collab-cta .btn-team:hover{background:#222;}
+  .collab-cta .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em;}
+  .collab-cta .msg.ok{color:#2d6a2d;}
+  .collab-cta .msg.err{color:#a02020;}
+  .collab-pricing{text-align:center;font-size:0.75rem;color:#888;font-family:'Geist Mono','JetBrains Mono',monospace;margin-bottom:4rem;letter-spacing:0.04em;}
+
+  .collab-footer{border-top:1px solid #e5e5e5;padding:2.5rem 0;margin-top:2rem;display:flex;justify-content:space-between;font-size:0.8rem;color:#666;}
+  .collab-footer a{color:#0a0a0a;text-decoration:none;border-bottom:1px solid #ccc;}
+  .collab-footer a:hover{border-bottom-color:#0a0a0a;}
+
   @media(max-width:768px){
     .stats-row{flex-direction:column}
     .ascii-box{font-size:0.5rem}
     .game-canvas{font-size:0.55rem;height:100px;}
+    .collab-header h2{font-size:1.75rem;}
+    .collab-contrast{grid-template-columns:1fr;}
+    .collab-grid{grid-template-columns:1fr;}
   }
   @media(max-width:640px){
     .hero{padding:2.5rem 0 2rem}
@@ -530,6 +583,10 @@ ${SHARED_STYLES}
     .popup-card form{flex-direction:column}
     .ascii-box{font-size:0.4rem}
     .game-canvas{font-size:0.45rem;height:80px;padding:0.5rem 0.75rem}
+    .collab{padding:4rem 0 0;}
+    .collab-inner{padding:0 1.25rem;}
+    .collab-header h2{font-size:1.5rem;}
+    .collab-cta form{flex-direction:column;}
   }
 </style>
 </head>
@@ -593,18 +650,88 @@ ${renderNav()}
     </div>
   </div>
 
-  <div class="terminal">
-    <div><span class="prompt">$</span> <span class="cmd">claude mcp add procurement-labs \\</span></div>
-    <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
-    <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
-    <div class="out">done. restart your session to use ${total} providers.</div>
-  </div>
 
-  <footer class="page-footer">
-    <span>procurement labs v0.1.0</span>
-    <a href="https://github.com/tobasummandal/procurementlabs">github</a>
-  </footer>
 </div>
+
+<div class="fade-zone">
+  <div class="container">
+    <div class="terminal">
+      <div><span class="prompt">$</span> <span class="cmd">claude mcp add procurement-labs \\</span></div>
+      <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
+      <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
+      <div class="out">done. restart your session to use ${total} providers.</div>
+    </div>
+  </div>
+</div>
+
+<section class="collab">
+  <div class="collab-inner">
+    <div class="collab-header">
+      <span class="collab-eyebrow"><span class="pulse"></span>pl teams · coming soon</span>
+      <h2>make api key governance invisible for your whole team.</h2>
+      <p>the same one-key-for-everything experience, extended to orgs. <strong>workspace credentials, per-seat usage, one-click rotation, instant offboarding.</strong> the api layer disappeared for individuals — for teams, the governance layer disappears too.</p>
+    </div>
+
+    <div class="collab-contrast">
+      <div class="collab-col before">
+        <h3>today, at most teams</h3>
+        <ul>
+          <li>api keys pasted into slack dms and 1password vaults nobody actually maintains</li>
+          <li>rotations happen by email chain and usually break something in prod</li>
+          <li>no way to answer "who burned through our openai quota last week"</li>
+          <li>someone leaves → scramble to rotate every credential they touched</li>
+          <li>junior devs accidentally commit a .env file to github, twice a year</li>
+        </ul>
+      </div>
+      <div class="collab-col after">
+        <h3>with pl teams</h3>
+        <ul>
+          <li>one workspace holds every provider credential — engineers never see the raw keys</li>
+          <li>each seat gets its own pl_key; admins control which providers it can reach</li>
+          <li>per-seat usage and cost attribution, down to the api call</li>
+          <li>rotate any provider credential in one click — zero downtime, nobody needs to know</li>
+          <li>offboard a dev? revoke their seat. done. no credential hunt.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="collab-grid">
+      <div class="collab-feat">
+        <h4>workspace credentials</h4>
+        <p>your org's provider keys live in one encrypted vault. every engineer pulls from it without ever touching the raw values.</p>
+      </div>
+      <div class="collab-feat">
+        <h4>per-seat attribution</h4>
+        <p>see exactly which engineer called which provider, when, and how much it cost. finance will love you.</p>
+      </div>
+      <div class="collab-feat">
+        <h4>one-click rotation</h4>
+        <p>rotate a leaked key in the dashboard. every seat picks up the new credential transparently on its next call. no deploys, no outages.</p>
+      </div>
+      <div class="collab-feat">
+        <h4>instant offboarding</h4>
+        <p>revoke a departing engineer's seat and their access to every provider vanishes at once. no hunting through 20 services.</p>
+      </div>
+    </div>
+
+    <div class="collab-cta">
+      <h3>early access for teams</h3>
+      <p class="cta-sub">we're talking to design partners now. drop your work email and we'll reach out when teams goes live.</p>
+      <form id="teams-form">
+        <input type="email" name="email" placeholder="you@company.com" required>
+        <button type="submit" class="btn-team">request access</button>
+      </form>
+      <div class="msg" id="teams-msg"></div>
+    </div>
+
+    <p class="collab-pricing">paid tier · generous free trial during beta · pricing at launch</p>
+
+    <footer class="collab-footer">
+      <span>procurement labs v0.1.0</span>
+      <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+    </footer>
+  </div>
+</section>
 
 <!-- email popup (5s delay) -->
 <div class="popup-overlay" id="email-popup">
@@ -822,6 +949,7 @@ ${renderNav()}
   }
   handleWaitlist('waitlist-form', 'waitlist-msg');
   handleWaitlist('popup-form', 'popup-msg');
+  handleWaitlist('teams-form', 'teams-msg');
 
   // ── 5-second popup ──
   setTimeout(function() {
