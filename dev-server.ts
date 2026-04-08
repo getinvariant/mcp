@@ -612,11 +612,16 @@ ${renderNav()}
     <div class="msg" id="waitlist-msg"></div>
   </div>
 
-  <div class="terminal">
-    <div><span class="prompt">$</span> <span class="cmd">claude mcp add procure \\</span></div>
-    <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
-    <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
-    <div class="out">done. restart your session to use ${total} providers.</div>
+  <div class="demo-wrap">
+    <h2>how it looks in your terminal</h2>
+    <p class="demo-sub">one prompt. your agent hits multiple apis through us. you never see a key.</p>
+    <div class="demo-term">
+      <div class="demo-head">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <span>~ claude code</span>
+      </div>
+      <div class="demo-body" id="demo-body"></div>
+    </div>
   </div>
 
   <div class="game-wrap">
@@ -639,16 +644,11 @@ ${renderNav()}
     <div class="cat-tags">${categoryList}<span class="cat-tag cat-tag-more">more coming</span></div>
   </div>
 
-  <div class="demo-wrap">
-    <h2>how it looks in your terminal</h2>
-    <p class="demo-sub">one prompt. your agent hits multiple apis through us. you never see a key.</p>
-    <div class="demo-term">
-      <div class="demo-head">
-        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-        <span>~ claude code</span>
-      </div>
-      <div class="demo-body" id="demo-body"></div>
-    </div>
+  <div class="terminal">
+    <div><span class="prompt">$</span> <span class="cmd">claude mcp add procure \\</span></div>
+    <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
+    <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
+    <div class="out">done. restart your session to use ${total} providers.</div>
   </div>
 
 
