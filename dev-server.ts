@@ -12,7 +12,7 @@ import recommendHandler from "./api/recommend.js";
 import { getAllProviders, getProvider } from "./lib/providers/registry.js";
 import { recommend, compareProviders } from "./lib/reasoning/engine.js";
 import { providerKnowledge } from "./lib/reasoning/provider-knowledge.js";
-import { getAccount, getUsage, getAllAccounts, createAccount, addToWaitlist, logUsage, logRouting, getRoutingStats } from "./lib/db.js";
+import { getAccount, getAccountByEmail, getUsage, getAllAccounts, createAccount, addToWaitlist, logUsage, logRouting, getRoutingStats } from "./lib/db.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -752,21 +752,31 @@ ${renderNav("login")}
     </div>
 
     <div class="login-panel">
-      <h2>Create Account</h2>
-      <p>Free — 500 requests/month</p>
-      <input type="email" id="signup-email" placeholder="you@example.com">
-      <button class="btn btn-primary" id="signup-btn">Create key</button>
-      <div id="signup-error" class="login-error"></div>
+      <h2>Sign In</h2>
+      <p>Sign in with the email you registered with</p>
+      <input type="email" id="signin-email" placeholder="you@example.com">
+      <button class="btn btn-primary" id="signin-email-btn">Sign in</button>
+      <div id="signin-email-error" class="login-error"></div>
     </div>
 
     <div class="or-divider">or</div>
 
     <div class="login-panel">
-      <h2>Sign In</h2>
-      <p>Already have a key?</p>
+      <h2>Sign In With Key</h2>
+      <p>For teams sharing one key</p>
       <input type="text" id="signin-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false">
       <button class="btn btn-ghost" id="signin-btn" style="width:100%;padding:0.65rem;font-size:0.85rem">Sign in</button>
       <div id="signin-error" class="login-error"></div>
+    </div>
+
+    <div class="or-divider">new here?</div>
+
+    <div class="login-panel">
+      <h2>Create Account</h2>
+      <p>Free — 500 requests/month</p>
+      <input type="email" id="signup-email" placeholder="you@example.com">
+      <button class="btn btn-primary" id="signup-btn">Create key</button>
+      <div id="signup-error" class="login-error"></div>
     </div>
 
     <footer class="page-footer">
@@ -786,6 +796,30 @@ ${renderNav("login")}
 
   function setCookie(name, val) {
     document.cookie = name + '=' + encodeURIComponent(val) + '; path=/; max-age=' + (365*86400) + '; samesite=lax';
+  }
+
+  // Email sign in
+  document.getElementById('signin-email-btn').addEventListener('click', doEmailSignin);
+  document.getElementById('signin-email').addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSignin(); });
+
+  async function doEmailSignin() {
+    var email = document.getElementById('signin-email').value.trim();
+    var errEl = document.getElementById('signin-email-error');
+    var btn = document.getElementById('signin-email-btn');
+    errEl.textContent = '';
+    if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email'; return; }
+    btn.disabled = true; btn.textContent = '...';
+    try {
+      var res = await fetch('/api/signin-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      var data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Sign in failed'; return; }
+      window.location.href = '/dashboard';
+    } catch (e) { errEl.textContent = 'Connection error'; }
+    finally { btn.disabled = false; btn.textContent = 'Sign in'; }
   }
 
   // Sign up
@@ -2166,6 +2200,24 @@ const server = http.createServer(async (req, res) => {
     }
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(stats));
+  }
+
+  if (path === "/api/signin-email" && req.method === "POST") {
+    const email = (body.email || "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Valid email is required" }));
+    }
+    const account = await getAccountByEmail(email);
+    if (!account) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "No account found for this email" }));
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Set-Cookie": `pl_key=${account.pl_key}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+    });
+    return res.end(JSON.stringify({ ok: true }));
   }
 
   if (path === "/api/waitlist" && req.method === "POST") {

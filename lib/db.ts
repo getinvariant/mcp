@@ -25,6 +25,16 @@ export async function getAccount(plKey: string): Promise<Account | null> {
   return data as Account;
 }
 
+export async function getAccountByEmail(email: string): Promise<Account | null> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("email", email)
+    .single();
+  if (error || !data) return null;
+  return data as Account;
+}
+
 export async function logUsage(
   accountId: string,
   providerId: string,
