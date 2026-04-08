@@ -242,7 +242,7 @@ function getBaseUrl(req: http.IncomingMessage): string {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function verifyPKCE(verifier: string, challenge: string): boolean {
@@ -273,7 +273,7 @@ function renderAuthorizeForm(opts: {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Procurement Labs — Connect</title>
+<title>Procure | Connect</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Inter',-apple-system,sans-serif;background:#0a0a0a;color:#e5e5e5;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem}
@@ -402,7 +402,7 @@ const SHARED_STYLES = `
 
 function renderNav(active?: string): string {
   return `<nav><div class="container">
-    <a href="/" class="logo">procurement labs</a>
+    <a href="/" class="logo">procure</a>
     <div class="links">
       <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>how it works</a>
       <a href="/login"${active === "login" ? ' class="active"' : ""}>login</a>
@@ -426,7 +426,7 @@ function renderHomepage(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>procurement labs — api gateway for agents</title>
+<title>procure, by procurement labs</title>
 <style>
 ${SHARED_STYLES}
 
@@ -453,7 +453,7 @@ ${SHARED_STYLES}
   .waitlist-hero .btn-wait{padding:0.7rem 1.25rem;background:#fff;color:#000;border:none;border-radius:0.375rem;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
   .waitlist-hero .btn-wait:hover{background:#ddd;transform:translateY(-1px)}
   .waitlist-hero .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em;font-weight:500;}
-  .waitlist-hero .msg.ok{color:#4ade80}
+  .waitlist-hero .msg.ok{color:#999}
   .waitlist-hero .msg.err{color:#f87171}
 
   /* ── pitch ── */
@@ -515,23 +515,16 @@ ${SHARED_STYLES}
   .popup-close{position:absolute;top:0.75rem;right:1rem;background:none;border:none;color:#555;font-size:1.25rem;cursor:pointer;padding:0.25rem;line-height:1;}
   .popup-close:hover{color:#fff}
   .popup-card .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em}
-  .popup-card .msg.ok{color:#4ade80}
+  .popup-card .msg.ok{color:#999}
   .popup-card .msg.err{color:#f87171}
 
-  /* ── fade zone (black → white transition around the mcp terminal) ── */
-  .fade-zone{background:linear-gradient(to bottom,#050505 0%,#050505 15%,#2a2a2a 45%,#e0e0e0 80%,#ffffff 100%);padding:2rem 0 5rem;}
-  .fade-zone .container{padding-top:2rem;}
-
   /* ── collab section (light theme, paid tier) ── */
-  .collab{background:#ffffff;color:#0a0a0a;padding:5rem 0 0;position:relative;overflow:hidden;}
-  .collab::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(0,0,0,0.035) 1px, transparent 1px);background-size:20px 20px;pointer-events:none;}
+  .collab{background:#ffffff;color:#0a0a0a;padding:5rem 0 0;position:relative;overflow:hidden;border-top:1px solid #e0e0e0;}
   .collab-inner{max-width:1000px;margin:0 auto;padding:0 2rem;position:relative;}
   .collab-eyebrow{display:inline-block;font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.7rem;color:#fff;background:#0a0a0a;border:1px solid #0a0a0a;padding:0.35rem 0.85rem;border-radius:999px;text-transform:lowercase;letter-spacing:0.08em;margin-bottom:1.25rem;}
-  .collab-eyebrow .pulse{display:inline-block;width:6px;height:6px;background:#fff;border-radius:50%;margin-right:0.4rem;vertical-align:middle;animation:collab-pulse 2s infinite;}
-  @keyframes collab-pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-  .collab-header{text-align:center;margin-bottom:3.5rem;}
-  .collab-header h2{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:2.4rem;font-weight:700;color:#0a0a0a;letter-spacing:-0.04em;line-height:1.15;margin-bottom:1rem;text-transform:lowercase;max-width:780px;margin-left:auto;margin-right:auto;}
-  .collab-header p{font-size:1rem;color:#555;max-width:700px;margin:0 auto;line-height:1.7;}
+  .collab-header{text-align:center;margin-bottom:3rem;}
+  .collab-header h2{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:2rem;font-weight:700;color:#0a0a0a;letter-spacing:-0.04em;line-height:1.2;margin-bottom:1rem;text-transform:lowercase;max-width:700px;margin-left:auto;margin-right:auto;}
+  .collab-header p{font-size:0.95rem;color:#555;max-width:640px;margin:0 auto;line-height:1.7;}
   .collab-header p strong{color:#0a0a0a;font-weight:600;}
 
   .collab-contrast{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:860px;margin:0 auto 4rem;}
@@ -564,11 +557,6 @@ ${SHARED_STYLES}
   .collab-cta .msg.err{color:#a02020;}
   .collab-pricing{text-align:center;font-size:0.75rem;color:#888;font-family:'Geist Mono','JetBrains Mono',monospace;margin-bottom:4rem;letter-spacing:0.04em;}
 
-  /* ── contrast block stagger animation ── */
-  .collab-contrast li{opacity:0;transform:translateY(-10px);transition:opacity 0.5s cubic-bezier(0.2,0.7,0.3,1), transform 0.5s cubic-bezier(0.2,0.7,0.3,1);}
-  .collab-contrast li.visible{opacity:1;transform:translateY(0);}
-  .collab-col h3{opacity:0;transform:translateY(-6px);transition:opacity 0.5s ease, transform 0.5s ease;}
-  .collab-col h3.visible{opacity:1;transform:translateY(0);}
 
   .collab-footer{border-top:1px solid #e5e5e5;padding:2.5rem 0;margin-top:2rem;display:flex;justify-content:space-between;font-size:0.8rem;color:#666;}
   .collab-footer a{color:#0a0a0a;text-decoration:none;border-bottom:1px solid #ccc;}
@@ -612,11 +600,11 @@ ${renderNav()}
  └──────────────────────────────────────────────┘</div>
     <h1>one key. every api.<br>zero friction.</h1>
     <p class="tagline">procurement labs is an <strong>mcp gateway that removes the api layer from your workflow entirely</strong>. you never register for a provider, never touch a raw key, never write rate-limit logic.</p>
-    <p class="tagline">we maintain the provider credentials — your agent queries us through mcp, and we handle auth, retries, fallbacks, and usage tracking behind the scenes. the one key you install unlocks all of them at once.</p>
+    <p class="tagline">we maintain the provider credentials. your agent queries us through mcp, and we handle auth, retries, fallbacks, and usage tracking behind the scenes. the one key you install unlocks all of them at once.</p>
   </div>
 
   <div class="waitlist-hero">
-    <p>alpha drops soon — get early access</p>
+    <p>alpha drops soon. get early access</p>
     <form id="waitlist-form">
       <input type="email" name="email" placeholder="you@example.com" required>
       <button type="submit" class="btn-wait">join waitlist</button>
@@ -624,12 +612,19 @@ ${renderNav()}
     <div class="msg" id="waitlist-msg"></div>
   </div>
 
+  <div class="terminal">
+    <div><span class="prompt">$</span> <span class="cmd">claude mcp add procure \\</span></div>
+    <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
+    <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
+    <div class="out">done. restart your session to use ${total} providers.</div>
+  </div>
+
   <div class="game-wrap">
     <div class="game-canvas"><div id="game-display"></div></div>
   </div>
 
   <div class="pitch">
-    stop integrating apis. we already signed up for weather, finance, health, maps, and more — your ai agent just asks for data, we fetch it. no provider accounts, no .env files, no credentials on your machine.
+    stop integrating apis. we already signed up for weather, finance, health, maps, and more. your ai agent just asks for data, we fetch it. no provider accounts, no .env files, no credentials on your machine.
   </div>
 
   <div class="stats-row">
@@ -659,23 +654,12 @@ ${renderNav()}
 
 </div>
 
-<div class="fade-zone">
-  <div class="container">
-    <div class="terminal">
-      <div><span class="prompt">$</span> <span class="cmd">claude mcp add procurement-labs \\</span></div>
-      <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
-      <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
-      <div class="out">done. restart your session to use ${total} providers.</div>
-    </div>
-  </div>
-</div>
-
 <section class="collab">
   <div class="collab-inner">
     <div class="collab-header">
-      <span class="collab-eyebrow"><span class="pulse"></span>pl teams · coming soon</span>
-      <h2>make api key governance invisible for your whole team.</h2>
-      <p>the same one-key-for-everything experience, extended to orgs. <strong>workspace credentials, per-seat usage, one-click rotation, instant offboarding.</strong> the api layer disappeared for individuals — for teams, the governance layer disappears too.</p>
+      <span class="collab-eyebrow">procure teams · coming soon</span>
+      <h2>api key governance for your whole team.</h2>
+      <p>the same one-key experience, extended to orgs. <strong>workspace credentials, per-seat usage, one-click rotation, instant offboarding.</strong></p>
     </div>
 
     <div class="collab-contrast">
@@ -692,10 +676,10 @@ ${renderNav()}
       <div class="collab-col after">
         <h3>with pl teams</h3>
         <ul>
-          <li>one workspace holds every provider credential — engineers never see the raw keys</li>
+          <li>one workspace holds every provider credential. engineers never see the raw keys</li>
           <li>each seat gets its own pl_key; admins control which providers it can reach</li>
           <li>per-seat usage and cost attribution, down to the api call</li>
-          <li>rotate any provider credential in one click — zero downtime, nobody needs to know</li>
+          <li>rotate any provider credential in one click. zero downtime, nobody needs to know</li>
           <li>offboard a dev? revoke their seat. done. no credential hunt.</li>
         </ul>
       </div>
@@ -733,7 +717,7 @@ ${renderNav()}
     <p class="collab-pricing">paid tier · generous free trial during beta · pricing at launch</p>
 
     <footer class="collab-footer">
-      <span>procurement labs v0.1.0</span>
+      <span>procure, by procurement labs</span>
       <a href="https://github.com/tobasummandal/procurementlabs">github</a>
     </footer>
   </div>
@@ -744,7 +728,7 @@ ${renderNav()}
   <div class="popup-card">
     <button class="popup-close" id="popup-close" aria-label="Close">&times;</button>
     <h3>don't miss early access</h3>
-    <p>we're opening to a small first wave. drop your email — no spam, just the key when it's ready.</p>
+    <p>we're opening to a small first wave. drop your email. no spam, just the key when it's ready.</p>
     <form id="popup-form">
       <input type="email" name="email" placeholder="you@example.com" required>
       <button type="submit" class="btn-wait">notify me</button>
@@ -917,39 +901,6 @@ ${renderNav()}
     observe('.stats-row');
   })();
 
-  // ── contrast block: staggered reveal on scroll into view ──
-  (function() {
-    var contrast = document.querySelector('.collab-contrast');
-    if (!contrast) return;
-    var beforeItems = contrast.querySelectorAll('.collab-col.before li');
-    var afterItems = contrast.querySelectorAll('.collab-col.after li');
-    var headings = contrast.querySelectorAll('.collab-col h3');
-
-    function reveal() {
-      headings.forEach(function(h, i) {
-        setTimeout(function(){ h.classList.add('visible'); }, i * 120);
-      });
-      // interleave left/right so they drop in pairs
-      var max = Math.max(beforeItems.length, afterItems.length);
-      for (var i = 0; i < max; i++) {
-        (function(idx){
-          var delay = 260 + idx * 280;
-          if (beforeItems[idx]) setTimeout(function(){ beforeItems[idx].classList.add('visible'); }, delay);
-          if (afterItems[idx])  setTimeout(function(){ afterItems[idx].classList.add('visible'); }, delay + 90);
-        })(i);
-      }
-    }
-
-    if (!('IntersectionObserver' in window)) { reveal(); return; }
-    var obs = new IntersectionObserver(function(entries) {
-      if (entries[0].isIntersecting) {
-        reveal();
-        obs.disconnect();
-      }
-    }, {threshold: 0.25});
-    obs.observe(contrast);
-  })();
-
   // ── demo terminal animation ──
   (function() {
     var el = document.getElementById('demo-body');
@@ -1028,7 +979,7 @@ ${renderNav()}
         }
       } catch(err) {
         msg.className = 'msg err';
-        msg.textContent = 'network error — try again';
+        msg.textContent = 'network error. try again';
         btn.textContent = 'join waitlist';
         btn.disabled = false;
       }
@@ -1060,7 +1011,7 @@ function renderHowItWorks(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>How It Works — Procurement Labs</title>
+<title>How It Works | Procure</title>
 <style>
 ${SHARED_STYLES}
   .page-title{padding:3rem 0 1rem}
@@ -1094,7 +1045,7 @@ ${renderNav("how")}
       <div class="step-num">1</div>
       <div class="step-body">
         <h3>Create an account</h3>
-        <p>Enter your email on the <a href="/login">sign up page</a>. You'll get a unique API key instantly — no credit card, no approval process. The free tier gives you 500 requests per month.</p>
+        <p>Enter your email on the <a href="/login">sign up page</a>. You'll get a unique API key instantly. No credit card, no approval process. The free tier gives you 500 requests per month.</p>
       </div>
     </div>
 
@@ -1153,7 +1104,7 @@ ${renderNav("how")}
       <div class="step-num">5</div>
       <div class="step-body">
         <h3>Track usage</h3>
-        <p>Visit the <a href="/dashboard">dashboard</a> to see your quota, per-provider breakdown, and rate limits in real time. Your key is remembered — no need to sign in again.</p>
+        <p>Visit the <a href="/dashboard">dashboard</a> to see your quota, per-provider breakdown, and rate limits in real time. Your key is remembered, no need to sign in again.</p>
       </div>
     </div>
   </div>
@@ -1164,7 +1115,7 @@ ${renderNav("how")}
   </div>
 
   <footer class="page-footer">
-    <span>procurement labs v0.1.0</span>
+    <span>procure, by procurement labs</span>
     <a href="https://github.com/tobasummandal/procurementlabs">github</a>
   </footer>
 </div>
@@ -1183,7 +1134,7 @@ function renderLogin(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>Sign In — Procurement Labs</title>
+<title>Sign In | Procure</title>
 <style>
 ${SHARED_STYLES}
   .login-page{padding:4rem 0;max-width:420px;margin:0 auto}
@@ -1226,7 +1177,7 @@ ${renderNav("login")}
     <p class="sub">Sign in with your existing key or create a new account.</p>
 
     <div id="key-flash" class="flash">
-      <div class="flash-label">Your API key — click to copy</div>
+      <div class="flash-label">your api key. click to copy</div>
       <div id="flash-key" class="flash-key"></div>
       <div class="flash-sub">Save this key. Add it to your MCP client as <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;background:#1c1c1c;padding:0.1rem 0.3rem;border-radius:0.25rem">x-pl-key</code> header.</div>
     </div>
@@ -1254,7 +1205,7 @@ ${renderNav("login")}
     </div>
 
     <footer class="page-footer">
-      <span>procurement labs v0.1.0</span>
+      <span>procure, by procurement labs</span>
       <a href="https://github.com/tobasummandal/procurementlabs">github</a>
     </footer>
   </div>
@@ -1282,29 +1233,15 @@ ${renderNav("login")}
   var emailInput = document.getElementById('email-input');
   var errEl = document.getElementById('email-error');
 
-  function setMode(m) {
-    mode = m;
+  function setMode() {
+    mode = 'signup';
     errEl.textContent = '';
-    if (m === 'signin') {
-      titleEl.textContent = 'Sign In';
-      subEl.textContent = 'Sign in with your email';
-      btnEl.textContent = 'Sign in';
-      toggleText.textContent = "Don't have an account?";
-      toggleLink.textContent = 'Create one';
-    } else {
-      titleEl.textContent = 'Create Account';
-      subEl.textContent = 'Free — 500 requests/month';
-      btnEl.textContent = 'Create account';
-      toggleText.textContent = 'Already have an account?';
-      toggleLink.textContent = 'Sign in';
-    }
+    titleEl.textContent = 'Create Account';
+    subEl.textContent = 'free. 500 requests/month';
+    btnEl.textContent = 'Create account';
+    toggleText.textContent = 'Already have an account?';
+    toggleLink.textContent = 'Sign in with your API key below';
   }
-
-  toggleLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    setMode(mode === 'signin' ? 'signup' : 'signin');
-    emailInput.focus();
-  });
 
   btnEl.addEventListener('click', doEmailSubmit);
   emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSubmit(); });
@@ -1316,29 +1253,7 @@ ${renderNav("login")}
     var originalText = btnEl.textContent;
     btnEl.disabled = true; btnEl.textContent = '...';
     try {
-      if (mode === 'signin') {
-        var res = await fetch('/api/signin-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email }),
-        });
-        var data = await res.json();
-        if (!res.ok) {
-          // If no account, offer to create one
-          if (res.status === 404) {
-            errEl.innerHTML = 'No account found. <a href="#" id="switch-to-signup" style="color:#a3a3a3;text-decoration:underline">Create one instead?</a>';
-            document.getElementById('switch-to-signup').addEventListener('click', function(e) {
-              e.preventDefault();
-              setMode('signup');
-              emailInput.focus();
-            });
-          } else {
-            errEl.textContent = data.error || 'Sign in failed';
-          }
-          return;
-        }
-        window.location.href = '/dashboard';
-      } else {
+      {
         var res = await fetch('/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1447,7 +1362,7 @@ function renderDashboard(): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Procurement Labs</title>
+<title>Procure | Dashboard</title>
 <style>
   ${SHARED_STYLES}
   /* Header */
@@ -1489,7 +1404,7 @@ function renderDashboard(): string {
     color: #fff;
     font-variant-numeric: tabular-nums;
   }
-  .stat-value.green { color: #4ade80; }
+  .stat-value.green { color: #fff; }
   .stat-value.amber { color: #a3a3a3; }
   .stat-label {
     font-size: 0.75rem;
@@ -1564,13 +1479,13 @@ function renderDashboard(): string {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(74,222,128,0.1);
+    background: rgba(255,255,255,0.06);
     border-radius: 0.5rem;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #4ade80;
-    border: 1px solid rgba(74,222,128,0.2);
+    color: #999;
+    border: 1px solid rgba(255,255,255,0.1);
   }
   .category-header h2 {
     font-size: 0.8rem;
@@ -1598,8 +1513,8 @@ function renderDashboard(): string {
     transition: all 0.2s ease;
   }
   .provider:hover {
-    border-color: rgba(74,222,128,0.4);
-    background: rgba(74,222,128,0.02);
+    border-color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.02);
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     transform: translateY(-1px);
   }
@@ -1748,7 +1663,7 @@ function renderDashboard(): string {
   }
   .quota-bar-inner {
     height: 100%;
-    background: #4ade80;
+    background: #fff;
     border-radius: 3px;
     transition: width 0.3s;
   }
@@ -1816,7 +1731,7 @@ function renderDashboard(): string {
     letter-spacing: 0.05em;
   }
   .tab:hover { color: #fff; }
-  .tab.active { color: #4ade80; border-bottom-color: #4ade80; }
+  .tab.active { color: #fff; border-bottom-color: #fff; }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
@@ -2154,7 +2069,7 @@ function renderDashboard(): string {
 
     <div id="admin-panel" style="display:none">
       <div id="key-flash" class="flash">
-        <div class="flash-label">New key created — click to copy</div>
+        <div class="flash-label">new key created. click to copy</div>
         <div id="flash-key" class="flash-key"></div>
         <div class="flash-sub">This is the only time the full key is shown.</div>
       </div>
@@ -2204,7 +2119,7 @@ function renderDashboard(): string {
   </div>
 
   <footer>
-    <span>procurement labs v0.1.0</span>
+    <span>procure, by procurement labs</span>
     <a href="https://github.com/tobasummandal/procurementlabs">github</a>
   </footer>
 </div>
@@ -2235,7 +2150,7 @@ function renderDashboard(): string {
 
   // Usage rendering
   function showUsagePanel(u, key) {
-    document.getElementById('usage-title').textContent = 'Your Usage — ' + u.tier + ' tier';
+    document.getElementById('usage-title').textContent = 'your usage | ' + u.tier + ' tier';
     document.getElementById('usage-key-display').textContent = maskKey(key) + '  copy';
     document.getElementById('usage-quota-text').textContent = u.used + ' / ' + u.quota;
     document.getElementById('usage-rate-text').textContent = (u.per_minute_rate || 10) + ' req/min';
@@ -2337,16 +2252,23 @@ function renderDashboard(): string {
   }
 
   // Render accounts table
+  function escapeHtml(s) {
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }
+
   function renderAccounts(accounts) {
     const tbody = document.getElementById('accounts-body');
     tbody.innerHTML = accounts.map(a => {
+      var safeEmail = a.email ? escapeHtml(a.email) : '<span style="color:#404040">—</span>';
       const pct = Math.min(100, (a.used / a.quota) * 100);
       const cls = barClass(a.used, a.quota);
       const date = new Date(a.createdAt).toLocaleDateString();
       return '<tr>'
-        + '<td class="key-cell" data-key="' + a.key + '" title="Click to copy">' + maskKey(a.key) + '<span class="copy-hint">copy</span></td>'
-        + '<td>' + (a.email || '<span style="color:#404040">—</span>') + '</td>'
-        + '<td><span class="tier-badge">' + a.tier + '</span></td>'
+        + '<td class="key-cell" data-key="' + escapeHtml(a.key) + '" title="Click to copy">' + maskKey(a.key) + '<span class="copy-hint">copy</span></td>'
+        + '<td>' + safeEmail + '</td>'
+        + '<td><span class="tier-badge">' + escapeHtml(a.tier) + '</span></td>'
         + '<td><span class="mini-bar"><span class="mini-bar-inner ' + cls + '" style="width:' + pct + '%"></span></span>' + a.used + ' / ' + a.quota + '</td>'
         + '<td>' + a.remaining + ' left</td>'
         + '<td>' + a.perMinuteRate + '/min</td>'
@@ -2617,8 +2539,11 @@ const server = http.createServer(async (req, res) => {
   if (path === "/api/usage") return usageHandler(fakeReq, fakeRes);
 
   // ── Admin API ────────────────────────────────────────────────────────────
-  const adminPass = process.env.ADMIN_PASSWORD || "mantis-shrimp";
-  const checkAdmin = () => req.headers["x-admin-pass"] === adminPass;
+  const adminPass = process.env.ADMIN_PASSWORD;
+  const checkAdmin = () => {
+    if (!adminPass) return false;
+    return req.headers["x-admin-pass"] === adminPass;
+  };
 
   if (path === "/api/admin/accounts" && req.method === "GET") {
     if (!checkAdmin()) {
@@ -2667,7 +2592,7 @@ const server = http.createServer(async (req, res) => {
 
   // ── Public signup ─────────────────────────────────────────────────────────
   if (path === "/api/signup" && req.method === "POST") {
-    const email = (body.email || "").trim();
+    const email = (body.email || "").trim().toLowerCase();
     if (!email || !email.includes("@")) {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Valid email is required" }));
@@ -2707,22 +2632,11 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify(stats));
   }
 
-  if (path === "/api/signin-email" && req.method === "POST") {
-    const email = (body.email || "").trim().toLowerCase();
-    if (!email || !email.includes("@")) {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "Valid email is required" }));
-    }
-    const account = await getAccountByEmail(email);
-    if (!account) {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "No account found for this email" }));
-    }
-    res.writeHead(200, {
-      "Content-Type": "application/json",
-      "Set-Cookie": `pl_key=${account.pl_key}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
-    });
-    return res.end(JSON.stringify({ ok: true }));
+  // /api/signin-email disabled: exposed API keys without ownership verification.
+  // Users sign in with their API key directly via the key-based sign-in flow.
+  if (path === "/api/signin-email") {
+    res.writeHead(410, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ error: "Email sign-in has been disabled. Please sign in with your API key." }));
   }
 
   if (path === "/api/waitlist" && req.method === "POST") {
