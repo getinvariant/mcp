@@ -483,7 +483,7 @@ ${SHARED_STYLES}
   .demo-head .dots{display:flex;gap:0.35rem;}
   .demo-head .dot{width:10px;height:10px;border-radius:50%;background:#2a2a2a;}
   .demo-body{padding:1.25rem 1.5rem;font-size:0.78rem;line-height:1.65;min-height:320px;}
-  .d-line{opacity:0;transform:translateY(3px);transition:opacity 0.35s ease,transform 0.35s ease;white-space:pre;font-family:inherit;}
+  .d-line{opacity:0;transform:translateY(3px);transition:opacity 0.35s ease,transform 0.35s ease;white-space:pre-wrap;word-break:break-word;font-family:inherit;}
   .d-line.visible{opacity:1;transform:translateY(0);}
   .d-in{color:#e5e5e5;}
   .d-sys{color:#6aace8;}
