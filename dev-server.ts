@@ -284,27 +284,27 @@ interface AccountWithUsage {
 const SHARED_HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">`;
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">`;
 
 const SHARED_STYLES = `
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Inter',-apple-system,sans-serif;background-color:#050505;background-image:radial-gradient(circle at 50% 0%, #1a1a1a 0%, transparent 800px), radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);background-size:100% 100%, 20px 20px;color:#ededed;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
-  a{color:#888;text-decoration:none;transition:color .2s ease, text-shadow .2s ease}
-  a:hover{color:#fff;text-shadow:0 0 8px rgba(255,255,255,0.3)}
+  body{font-family:'Inter',-apple-system,sans-serif;background-color:#050505;background-image:radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);background-size:20px 20px;color:#ededed;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  a{color:#888;text-decoration:none;transition:color .2s ease}
+  a:hover{color:#fff}
   .container{max-width:1000px;margin:0 auto;padding:0 2rem}
-  nav{border-bottom:1px solid rgba(255,255,255,0.05);padding:1.25rem 0;backdrop-filter:blur(10px);position:sticky;top:0;z-index:50;}
+  nav{border-bottom:1px solid rgba(255,255,255,0.05);padding:1.25rem 0;position:sticky;top:0;z-index:50;background:rgba(5,5,5,0.9);backdrop-filter:blur(10px);}
   nav .container{display:flex;justify-content:space-between;align-items:center}
-  nav .logo{font-weight:700;color:#fff;font-size:1rem;letter-spacing:-0.03em;text-transform:lowercase;display:flex;align-items:center;gap:0.5rem;}
-  nav .logo::after{content:'alpha';font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;background:rgba(74, 222, 128, 0.1);color:#4ade80;padding:0.1rem 0.4rem;border-radius:0.25rem;font-weight:800;}
+  nav .logo{font-family:'Geist Mono','JetBrains Mono',monospace;font-weight:700;color:#fff;font-size:1rem;letter-spacing:-0.03em;text-transform:lowercase;display:flex;align-items:center;gap:0.5rem;}
+  nav .logo::after{content:'alpha';font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;background:rgba(255,255,255,0.08);color:#888;padding:0.1rem 0.4rem;border-radius:0.25rem;font-weight:800;}
   nav .links{display:flex;gap:2rem;font-size:0.85rem;font-weight:500;}
   nav .links a{color:#777}
   nav .links a:hover{color:#fff}
   nav .links a.active{color:#fff}
   .btn{display:inline-flex;align-items:center;justify-content:center;padding:0.75rem 1.75rem;border-radius:0.5rem;font-size:0.9rem;font-weight:600;letter-spacing:-0.01em;transition:all .2s ease;cursor:pointer;border:1px solid transparent;text-decoration:none;}
-  .btn-primary{background:#fff;color:#000;box-shadow:0 4px 14px rgba(255,255,255,0.1)}
-  .btn-primary:hover{background:#4ade80;color:#000;transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,222,128,0.3)}
+  .btn-primary{background:#fff;color:#000}
+  .btn-primary:hover{background:#ddd;color:#000;transform:translateY(-1px)}
   .btn-ghost{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.1);color:#ccc}
-  .btn-ghost:hover{border-color:rgba(74,222,128,0.4);color:#fff;background:rgba(74,222,128,0.05);text-shadow: 0 0 8px rgba(74,222,128,0.4)}
+  .btn-ghost:hover{border-color:rgba(255,255,255,0.3);color:#fff;background:rgba(255,255,255,0.05)}
   .page-footer{border-top:1px solid rgba(255,255,255,0.05);padding:3rem 0;margin-top:5rem;display:flex;justify-content:space-between;font-size:0.8rem;color:#555}
 `;
 
@@ -312,8 +312,8 @@ function renderNav(active?: string): string {
   return `<nav><div class="container">
     <a href="/" class="logo">procurement labs</a>
     <div class="links">
-      <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>How It Works</a>
-      <a href="/login"${active === "login" ? ' class="active"' : ""}>Login</a>
+      <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>how it works</a>
+      <a href="/login"${active === "login" ? ' class="active"' : ""}>login</a>
     </div>
   </div></nav>`;
 }
@@ -324,72 +324,96 @@ function renderHomepage(): string {
   const live = providers.filter((p) => p.available).length;
   const categories = Object.keys(CATEGORY_META);
 
-  const categoryGrid = categories.map(cat => {
+  const categoryList = categories.map(cat => {
     const meta = CATEGORY_META[cat] || { label: cat, icon: "·" };
     const count = providers.filter(p => p.category === cat).length;
-    return `<div class="cat-card">
-      <span class="cat-icon">${meta.icon}</span>
-      <span class="cat-label">${meta.label}</span>
-      <span class="cat-count">${count}</span>
-    </div>`;
+    return `<span class="cat-tag">${escapeHtml(meta.label.toLowerCase())} (${count})</span>`;
   }).join("");
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>Procurement Labs — API Gateway for AI Agents</title>
+<title>procurement labs — api gateway for agents</title>
 <style>
 ${SHARED_STYLES}
-  .hero{padding:8rem 0 5rem;text-align:center;position:relative;}
-  .hero::before{content:'';position:absolute;top:-50%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 60%);pointer-events:none;}
-  .hero h1{font-size:3.5rem;font-weight:800;color:#fff;letter-spacing:-0.05em;margin-bottom:1.25rem;line-height:1.1;background:linear-gradient(135deg, #fff 30%, #4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-  .hero .tagline{font-size:1.15rem;color:#888;max-width:560px;margin:0 auto 3rem;line-height:1.6;}
-  .hero .ctas{display:flex;gap:1rem;justify-content:center;position:relative;z-index:10;}
 
-  .pitch{text-align:center;max-width:680px;margin:0 auto 5rem;font-size:1.05rem;color:#777;line-height:1.8;letter-spacing:-0.01em;}
-  .pitch strong{color:#fff;font-weight:600;}
+  /* ── hero ── */
+  .hero{padding:3rem 0 2rem;text-align:center;}
+  .hero h1{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:2.8rem;font-weight:700;color:#fff;letter-spacing:-0.05em;margin-bottom:1rem;line-height:1.1;text-transform:lowercase;}
+  .hero .tagline{font-size:1rem;color:#777;max-width:500px;margin:0 auto 1.5rem;line-height:1.7;}
 
-  .stats-row{display:flex;gap:1px;background:rgba(255,255,255,0.05);border-radius:1rem;overflow:hidden;border:1px solid rgba(255,255,255,0.08);margin-bottom:5rem;box-shadow:0 20px 40px rgba(0,0,0,0.4)}
-  .stats-row .s{flex:1;padding:2rem 1.5rem;background:rgba(10,10,10,0.8);text-align:center;backdrop-filter:blur(10px);transition:background 0.3s}
-  .stats-row .s:hover{background:rgba(20,20,20,0.9)}
-  .stats-row .sv{font-size:2rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-0.03em;}
-  .stats-row .sl{font-size:0.75rem;color:#666;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.5rem;font-weight:600;}
+  /* ── ascii art box ── */
+  .ascii-box{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.72rem;line-height:1.35;color:#ccc;text-align:center;margin:0 auto 1.5rem;white-space:pre;user-select:none;letter-spacing:0.02em;}
 
-  .categories{margin-bottom:5rem}
-  .categories h2{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;color:#666;margin-bottom:1.5rem;text-align:center;font-weight:600;}
-  .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
-  .cat-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:0.75rem;padding:1.25rem;display:flex;align-items:center;gap:1rem;transition:all .2s ease;cursor:default;}
-  .cat-card:hover{border-color:rgba(74,222,128,0.3);transform:translateY(-2px);background:rgba(74,222,128,0.02);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
-  .cat-icon{width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border-radius:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:#4ade80;flex-shrink:0;border:1px solid rgba(255,255,255,0.05)}
-  .cat-label{font-size:0.9rem;font-weight:500;color:#ccc;flex:1}
-  .cat-count{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#555;background:rgba(0,0,0,0.5);padding:0.2rem 0.5rem;border-radius:1rem;}
+  /* ── game canvas ── */
+  .game-wrap{position:relative;max-width:700px;margin:0 auto 3rem;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;overflow:hidden;background:#0a0a0a;}
+  .game-canvas{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.75rem;line-height:1.25;color:#555;white-space:pre;padding:1rem 1.5rem;height:140px;overflow:hidden;display:flex;align-items:flex-end;}
+  #game-display{width:100%;}
 
-  .terminal{background:#000;border:1px solid rgba(255,255,255,0.1);border-radius:1rem;padding:2rem;max-width:680px;margin:0 auto 5rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;line-height:1.6;box-shadow:0 20px 40px rgba(0,0,0,0.5);position:relative;overflow:hidden;}
-  .terminal .prompt{color:#666}
-  .terminal .cmd{color:#eee}
-  .terminal .out{color:#888;margin-top:1rem;border-top:1px dashed rgba(255,255,255,0.1);padding-top:1rem;}
+  /* ── waitlist (hero position) ── */
+  .waitlist-hero{text-align:center;margin-bottom:3rem;}
+  .waitlist-hero p{font-size:0.85rem;color:#666;margin-bottom:1rem;}
+  .waitlist-hero form{display:flex;gap:0.5rem;max-width:420px;margin:0 auto}
+  .waitlist-hero input[type="email"]{flex:1;padding:0.7rem 1rem;background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:0.375rem;color:#fff;font-size:0.85rem;outline:none;font-family:'Geist Mono','JetBrains Mono',monospace;transition:border-color 0.2s}
+  .waitlist-hero input[type="email"]:focus{border-color:rgba(255,255,255,0.3)}
+  .waitlist-hero .btn-wait{padding:0.7rem 1.25rem;background:#fff;color:#000;border:none;border-radius:0.375rem;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+  .waitlist-hero .btn-wait:hover{background:#ddd;transform:translateY(-1px)}
+  .waitlist-hero .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em;font-weight:500;}
+  .waitlist-hero .msg.ok{color:#4ade80}
+  .waitlist-hero .msg.err{color:#f87171}
 
-  .waitlist{text-align:center;padding:4rem 0;margin-bottom:2rem;border-top:1px solid rgba(255,255,255,0.05);background:radial-gradient(ellipse at top, rgba(74,222,128,0.08) 0%, transparent 60%);}
-  .waitlist h2{font-size:1.5rem;color:#fff;font-weight:700;letter-spacing:-0.03em;margin-bottom:0.75rem}
-  .waitlist p{font-size:0.95rem;color:#888;max-width:460px;margin:0 auto 2rem;line-height:1.6}
-  .waitlist form{display:flex;gap:0.75rem;max-width:440px;margin:0 auto}
-  .waitlist input[type="email"]{flex:1;padding:0.8rem 1.25rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;color:#fff;font-size:0.9rem;outline:none;font-family:inherit;transition:all 0.2s}
-  .waitlist input[type="email"]:focus{border-color:rgba(74,222,128,0.5);background:rgba(74,222,128,0.05);box-shadow:0 0 0 3px rgba(74,222,128,0.15)}
-  .waitlist .btn-wait{padding:0.8rem 1.5rem;background:#fff;color:#000;border:none;border-radius:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 4px 14px rgba(255,255,255,0.1)}
-  .waitlist .btn-wait:hover{background:#4ade80;color:#000;transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,222,128,0.3)}
-  .waitlist .msg{font-size:0.85rem;margin-top:1rem;min-height:1.2em;font-weight:500;}
-  .waitlist .msg.ok{color:#4ade80}
-  .waitlist .msg.err{color:#f87171}
+  /* ── pitch ── */
+  .pitch{text-align:center;max-width:620px;margin:0 auto 4rem;font-size:0.95rem;color:#666;line-height:1.8;}
+  .pitch strong{color:#ccc;font-weight:600;}
+
+  /* ── stats ── */
+  .stats-row{display:flex;gap:1px;background:rgba(255,255,255,0.05);border-radius:0.75rem;overflow:hidden;border:1px solid rgba(255,255,255,0.08);margin-bottom:4rem}
+  .stats-row .s{flex:1;padding:1.5rem 1.25rem;background:#0a0a0a;text-align:center}
+  .stats-row .sv{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:1.75rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-0.03em;}
+  .stats-row .sl{font-size:0.7rem;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-top:0.35rem;font-weight:600;}
+
+  /* ── categories (plain text) ── */
+  .categories{margin-bottom:4rem;text-align:center;}
+  .categories h2{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.75rem;text-transform:lowercase;letter-spacing:0.08em;color:#555;margin-bottom:1rem;font-weight:500;}
+  .cat-tags{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;max-width:600px;margin:0 auto;}
+  .cat-tag{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.75rem;color:#888;padding:0.35rem 0.75rem;border:1px solid rgba(255,255,255,0.08);border-radius:0.25rem;background:transparent;}
+
+  /* ── terminal ── */
+  .terminal{background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;padding:1.5rem 2rem;max-width:640px;margin:0 auto 4rem;font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.8rem;line-height:1.6;}
+  .terminal .prompt{color:#555}
+  .terminal .cmd{color:#ddd}
+  .terminal .out{color:#666;margin-top:0.75rem;border-top:1px dashed rgba(255,255,255,0.08);padding-top:0.75rem;}
+
+  /* ── popup overlay ── */
+  .popup-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+  .popup-overlay.visible{display:flex}
+  .popup-card{background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;padding:2rem;max-width:400px;width:90%;position:relative;text-align:center;}
+  .popup-card h3{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:1rem;color:#fff;margin-bottom:0.5rem;font-weight:600;text-transform:lowercase;}
+  .popup-card p{font-size:0.85rem;color:#777;margin-bottom:1.5rem;line-height:1.5;}
+  .popup-card form{display:flex;gap:0.5rem;}
+  .popup-card input[type="email"]{flex:1;padding:0.65rem 1rem;background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:0.375rem;color:#fff;font-size:0.85rem;outline:none;font-family:'Geist Mono','JetBrains Mono',monospace;}
+  .popup-card input[type="email"]:focus{border-color:rgba(255,255,255,0.3)}
+  .popup-card .btn-wait{padding:0.65rem 1rem;background:#fff;color:#000;border:none;border-radius:0.375rem;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit}
+  .popup-card .btn-wait:hover{background:#ddd}
+  .popup-close{position:absolute;top:0.75rem;right:1rem;background:none;border:none;color:#555;font-size:1.25rem;cursor:pointer;padding:0.25rem;line-height:1;}
+  .popup-close:hover{color:#fff}
+  .popup-card .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em}
+  .popup-card .msg.ok{color:#4ade80}
+  .popup-card .msg.err{color:#f87171}
 
   @media(max-width:768px){
-    .cat-grid{grid-template-columns:repeat(2,1fr)}
     .stats-row{flex-direction:column}
+    .ascii-box{font-size:0.5rem}
+    .game-canvas{font-size:0.55rem;height:100px;}
   }
   @media(max-width:640px){
-    .hero h1{font-size:2.5rem}
-    .hero .ctas{flex-direction:column;align-items:center}
-    .waitlist form{flex-direction:column}
+    .hero{padding:2.5rem 0 2rem}
+    .hero h1{font-size:1.8rem}
+    .waitlist-hero form{flex-direction:column}
+    .popup-card form{flex-direction:column}
+    .ascii-box{font-size:0.4rem}
+    .game-canvas{font-size:0.45rem;height:80px;padding:0.5rem 0.75rem}
   }
 </style>
 </head>
@@ -397,45 +421,54 @@ ${SHARED_STYLES}
 ${renderNav()}
 <div class="container">
   <div class="hero">
-    <h1>One key. Every API.<br>Zero friction.</h1>
-    <p class="tagline">Give your AI agents access to weather, finance, health, maps and more — through a single API key. No credential juggling. No provider accounts.</p>
-    <div class="ctas">
-      <a href="/login" class="btn btn-primary">Get Started</a>
-      <a href="/how-it-works" class="btn btn-ghost">How It Works</a>
-    </div>
+    <div class="ascii-box">
+ ┌──────────────────────────────────────────────┐
+ │                                              │
+ │   ╱╲      procurement       ╱╲              │
+ │  ╱  ╲       labs           ╱  ╲             │
+ │ ╱    ╲    ──────────      ╱    ╲            │
+ │╱ ▓▓▓▓ ╲   api gateway    ╱ ▓▓▓▓ ╲           │
+ │  ▓▓▓▓  ╲   for agents   ╱  ▓▓▓▓             │
+ │                                              │
+ └──────────────────────────────────────────────┘</div>
+    <h1>one key. every api.<br>zero friction.</h1>
+    <p class="tagline">give your ai agents access to weather, finance, health, maps and more — through a single api key. no credential juggling. no provider accounts.</p>
+  </div>
+
+  <div class="waitlist-hero">
+    <p>alpha drops soon — get early access</p>
+    <form id="waitlist-form">
+      <input type="email" name="email" placeholder="you@example.com" required>
+      <button type="submit" class="btn-wait">join waitlist</button>
+    </form>
+    <div class="msg" id="waitlist-msg"></div>
+  </div>
+
+  <div class="game-wrap">
+    <div class="game-canvas"><div id="game-display"></div></div>
   </div>
 
   <div class="pitch">
-    Procurement Labs is an <strong>MCP-compatible API gateway</strong> that sits between your AI agent and ${total} data providers. You get one key. We handle authentication, rate limiting, and usage tracking for every provider behind the scenes.
+    procurement labs is an <strong>mcp-compatible api gateway</strong> that sits between your ai agent and ${total} data providers. you get one key. we handle authentication, rate limiting, and usage tracking for every provider behind the scenes.
   </div>
 
   <div class="stats-row">
-    <div class="s"><div class="sv">${total}</div><div class="sl">Providers</div></div>
-    <div class="s"><div class="sv">${live}</div><div class="sl">Live</div></div>
-    <div class="s"><div class="sv">${categories.length}</div><div class="sl">Categories</div></div>
-    <div class="s"><div class="sv">500</div><div class="sl">Free Requests/mo</div></div>
+    <div class="s"><div class="sv">${total}</div><div class="sl">providers</div></div>
+    <div class="s"><div class="sv">${live}</div><div class="sl">live</div></div>
+    <div class="s"><div class="sv">${categories.length}</div><div class="sl">categories</div></div>
+    <div class="s"><div class="sv">500</div><div class="sl">free requests/mo</div></div>
   </div>
 
   <div class="categories">
-    <h2>Available Categories</h2>
-    <div class="cat-grid">${categoryGrid}</div>
+    <h2>available categories</h2>
+    <div class="cat-tags">${categoryList}</div>
   </div>
 
   <div class="terminal">
     <div><span class="prompt">$</span> <span class="cmd">claude mcp add procurement-labs \\</span></div>
     <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
     <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
-    <div class="out">✓ Added. Restart your session to use ${total} providers.</div>
-  </div>
-
-  <div class="waitlist">
-    <h2>Alpha drops soon.</h2>
-    <p>We're opening full access to a small first wave. One email. First in line. No spam — just the key when it's ready.</p>
-    <form id="waitlist-form">
-      <input type="email" name="email" placeholder="you@example.com" required>
-      <button type="submit" class="btn-wait">Get Early Access</button>
-    </form>
-    <div class="msg" id="waitlist-msg"></div>
+    <div class="out">done. restart your session to use ${total} providers.</div>
   </div>
 
   <footer class="page-footer">
@@ -443,43 +476,186 @@ ${renderNav()}
     <a href="https://github.com/tobasummandal/procurementlabs">github</a>
   </footer>
 </div>
+
+<!-- email popup (5s delay) -->
+<div class="popup-overlay" id="email-popup">
+  <div class="popup-card">
+    <button class="popup-close" id="popup-close" aria-label="Close">&times;</button>
+    <h3>don't miss early access</h3>
+    <p>we're opening to a small first wave. drop your email — no spam, just the key when it's ready.</p>
+    <form id="popup-form">
+      <input type="email" name="email" placeholder="you@example.com" required>
+      <button type="submit" class="btn-wait">notify me</button>
+    </form>
+    <div class="msg" id="popup-msg"></div>
+  </div>
+</div>
+
 <script>
-  // If user has cookie, swap "Login" to "Dashboard"
+  // cookie check
   if (document.cookie.match(/pl_key=/)) {
     var links = document.querySelectorAll('nav .links a');
     links.forEach(function(a) { if (a.textContent === 'Login') { a.href = '/dashboard'; a.textContent = 'Dashboard'; } });
   }
-  // Waitlist form
-  document.getElementById('waitlist-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    var msg = document.getElementById('waitlist-msg');
-    var btn = this.querySelector('.btn-wait');
-    var email = this.email.value.trim();
-    btn.disabled = true;
-    btn.textContent = '...';
-    try {
-      var r = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: email})
-      });
-      if (r.ok) {
-        msg.className = 'msg ok';
-        msg.textContent = "You're in. We'll reach out soon.";
-        btn.textContent = 'Done';
-      } else {
-        var d = await r.json();
+
+  // ── ascii game (sphere jumping over mountains) ──
+  (function() {
+    var W = 80, H = 10;
+    var sphereX = 12, sphereY = 0, velY = 0, jumping = false;
+    var gravity = 0.4, jumpForce = -2.2;
+    var frame = 0;
+    var scrollOffset = 0;
+
+    // sphere flash colors (warm tones only — no pink/purple/green)
+    var colors = ['#fff', '#fff', '#fff', '#fff', '#e8c36a', '#6aace8', '#e8a86a', '#c4c4c4', '#fff', '#fff'];
+    var currentColor = '#fff';
+    var flashTimer = 0;
+
+    // mountain pattern (repeating) using simple ASCII
+    var mountainPattern = [
+      '                                /\\\\                                                   /\\\\                                      ',
+      '                  /\\\\           /  \\\\                                                 /  \\\\                /\\\\                   ',
+      '                 /  \\\\         /    \\\\                                               /    \\\\              /  \\\\                  ',
+      '                /    \\\\       /      \\\\                  /\\\\                        /      \\\\            /    \\\\                 ',
+      '               /      \\\\     /        \\\\               /  \\\\                      /        \\\\          /      \\\\                ',
+      '______________/________\\\\___/          \\\\______________/    \\\\____________________/          \\\\________/        \\\\_______________',
+    ];
+    var patternW = mountainPattern[0].length;
+
+    function getGroundY() { return H - mountainPattern.length - 1; }
+
+    function tick() {
+      frame++;
+      scrollOffset += 0.35;
+
+      // auto-jump
+      if (!jumping && Math.random() < 0.018) {
+        jumping = true;
+        velY = jumpForce;
+      }
+
+      // physics
+      if (jumping) {
+        sphereY += velY;
+        velY += gravity;
+        if (sphereY >= 0) {
+          sphereY = 0;
+          jumping = false;
+          velY = 0;
+        }
+      }
+
+      // flash color occasionally
+      flashTimer--;
+      if (flashTimer <= 0 && Math.random() < 0.02) {
+        currentColor = colors[Math.floor(Math.random() * colors.length)];
+        flashTimer = 8 + Math.floor(Math.random() * 15);
+      }
+      if (flashTimer <= 0) currentColor = '#fff';
+
+      render();
+      requestAnimationFrame(tick);
+    }
+
+    function render() {
+      var grid = [];
+      for (var y = 0; y < H; y++) {
+        grid[y] = [];
+        for (var x = 0; x < W; x++) grid[y][x] = ' ';
+      }
+
+      // draw mountains
+      var groundStart = getGroundY();
+      for (var my = 0; my < mountainPattern.length; my++) {
+        for (var x = 0; x < W; x++) {
+          var srcX = Math.floor((x + scrollOffset) % patternW);
+          if (srcX < 0) srcX += patternW;
+          var ch = mountainPattern[my].charAt(srcX) || ' ';
+          var gy = groundStart + my;
+          if (gy < H) grid[gy][x] = ch;
+        }
+      }
+
+      // draw sphere
+      var sy = groundStart - 1 + Math.round(sphereY);
+      if (sy >= 0 && sy < H) grid[sy][sphereX] = 'O';
+
+      // build output as DOM nodes (no innerHTML)
+      var el = document.getElementById('game-display');
+      if (!el) return;
+
+      while (el.firstChild) el.removeChild(el.firstChild);
+
+      for (var i = 0; i < H; i++) {
+        var line = grid[i].join('');
+        var si = line.indexOf('O');
+        if (si !== -1 && currentColor !== '#fff') {
+          el.appendChild(document.createTextNode(line.substring(0, si)));
+          var span = document.createElement('span');
+          span.style.color = currentColor;
+          span.style.fontWeight = 'bold';
+          span.textContent = 'O';
+          el.appendChild(span);
+          el.appendChild(document.createTextNode(line.substring(si + 1)));
+        } else {
+          el.appendChild(document.createTextNode(line));
+        }
+        el.appendChild(document.createTextNode('\\n'));
+      }
+    }
+
+    tick();
+  })();
+
+  // ── waitlist form handler ──
+  function handleWaitlist(formId, msgId) {
+    document.getElementById(formId).addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var msg = document.getElementById(msgId);
+      var btn = this.querySelector('.btn-wait');
+      var email = this.email.value.trim();
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        var r = await fetch('/api/waitlist', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: email})
+        });
+        if (r.ok) {
+          msg.className = 'msg ok';
+          msg.textContent = "you're in. we'll reach out soon.";
+          btn.textContent = 'done';
+          window.__waitlistDone = true;
+        } else {
+          var d = await r.json();
+          msg.className = 'msg err';
+          msg.textContent = d.error || 'something went wrong';
+          btn.textContent = 'join waitlist';
+          btn.disabled = false;
+        }
+      } catch(err) {
         msg.className = 'msg err';
-        msg.textContent = d.error || 'Something went wrong';
-        btn.textContent = 'Get Early Access';
+        msg.textContent = 'network error — try again';
+        btn.textContent = 'join waitlist';
         btn.disabled = false;
       }
-    } catch(err) {
-      msg.className = 'msg err';
-      msg.textContent = 'Network error — try again';
-      btn.textContent = 'Get Early Access';
-      btn.disabled = false;
-    }
+    });
+  }
+  handleWaitlist('waitlist-form', 'waitlist-msg');
+  handleWaitlist('popup-form', 'popup-msg');
+
+  // ── 5-second popup ──
+  setTimeout(function() {
+    if (window.__waitlistDone) return;
+    document.getElementById('email-popup').classList.add('visible');
+  }, 5000);
+
+  document.getElementById('popup-close').addEventListener('click', function() {
+    document.getElementById('email-popup').classList.remove('visible');
+  });
+  document.getElementById('email-popup').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('visible');
   });
 </script>
 </body>
