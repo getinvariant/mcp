@@ -1,15 +1,14 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { validatePlKey } from "../lib/auth.js";
+import { authenticateRequest } from "../lib/auth.js";
 import { getAllProviders } from "../lib/providers/registry.js";
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = req.headers["x-pl-key"] as string;
-  if (!validatePlKey(apiKey)) {
-    return res.status(401).json({ error: "Invalid Procurement Labs API key" });
+  const auth = await authenticateRequest(req.headers["x-pl-key"] as string);
+  if (!auth.ok) {
+    return res.status(auth.status || 401).json({ error: auth.error });
   }
 
   const category = req.query.category as string | undefined;

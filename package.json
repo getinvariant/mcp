@@ -15,11 +15,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "@supabase/supabase-js": "^2.101.1",
+    "@upstash/redis": "^1.37.0",
     "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
-    "@vercel/node": "^5.1.8",
     "dotenv": "^16.4.7",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
