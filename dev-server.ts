@@ -564,6 +564,51 @@ ${SHARED_STYLES}
   .collab-cta .msg.err{color:#a02020;}
   .collab-pricing{text-align:center;font-size:0.75rem;color:#888;font-family:'Geist Mono','JetBrains Mono',monospace;margin-bottom:4rem;letter-spacing:0.04em;}
 
+  /* ── team live dashboard mockup ── */
+  .team-dash{max-width:780px;margin:0 auto 2.5rem;border:1px solid #e5e5e5;border-radius:0.9rem;background:#fafafa;overflow:hidden;font-family:'Geist Mono','JetBrains Mono',monospace;box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 20px 60px rgba(0,0,0,0.04);}
+  .td-head{padding:0.85rem 1.25rem;background:#fff;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;}
+  .td-title{color:#0a0a0a;font-weight:600;}
+  .td-title .sep{color:#bbb;margin:0 0.5rem;font-weight:400;}
+  .td-title .sub{color:#888;font-weight:500;}
+  .td-badge{color:#2d6a2d;display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;font-weight:600;}
+  .td-dot{width:6px;height:6px;background:#2d6a2d;border-radius:50%;animation:td-pulse 2s infinite;}
+  @keyframes td-pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .td-body{padding:1.25rem;display:grid;gap:1rem;}
+  .td-row{display:grid;grid-template-columns:1fr 1.3fr;gap:1rem;}
+  @media(max-width:640px){.td-row{grid-template-columns:1fr;}}
+  .td-card{border:1px solid #e5e5e5;border-radius:0.5rem;padding:1rem 1.15rem;background:#fff;}
+  .td-card-label{font-size:0.66rem;color:#888;text-transform:lowercase;letter-spacing:0.08em;margin-bottom:0.5rem;font-weight:500;}
+  .td-stat-value{font-size:2rem;font-weight:700;color:#0a0a0a;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;margin-bottom:0.6rem;line-height:1;}
+  .td-stat-bar{height:4px;background:#eee;border-radius:2px;overflow:hidden;margin-bottom:0.5rem;}
+  .td-stat-fill{height:100%;background:#0a0a0a;width:0;transition:width 0.8s ease;}
+  .td-stat-sub{font-size:0.7rem;color:#888;}
+  .td-log-stream{display:flex;flex-direction:column;gap:0.35rem;font-size:0.72rem;min-height:115px;}
+  .td-log-row{display:grid;grid-template-columns:42px 86px 1fr auto;gap:0.6rem;color:#555;opacity:0;transform:translateY(3px);transition:opacity 0.35s,transform 0.35s;align-items:center;}
+  .td-log-row.visible{opacity:1;transform:translateY(0);}
+  .td-log-row .t{color:#b0b0b0;font-size:0.66rem;font-variant-numeric:tabular-nums;}
+  .td-log-row .u{color:#0a0a0a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .td-log-row .a{color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .td-log-row .v{color:#aaa;font-size:0.66rem;text-align:right;white-space:nowrap;}
+  .td-log-row.rotate .u,.td-log-row.rotate .a{color:#8a6a1e;}
+  .td-log-row.rotate .t{color:#e8c36a;}
+  .td-actions{display:flex;align-items:center;gap:1rem;padding:0.5rem 0.25rem 0;}
+  .td-rotate{padding:0.7rem 1.1rem;background:#0a0a0a;color:#fff;border:none;border-radius:0.5rem;font-family:inherit;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:0.55rem;transition:background 0.2s;}
+  .td-rotate:hover{background:#222;}
+  .td-rotate.active{background:#8a6a1e;}
+  .td-rotate .spin{display:inline-block;}
+  .td-rotate.active .spin{animation:td-spin 0.8s linear infinite;}
+  @keyframes td-spin{to{transform:rotate(360deg);}}
+  .td-rotate-status{font-size:0.74rem;color:#2d6a2d;opacity:0;transition:opacity 0.3s;font-weight:500;}
+  .td-rotate-status.visible{opacity:1;}
+
+  /* ── team stats row (count-up, white theme) ── */
+  .team-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#e5e5e5;border-radius:0.75rem;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:4rem;max-width:780px;margin-left:auto;margin-right:auto;}
+  .team-stats .s{padding:1.35rem 1rem;background:#fff;text-align:center;}
+  .team-stats .sv{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:1.75rem;font-weight:700;color:#0a0a0a;font-variant-numeric:tabular-nums;letter-spacing:-0.03em;}
+  .team-stats .sv .unit{font-size:0.9rem;color:#888;font-weight:500;margin-left:0.1rem;}
+  .team-stats .sl{font-size:0.65rem;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-top:0.35rem;font-weight:600;}
+  @media(max-width:640px){.team-stats{grid-template-columns:repeat(2,1fr);}}
+
   .collab-footer{border-top:1px solid #e5e5e5;padding:2.5rem 0;margin-top:2rem;display:flex;justify-content:space-between;font-size:0.8rem;color:#666;}
   .collab-footer a{color:#0a0a0a;text-decoration:none;border-bottom:1px solid #ccc;}
   .collab-footer a:hover{border-bottom-color:#0a0a0a;}
@@ -627,10 +672,10 @@ ${renderNav()}
   </div>
 
   <div class="stats-row">
-    <div class="s"><div class="sv">${total}</div><div class="sl">providers</div></div>
-    <div class="s"><div class="sv">${live}</div><div class="sl">live</div></div>
-    <div class="s"><div class="sv">${categories.length}</div><div class="sl">categories</div></div>
-    <div class="s"><div class="sv">500</div><div class="sl">free requests/mo</div></div>
+    <div class="s"><div class="sv" data-target="${total}">0</div><div class="sl">providers</div></div>
+    <div class="s"><div class="sv" data-target="${live}">0</div><div class="sl">live</div></div>
+    <div class="s"><div class="sv" data-target="${categories.length}">0</div><div class="sl">categories</div></div>
+    <div class="s"><div class="sv" data-target="500">0</div><div class="sl">free requests/mo</div></div>
   </div>
 
   <div class="categories">
@@ -693,6 +738,38 @@ ${renderNav()}
           <li>offboard a dev? revoke their seat. done. no credential hunt.</li>
         </ul>
       </div>
+    </div>
+
+    <div class="team-dash">
+      <div class="td-head">
+        <div class="td-title">acme engineering <span class="sep">·</span> <span class="sub">workspace · 14 seats</span></div>
+        <div class="td-badge"><span class="td-dot"></span>live</div>
+      </div>
+      <div class="td-body">
+        <div class="td-row">
+          <div class="td-card">
+            <div class="td-card-label">api calls today</div>
+            <div class="td-stat-value" id="td-calls">0</div>
+            <div class="td-stat-bar"><div class="td-stat-fill" id="td-fill"></div></div>
+            <div class="td-stat-sub"><span id="td-pct">0</span>% of monthly team quota</div>
+          </div>
+          <div class="td-card">
+            <div class="td-card-label">live activity</div>
+            <div class="td-log-stream" id="td-log-stream"></div>
+          </div>
+        </div>
+        <div class="td-actions">
+          <button class="td-rotate" id="td-rotate" type="button"><span class="spin">⟳</span> rotate stripe_key</button>
+          <div class="td-rotate-status" id="td-rotate-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="team-stats">
+      <div class="s"><div class="sv" data-target="0">0</div><div class="sl">credentials exposed</div></div>
+      <div class="s"><div class="sv" data-target="14">0</div><div class="sl">seats tracked</div></div>
+      <div class="s"><div class="sv" data-target="400" data-suffix="ms">0<span class="unit">ms</span></div><div class="sl">avg rotation</div></div>
+      <div class="s"><div class="sv" data-target="100" data-suffix="%">0<span class="unit">%</span></div><div class="sl">uptime on rotate</div></div>
     </div>
 
     <div class="collab-grid">
@@ -861,6 +938,156 @@ ${renderNav()}
     }
 
     tick();
+  })();
+
+  // ── count-up stats (triggered on scroll into view) ──
+  (function() {
+    function animateStat(el) {
+      var target = parseInt(el.getAttribute('data-target') || '0', 10);
+      var hasUnit = !!el.querySelector('.unit');
+      // ensure first child is a text node holding the number, unit span (if any) stays after
+      if (hasUnit) {
+        if (!el.firstChild || el.firstChild.nodeType !== 3) {
+          el.insertBefore(document.createTextNode('0'), el.firstChild);
+        } else {
+          el.firstChild.nodeValue = '0';
+        }
+      } else {
+        el.textContent = '0';
+      }
+      var duration = 1500;
+      var t0 = null;
+      function frame(ts) {
+        if (!t0) t0 = ts;
+        var p = Math.min((ts - t0) / duration, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        var val = Math.floor(target * eased).toString();
+        if (hasUnit) el.firstChild.nodeValue = val;
+        else el.textContent = val;
+        if (p < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function observe(selector) {
+      var row = document.querySelector(selector);
+      if (!row) return;
+      var stats = row.querySelectorAll('.sv[data-target]');
+      if (!('IntersectionObserver' in window)) {
+        stats.forEach(animateStat);
+        return;
+      }
+      var obs = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting) {
+          stats.forEach(animateStat);
+          obs.disconnect();
+        }
+      }, {threshold: 0.3});
+      obs.observe(row);
+    }
+    observe('.stats-row');
+    observe('.team-stats');
+  })();
+
+  // ── live team dashboard (mockup animation) ──
+  (function() {
+    var callsEl = document.getElementById('td-calls');
+    var fillEl = document.getElementById('td-fill');
+    var pctEl = document.getElementById('td-pct');
+    var streamEl = document.getElementById('td-log-stream');
+    var rotateBtn = document.getElementById('td-rotate');
+    var statusEl = document.getElementById('td-rotate-status');
+    if (!callsEl || !streamEl || !rotateBtn) return;
+
+    // ticking api-calls counter
+    var calls = 47208;
+    var target = 47208;
+    function renderCalls() {
+      callsEl.textContent = calls.toLocaleString();
+      var pct = Math.min(Math.floor((calls / 70000) * 100), 98);
+      if (fillEl) fillEl.style.width = pct + '%';
+      if (pctEl) pctEl.textContent = pct;
+    }
+    // initial ramp from 0 → 47208 so it feels alive
+    var t0 = null;
+    function rampUp(ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min((ts - t0) / 1600, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      calls = Math.floor(target * eased);
+      renderCalls();
+      if (p < 1) requestAnimationFrame(rampUp);
+      else {
+        // then start ticking forward
+        setInterval(function() {
+          calls += Math.floor(Math.random() * 14) + 3;
+          renderCalls();
+        }, 380);
+      }
+    }
+    requestAnimationFrame(rampUp);
+
+    // activity pool
+    var pool = [
+      {u:'sarah.w',  a:'openai · gpt-4',       v:'2.1k tok'},
+      {u:'james.m',  a:'stripe · refund',      v:'1 call'},
+      {u:'priya.k',  a:'openfda · drug recall',v:'14 calls'},
+      {u:'dev.bot',  a:'coingecko · btc',      v:'8 calls'},
+      {u:'sarah.w',  a:'claude · haiku',       v:'5.4k tok'},
+      {u:'marcus.l', a:'openweather · nyc',    v:'3 calls'},
+      {u:'priya.k',  a:'geoapify · geocode',   v:'22 calls'},
+      {u:'dev.bot',  a:'finnhub · quotes',     v:'19 calls'},
+      {u:'james.m',  a:'claude · sonnet',      v:'12k tok'},
+      {u:'marcus.l', a:'huggingface · ner',    v:'6 calls'},
+    ];
+    var MAX_ROWS = 5;
+    var idx = 0;
+
+    function addRow(a) {
+      var row = document.createElement('div');
+      row.className = 'td-log-row' + (a.rotate ? ' rotate' : '');
+      var now = new Date();
+      var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+      var t = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+      var tSpan = document.createElement('span'); tSpan.className = 't'; tSpan.textContent = t;
+      var uSpan = document.createElement('span'); uSpan.className = 'u'; uSpan.textContent = a.u;
+      var aSpan = document.createElement('span'); aSpan.className = 'a'; aSpan.textContent = a.a;
+      var vSpan = document.createElement('span'); vSpan.className = 'v'; vSpan.textContent = a.v || '';
+      row.appendChild(tSpan); row.appendChild(uSpan); row.appendChild(aSpan); row.appendChild(vSpan);
+      streamEl.appendChild(row);
+      void row.offsetWidth;
+      row.classList.add('visible');
+      while (streamEl.children.length > MAX_ROWS) streamEl.removeChild(streamEl.firstChild);
+    }
+
+    function streamNext() {
+      addRow(pool[idx % pool.length]);
+      idx++;
+      setTimeout(streamNext, 1200 + Math.random() * 1300);
+    }
+    setTimeout(streamNext, 400);
+
+    // rotation cascade
+    function runRotation() {
+      rotateBtn.classList.add('active');
+      statusEl.classList.remove('visible');
+      addRow({u:'ops.bot', a:'rotating stripe_key...', v:'', rotate:true});
+      setTimeout(function() {
+        addRow({u:'ops.bot', a:'propagating to 14 seats...', v:'', rotate:true});
+      }, 320);
+      setTimeout(function() {
+        addRow({u:'ops.bot', a:'✓ rotated stripe_key', v:'0.4s · 14 seats', rotate:true});
+        rotateBtn.classList.remove('active');
+        statusEl.textContent = '✓ zero downtime · every seat updated transparently';
+        statusEl.classList.add('visible');
+      }, 820);
+      setTimeout(function() {
+        statusEl.classList.remove('visible');
+      }, 4500);
+    }
+    rotateBtn.addEventListener('click', runRotation);
+    setTimeout(runRotation, 7000);
+    setInterval(runRotation, 16000);
   })();
 
   // ── demo terminal animation ──
