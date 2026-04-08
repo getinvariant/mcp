@@ -902,6 +902,10 @@ ${SHARED_STYLES}
   .or-divider::before{left:0}
   .or-divider::after{right:0}
 
+  .toggle-mode{margin-top:1rem;font-size:0.75rem;color:#525252;text-align:center}
+  .toggle-mode a{color:#a3a3a3;margin-left:0.375rem;text-decoration:underline;text-underline-offset:2px}
+  .toggle-mode a:hover{color:#fff}
+
   .flash{background:rgba(255,255,255,0.04);border:1px solid #333;border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:1.5rem;display:none}
   .flash.visible{display:block}
   .flash-label{font-size:0.7rem;color:#525252;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
@@ -927,11 +931,15 @@ ${renderNav("login")}
     </div>
 
     <div class="login-panel">
-      <h2>Sign In</h2>
-      <p>Sign in with the email you registered with</p>
-      <input type="email" id="signin-email" placeholder="you@example.com">
-      <button class="btn btn-primary" id="signin-email-btn">Sign in</button>
-      <div id="signin-email-error" class="login-error"></div>
+      <h2 id="email-panel-title">Sign In</h2>
+      <p id="email-panel-sub">Sign in with your email</p>
+      <input type="email" id="email-input" placeholder="you@example.com">
+      <button class="btn btn-primary" id="email-submit-btn">Sign in</button>
+      <div id="email-error" class="login-error"></div>
+      <div class="toggle-mode">
+        <span id="toggle-mode-text">Don't have an account?</span>
+        <a href="#" id="toggle-mode-link">Create one</a>
+      </div>
     </div>
 
     <div class="or-divider">or</div>
@@ -942,16 +950,6 @@ ${renderNav("login")}
       <input type="text" id="signin-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false">
       <button class="btn btn-ghost" id="signin-btn" style="width:100%;padding:0.65rem;font-size:0.85rem">Sign in</button>
       <div id="signin-error" class="login-error"></div>
-    </div>
-
-    <div class="or-divider">new here?</div>
-
-    <div class="login-panel">
-      <h2>Create Account</h2>
-      <p>Free — 500 requests/month</p>
-      <input type="email" id="signup-email" placeholder="you@example.com">
-      <button class="btn btn-primary" id="signup-btn">Create key</button>
-      <div id="signup-error" class="login-error"></div>
     </div>
 
     <footer class="page-footer">
@@ -973,64 +971,95 @@ ${renderNav("login")}
     document.cookie = name + '=' + encodeURIComponent(val) + '; path=/; max-age=' + (365*86400) + '; samesite=lax';
   }
 
-  // Email sign in
-  document.getElementById('signin-email-btn').addEventListener('click', doEmailSignin);
-  document.getElementById('signin-email').addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSignin(); });
+  // Unified email panel — toggles between sign-in and create
+  var mode = 'signin';
+  var titleEl = document.getElementById('email-panel-title');
+  var subEl = document.getElementById('email-panel-sub');
+  var btnEl = document.getElementById('email-submit-btn');
+  var toggleText = document.getElementById('toggle-mode-text');
+  var toggleLink = document.getElementById('toggle-mode-link');
+  var emailInput = document.getElementById('email-input');
+  var errEl = document.getElementById('email-error');
 
-  async function doEmailSignin() {
-    var email = document.getElementById('signin-email').value.trim();
-    var errEl = document.getElementById('signin-email-error');
-    var btn = document.getElementById('signin-email-btn');
+  function setMode(m) {
+    mode = m;
     errEl.textContent = '';
-    if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email'; return; }
-    btn.disabled = true; btn.textContent = '...';
-    try {
-      var res = await fetch('/api/signin-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email }),
-      });
-      var data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || 'Sign in failed'; return; }
-      window.location.href = '/dashboard';
-    } catch (e) { errEl.textContent = 'Connection error'; }
-    finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+    if (m === 'signin') {
+      titleEl.textContent = 'Sign In';
+      subEl.textContent = 'Sign in with your email';
+      btnEl.textContent = 'Sign in';
+      toggleText.textContent = "Don't have an account?";
+      toggleLink.textContent = 'Create one';
+    } else {
+      titleEl.textContent = 'Create Account';
+      subEl.textContent = 'Free — 500 requests/month';
+      btnEl.textContent = 'Create account';
+      toggleText.textContent = 'Already have an account?';
+      toggleLink.textContent = 'Sign in';
+    }
   }
 
-  // Sign up
-  document.getElementById('signup-btn').addEventListener('click', doSignup);
-  document.getElementById('signup-email').addEventListener('keydown', function(e) { if (e.key === 'Enter') doSignup(); });
+  toggleLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    setMode(mode === 'signin' ? 'signup' : 'signin');
+    emailInput.focus();
+  });
 
-  async function doSignup() {
-    var email = document.getElementById('signup-email').value.trim();
-    var errEl = document.getElementById('signup-error');
-    var btn = document.getElementById('signup-btn');
+  btnEl.addEventListener('click', doEmailSubmit);
+  emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSubmit(); });
+
+  async function doEmailSubmit() {
+    var email = emailInput.value.trim();
     errEl.textContent = '';
     if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email'; return; }
-    btn.disabled = true; btn.textContent = '...';
+    var originalText = btnEl.textContent;
+    btnEl.disabled = true; btnEl.textContent = '...';
     try {
-      var res = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email }),
-      });
-      var data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || 'Signup failed'; return; }
-      // Show key
-      var flash = document.getElementById('key-flash');
-      var flashKey = document.getElementById('flash-key');
-      flashKey.textContent = data.key;
-      flashKey.onclick = function() {
-        navigator.clipboard.writeText(data.key);
-        var t = document.getElementById('copied-toast');
-        t.classList.add('show');
-        setTimeout(function() { t.classList.remove('show'); }, 1200);
-      };
-      flash.classList.add('visible');
-      // Redirect to dashboard after 3s
-      setTimeout(function() { window.location.href = '/dashboard'; }, 3000);
+      if (mode === 'signin') {
+        var res = await fetch('/api/signin-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email }),
+        });
+        var data = await res.json();
+        if (!res.ok) {
+          // If no account, offer to create one
+          if (res.status === 404) {
+            errEl.innerHTML = 'No account found. <a href="#" id="switch-to-signup" style="color:#a3a3a3;text-decoration:underline">Create one instead?</a>';
+            document.getElementById('switch-to-signup').addEventListener('click', function(e) {
+              e.preventDefault();
+              setMode('signup');
+              emailInput.focus();
+            });
+          } else {
+            errEl.textContent = data.error || 'Sign in failed';
+          }
+          return;
+        }
+        window.location.href = '/dashboard';
+      } else {
+        var res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email }),
+        });
+        var data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Signup failed'; return; }
+        // Show key
+        var flash = document.getElementById('key-flash');
+        var flashKey = document.getElementById('flash-key');
+        flashKey.textContent = data.key;
+        flashKey.onclick = function() {
+          navigator.clipboard.writeText(data.key);
+          var t = document.getElementById('copied-toast');
+          t.classList.add('show');
+          setTimeout(function() { t.classList.remove('show'); }, 1200);
+        };
+        flash.classList.add('visible');
+        setTimeout(function() { window.location.href = '/dashboard'; }, 3000);
+      }
     } catch (e) { errEl.textContent = 'Connection error'; }
-    finally { btn.disabled = false; btn.textContent = 'Create key'; }
+    finally { btnEl.disabled = false; btnEl.textContent = originalText; }
   }
 
   // Sign in
