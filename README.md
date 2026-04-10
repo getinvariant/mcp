@@ -1,10 +1,10 @@
-# procure
+# procurerement labs
 
 **The agentic API provisioning layer.** Your AI agent gets weather, stocks, health data, maps, and frontier LLMs from a single endpoint. procure creates the accounts, manages the keys, enforces the quotas, and falls back when something breaks. You never touch a developer portal.
 
 > One key in. Every API out.
 
-## Why procure exists
+## Why procurement labs exists
 
 A useful AI agent needs to call ten different services. An LLM, a weather API, a stock ticker, a geocoder, a health database, a charity lookup. Building that today means:
 
@@ -91,14 +91,14 @@ Sign up at the hosted instance. You get one `pl_...` key. That is the only crede
 All clients connect to the same remote endpoint. No cloning, no building, no Node.js required.
 
 ```
-URL:    https://procure.example.com/api/mcp
+URL:    https://pclabs.dev/api/mcp
 Header: x-pl-key: pl_your_key_here
 ```
 
 #### Claude Code (CLI)
 
 ```bash
-claude mcp add procure --transport http https://procure.example.com/api/mcp --header "x-pl-key: pl_your_key_here"
+claude mcp add procure --transport http https://pclabs.dev/api/mcp --header "x-pl-key: pl_your_key_here"
 ```
 
 #### Claude Desktop
@@ -359,7 +359,7 @@ npm run build
       "args": ["/absolute/path/to/procurementlabs/dist/index.js"],
       "env": {
         "PL_API_KEY": "pl_your_key_here",
-        "PL_BACKEND_URL": "https://procure.example.com"
+        "PL_BACKEND_URL": "https://pclabs.dev/api/mcp"
       }
     }
   }
@@ -371,7 +371,7 @@ MCP client env vars for the stdio path:
 | Variable | Required | Description |
 |---|---|---|
 | `PL_API_KEY` | Yes | Your `pl_` key |
-| `PL_BACKEND_URL` | No | Override backend URL. Default: `https://procurementlabs.up.railway.app` |
+| `PL_BACKEND_URL` | No | Override backend URL. Default: `https://pclabs.dev/api/mcp` |
 
 ## Adding a provider
 

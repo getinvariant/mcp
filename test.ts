@@ -4,7 +4,7 @@
  *
  * Usage:
  *   Local:  PL_API_KEY=pl_demo_key_2026 PL_BACKEND_URL=http://localhost:3000 npx tsx test.ts
- *   Prod:   PL_API_KEY=pl_demo_key_2026 PL_BACKEND_URL=https://procurementlabs.up.railway.app npx tsx test.ts
+ *   Prod:   PL_API_KEY=pl_demo_key_2026 PL_BACKEND_URL=https://pclabs.dev/api/mcp npx tsx test.ts
  */
 
 const BASE_URL = process.env.PL_BACKEND_URL || "http://localhost:3000";
