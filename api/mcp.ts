@@ -212,7 +212,7 @@ function buildApiDocs(section?: string): string {
 
 Procurement Labs is a unified API gateway that gives you access to 15+ external APIs through a single authenticated endpoint. Use the MCP tools to discover and query providers, or call the REST endpoints directly.
 
-**Base URL:** \`https://procurementlabs.up.railway.app\`
+**Base URL:** \`https://pclabs.dev/api/mcp\`
 **Authentication:** Every request requires an \`x-pl-key\` header.`;
 
   const authentication = `# Authentication
