@@ -6,13 +6,14 @@ import crypto from "node:crypto";
 
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
-import mcpHandler from "./api/mcp.js";
 import usageHandler from "./api/usage.js";
 import recommendHandler from "./api/recommend.js";
-import { getAllProviders, getProvider } from "./lib/providers/registry.js";
+import { getAllProviders } from "./lib/providers/registry.js";
 import { recommend, compareProviders } from "./lib/reasoning/engine.js";
-import { providerKnowledge } from "./lib/reasoning/provider-knowledge.js";
-import { getAccount, getAccountByEmail, getUsage, getAllAccounts, createAccount, addToWaitlist, logUsage, logRouting, getRoutingStats } from "./lib/db.js";
+
+import { buildApiDocs } from "./lib/docs.js";
+
+import { getAccount, getAccountByEmail, getUsage, getAllAccounts, createAccount, addToWaitlist, getRoutingStats } from "./lib/db.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -56,122 +57,22 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
     }
   );
 
+
   server.tool(
-    "query",
-    "Execute a real API call to any available provider. Includes smart routing: if the requested provider fails or is unavailable, automatically falls back to an alternative provider.",
+    "get_api_docs",
+    "View the full API integration documentation — authentication, available REST endpoints, provider categories, and example requests. Read this before building an integration.",
     {
-      provider_id: z.string(),
-      action: z.string(),
-      params: z.record(z.unknown()).optional(),
+      section: z
+        .enum(["overview", "authentication", "endpoints", "providers"])
+        .optional()
+        .describe("Narrow to a specific section (optional — omit for full docs)"),
     },
-    async ({ provider_id, action, params: queryParams }) => {
-      const provider = getProvider(provider_id);
-      if (!provider) {
-        return { content: [{ type: "text", text: `Error: Provider '${provider_id}' not found` }], isError: true };
-      }
-
-      // Try the requested provider first
-      if (provider.isAvailable()) {
-        const result = await provider.query(action, queryParams || {});
-        logUsage(accountId, provider_id, action, result.success).catch(() => {});
-        logRouting({ accountId, requestedProvider: provider_id, actualProvider: provider_id, action, reason: "direct", fallback: false, success: result.success }).catch(() => {});
-
-        if (result.success) {
-          return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-        }
-
-        // Provider failed — try fallbacks
-        const knowledge = providerKnowledge[provider_id];
-        if (knowledge?.alternatives?.length) {
-          for (const altId of knowledge.alternatives) {
-            const alt = getProvider(altId);
-            if (!alt || !alt.isAvailable()) continue;
-            // find a matching action on the alternative
-            const altAction = alt.info.availableActions.find((a) => a.action === action);
-            if (!altAction) continue;
-            const altResult = await alt.query(action, queryParams || {});
-            logUsage(accountId, altId, action, altResult.success).catch(() => {});
-            logRouting({ accountId, requestedProvider: provider_id, actualProvider: altId, action, reason: `${provider_id} failed, routed to ${altId}`, fallback: true, success: altResult.success }).catch(() => {});
-            if (altResult.success) {
-              return { content: [{ type: "text", text: `[Routed: ${provider_id} → ${altId}]\n\n${JSON.stringify(altResult.data, null, 2)}` }] };
-            }
-          }
-        }
-
-        return { content: [{ type: "text", text: `Error: ${result.error}` }], isError: true };
-      }
-
-      // Requested provider unavailable — try alternatives silently
-      const knowledge = providerKnowledge[provider_id];
-      if (knowledge?.alternatives?.length) {
-        for (const altId of knowledge.alternatives) {
-          const alt = getProvider(altId);
-          if (!alt || !alt.isAvailable()) continue;
-          const altAction = alt.info.availableActions.find((a) => a.action === action);
-          if (!altAction) continue;
-          const altResult = await alt.query(action, queryParams || {});
-          logUsage(accountId, altId, action, altResult.success).catch(() => {});
-          logRouting({ accountId, requestedProvider: provider_id, actualProvider: altId, action, reason: `${provider_id} unavailable, routed to ${altId}`, fallback: true, success: altResult.success }).catch(() => {});
-          if (altResult.success) {
-            return { content: [{ type: "text", text: `[Routed: ${provider_id} → ${altId}]\n\n${JSON.stringify(altResult.data, null, 2)}` }] };
-          }
-        }
-      }
-
-      return { content: [{ type: "text", text: `Error: Provider '${provider.info.name}' is not configured and no alternatives are available` }], isError: true };
+    async ({ section }) => {
+      const docs = buildApiDocs(section);
+      return { content: [{ type: "text", text: docs }] };
     }
   );
 
-  server.tool(
-    "smart_query",
-    "Describe what data you need in plain language. The system automatically picks the best available provider, optimizing for cost, availability, and reliability. No need to know provider names.",
-    {
-      intent: z.string().describe("What you need — e.g. 'current weather in Tokyo', 'Bitcoin price', 'FDA recalls for ibuprofen'"),
-      params: z.record(z.unknown()).optional().describe("Any specific parameters for the query"),
-    },
-    async ({ intent, params: extraParams }) => {
-      const recommendations = recommend({ need: intent, priorities: ["reliability", "cost"] });
-      const available = recommendations.filter((r) => r.available);
-      if (available.length === 0) {
-        return { content: [{ type: "text", text: `No available providers match "${intent}". Use list_providers to see what's configured.` }], isError: true };
-      }
-
-      // Try each recommended provider in order until one succeeds
-      for (const rec of available) {
-        const provider = getProvider(rec.provider_id);
-        if (!provider) continue;
-
-        // Pick the best matching action
-        const action = rec.actions[0];
-        const actionDef = provider.info.availableActions.find((a) => a.action === action);
-        if (!actionDef) continue;
-
-        // Build params from intent + extraParams
-        const queryParams = { ...(extraParams || {}) };
-        // Auto-extract common params from intent
-        if (!queryParams.query && !queryParams.city && !queryParams.symbol && !queryParams.coins) {
-          // Try to extract the subject from the intent
-          const intentWords = intent.replace(/^(get|find|show|what|what's|whats|the|current|latest|recent)\s+/gi, "").trim();
-          const firstAction = actionDef;
-          const firstRequired = Object.entries(firstAction.parameters).find(([, v]) => (v as any).required);
-          if (firstRequired) {
-            queryParams[firstRequired[0]] = intentWords;
-          }
-        }
-
-        const result = await provider.query(action, queryParams);
-        logUsage(accountId, rec.provider_id, action, result.success).catch(() => {});
-        logRouting({ accountId, requestedProvider: "smart_query", actualProvider: rec.provider_id, action, reason: `smart routing: score ${rec.score}`, fallback: false, success: result.success }).catch(() => {});
-
-        if (result.success) {
-          return { content: [{ type: "text", text: `[Smart Route → ${rec.provider_name} / ${action}]\n\n${JSON.stringify(result.data, null, 2)}` }] };
-        }
-        // Try next provider if this one failed
-      }
-
-      return { content: [{ type: "text", text: `All providers failed for "${intent}". Try being more specific or use query with a specific provider.` }], isError: true };
-    }
-  );
 
   server.tool(
     "recommend",
