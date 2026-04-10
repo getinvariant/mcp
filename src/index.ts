@@ -5,6 +5,8 @@ import { config } from "./config.js";
 import { registerListProviders } from "./tools/list-providers.js";
 import { registerRecommend } from "./tools/recommend.js";
 import { registerGetApiDocs } from "./tools/get-api-docs.js";
+import { registerCompare } from "./tools/compare.js";
+
 
 async function main() {
   if (!config.apiKey) {
@@ -21,6 +23,8 @@ async function main() {
   registerListProviders(server);
   registerRecommend(server);
   registerGetApiDocs(server);
+  registerCompare(server);
+
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
