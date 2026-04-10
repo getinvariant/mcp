@@ -1,91 +1,105 @@
-# Procurement Labs MCP
+# procure
 
-An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that gives AI assistants access to a curated set of external APIs — health data, financial markets, AI models, maps, cloud services, and more — through a single unified interface.
+**The agentic API provisioning layer.** Your AI agent gets weather, stocks, health data, maps, and frontier LLMs from a single endpoint. procure creates the accounts, manages the keys, enforces the quotas, and falls back when something breaks. You never touch a developer portal.
 
-## Architecture Overview
+> One key in. Every API out.
 
-The project has two distinct layers:
+## Why procure exists
 
-**Backend (Vercel serverless)** — lives in `api/`
-- `api/mcp.ts` — `POST /api/mcp` — MCP JSON-RPC endpoint (recommended, no local install needed)
-- `api/providers.ts` — `GET /api/providers` — REST: list providers
-- `api/query.ts` — `POST /api/query` — REST: execute a provider action
-- `api/usage.ts` — `GET /api/usage` — REST: account quota and usage breakdown
-- `api/_lib/auth.ts` — validates `x-pl-key` headers against a comma-separated allowlist in `PL_VALID_KEYS`
-- `api/_lib/providers/` — one class per integration, all implementing the `Provider` interface
+A useful AI agent needs to call ten different services. An LLM, a weather API, a stock ticker, a geocoder, a health database, a charity lookup. Building that today means:
 
-**MCP Server (local stdio process)** — lives in `src/` (optional, for older clients)
-- Runs on the participant's machine and proxies to the Vercel backend via the REST endpoints
-- Only needed if your MCP client doesn't support remote HTTP connections
+- Ten developer portals, ten signup forms, ten email confirmations
+- Ten API keys to rotate and secure
+- Ten different auth schemes, rate limits, and error shapes
+- Ten ways for a single call to fail, and no fallback when one does
 
-```
-Option A — Remote MCP (recommended)
-┌─────────────────────┐   HTTPS + x-pl-key   ┌──────────────────────────────────────┐
-│   AI Client         │──────────────────────►│  Vercel Backend                      │
-│  (Claude Desktop,   │◄──────────────────────│  POST /api/mcp  ← MCP JSON-RPC       │
-│   Cursor, etc.)     │                       │                                      │
-└─────────────────────┘                       │  Providers:                          │
-                                              │  health:    OpenFDA, Mental Health   │
-Option B — Local stdio (legacy)               │  financial: Alpha Vantage            │
-┌─────────────────────┐  stdio  ┌──────────┐  │  impact:    Charity/Every.org        │
-│   AI Client         │◄───────►│  src/    │  │  env:       OpenWeather              │
-│                     │         │  index.ts│  │  ai:        Claude, OpenAI, Gemini,  │
-└─────────────────────┘         └────┬─────┘  │             HuggingFace              │
-                                     │ HTTPS  │  cloud:     AWS Comprehend, GCloud   │
-                                     └───────►│  maps:      Google Maps, OSM         │
-                                              └──────────────────────────────────────┘
-```
+procure collapses all of it into one managed layer. You connect once over MCP or REST, and the provisioning, routing, quota accounting, and failover happen above your agent.
 
-## Setup
+## Provider catalog
 
-### Prerequisites
+| Provider | Category | Rate Limit | Key needed? |
+|---|---|---|---|
+| OpenFDA | Physical Health | 240 req/min | No |
+| Mental Health Resources | Mental Health | unlimited | No |
+| **CoinGecko** | Finance | ~50 req/min | No |
+| **Finnhub** | Finance | 60 req/min | Free signup |
+| Every.org | Social Impact | generous | Free signup |
+| OpenWeatherMap | Environment | 60 req/min | Free signup |
+| Anthropic Claude | AI | . | Paid |
+| Google Gemini | AI | 1,500 req/day | Free (AI Studio) |
+| HuggingFace | AI | generous | Free signup |
+| **Geoapify** | Maps | 3,000 req/day | Free, no card |
 
-- Node.js 18+
-- A deployed instance of the backend (or run locally with Vercel CLI)
+On the hosted instance procure handles every "Free signup" row for you. You never see those portals. Self-hosted instances can bring their own keys via environment variables.
 
----
-
-### 1. Deploy the Backend
-
-**Option A — Vercel (recommended)**
-
-```bash
-npm install -g vercel
-vercel deploy
-```
-
-In the Vercel dashboard, set environment variables for the providers you want to enable (see [Environment Variables](#environment-variables) below). At minimum you need `PL_VALID_KEYS`.
-
-**Option B — Local with Vercel CLI**
-
-```bash
-npm install
-cp .env.example .env.local   # fill in your keys
-npx vercel dev               # runs on http://localhost:3000
-```
-
----
-
-### 2. Connect Your AI Client
-
-All clients connect to the same remote endpoint — no cloning, no building, no Node.js required.
+## How it works
 
 ```
-URL:    https://your-app.vercel.app/api/mcp
+         ┌─────────────────────┐
+         │    Your AI Agent    │
+         │  (Claude, Cursor,   │
+         │   Codex, custom)    │
+         └──────────┬──────────┘
+                    │ MCP (JSON-RPC) or REST
+                    │ single key: x-pl-key
+                    ▼
+         ┌─────────────────────────────────┐
+         │            procure              │
+         │  ┌───────────────────────────┐  │
+         │  │  auth + quota             │  │
+         │  │  (Supabase + Upstash)     │  │
+         │  ├───────────────────────────┤  │
+         │  │  reasoning layer          │  │
+         │  │  (recommend / compare)    │  │
+         │  ├───────────────────────────┤  │
+         │  │  provider router + fall-  │  │
+         │  │  back + usage logging     │  │
+         │  └───────────────────────────┘  │
+         └──────────┬──────────────────────┘
+                    │ managed upstream credentials
+                    ▼
+  OpenFDA . Mental Health . CoinGecko . Finnhub . Every.org
+  OpenWeatherMap . Anthropic . Gemini . HuggingFace . Geoapify
+```
+
+## Access modes
+
+procure exposes the same engine through two interfaces.
+
+**1. MCP (recommended for AI clients).** JSON-RPC over HTTP at `POST /api/mcp`. Works with Claude Desktop, Cursor, Claude Code, Windsurf, Cline, Continue.dev, Codex CLI, Goose, and the OpenAI Responses API.
+
+**2. REST (for custom code).** Plain HTTP endpoints if you are building your own integration:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/providers` | GET | List every provider and its status |
+| `/api/query` | POST | Execute an action on a provider |
+| `/api/recommend` | POST | Ask procure to pick the best provider for a goal |
+| `/api/usage` | GET | Your current quota, tier, and per-provider breakdown |
+| `/api/mcp` | POST | MCP JSON-RPC endpoint (same tools, agent-friendly shape) |
+
+Every endpoint requires an `x-pl-key: pl_...` header.
+
+## Getting started
+
+### 1. Get your procure key
+
+Sign up at the hosted instance. You get one `pl_...` key. That is the only credential you ever see. Behind it, procure is already holding every upstream account for you.
+
+### 2. Connect your AI client
+
+All clients connect to the same remote endpoint. No cloning, no building, no Node.js required.
+
+```
+URL:    https://procure.example.com/api/mcp
 Header: x-pl-key: pl_your_key_here
 ```
 
----
-
 #### Claude Code (CLI)
 
-One command, no file editing:
-
 ```bash
-claude mcp add procurement-labs --transport http https://your-app.vercel.app/api/mcp --header "x-pl-key: pl_your_key_here"
+claude mcp add procure --transport http https://procure.example.com/api/mcp --header "x-pl-key: pl_your_key_here"
 ```
-
----
 
 #### Claude Desktop
 
@@ -94,9 +108,9 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or 
 ```json
 {
   "mcpServers": {
-    "procurement-labs": {
+    "procure": {
       "type": "http",
-      "url": "https://your-app.vercel.app/api/mcp",
+      "url": "https://procure.example.com/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -107,23 +121,19 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or 
 
 Restart Claude Desktop after saving.
 
----
-
 #### claude.ai (web)
 
-Settings → Integrations → Add custom integration. Paste the URL and set the `x-pl-key` header in the form. No file editing needed.
-
----
+Settings → Integrations → Add custom integration. Paste the URL and set the `x-pl-key` header in the form. No file editing.
 
 #### Cursor
 
-Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` in your project root:
+Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project):
 
 ```json
 {
   "mcpServers": {
-    "procurement-labs": {
-      "url": "https://your-app.vercel.app/api/mcp",
+    "procure": {
+      "url": "https://procure.example.com/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -134,8 +144,6 @@ Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` in your project root:
 
 Or via UI: Settings → Tools & Integrations → MCP → Add Server.
 
----
-
 #### Windsurf
 
 Edit `~/.codeium/windsurf/mcp_config.json`:
@@ -143,8 +151,8 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
 ```json
 {
   "mcpServers": {
-    "procurement-labs": {
-      "url": "https://your-app.vercel.app/api/mcp",
+    "procure": {
+      "url": "https://procure.example.com/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -155,19 +163,13 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
 
 Or via UI: Cascade panel → MCP Servers → Configure.
 
----
-
 #### Cline (VS Code extension)
-
-Best UI of the bunch — no file editing needed:
 
 1. Open the Cline sidebar
 2. Click the MCP Servers tab (plug icon)
-3. Add Server → select HTTP type
-4. Paste `https://your-app.vercel.app/api/mcp` as the URL
+3. Add Server → HTTP
+4. Paste `https://procure.example.com/api/mcp` as the URL
 5. Add header `x-pl-key: pl_your_key_here`
-
----
 
 #### Continue.dev
 
@@ -177,10 +179,10 @@ Edit `~/.continue/config.json`:
 {
   "mcpServers": [
     {
-      "name": "procurement-labs",
+      "name": "procure",
       "transport": {
         "type": "http",
-        "url": "https://your-app.vercel.app/api/mcp",
+        "url": "https://procure.example.com/api/mcp",
         "headers": {
           "x-pl-key": "pl_your_key_here"
         }
@@ -190,40 +192,34 @@ Edit `~/.continue/config.json`:
 }
 ```
 
----
-
 #### OpenAI Codex CLI
 
 Edit `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.procurement-labs]
+[mcp_servers.procure]
 type = "http"
-url = "https://your-app.vercel.app/api/mcp"
+url = "https://procure.example.com/api/mcp"
 
-[mcp_servers.procurement-labs.headers]
+[mcp_servers.procure.headers]
 x-pl-key = "pl_your_key_here"
 ```
 
----
+#### OpenAI Responses API
 
-#### OpenAI Responses API (building your own app)
-
-Pass the MCP server directly as a tool in your API call — no config file needed:
+Pass the MCP server directly as a tool:
 
 ```python
 response = client.responses.create(
     model="codex-mini-latest",
     tools=[{
         "type": "mcp",
-        "server_url": "https://your-app.vercel.app/api/mcp",
+        "server_url": "https://procure.example.com/api/mcp",
         "headers": { "x-pl-key": "pl_your_key_here" }
     }],
     input="What crypto prices are available?"
 )
 ```
-
----
 
 #### Goose (Block)
 
@@ -231,18 +227,124 @@ Edit `~/.config/goose/config.yaml`:
 
 ```yaml
 extensions:
-  procurement-labs:
+  procure:
     type: mcp
     enabled: true
     transport: http
-    url: https://your-app.vercel.app/api/mcp
+    url: https://procure.example.com/api/mcp
     headers:
       x-pl-key: pl_your_key_here
 ```
 
----
+## MCP tools
 
-**Fallback — Local stdio (for clients that don't support HTTP MCP)**
+The MCP endpoint exposes four tools.
+
+### `recommend`
+
+Describe what you need. procure returns ranked providers with scores, reasoning, pricing, and availability. This is the agentic entry point. Agents should start here, not with `query`.
+
+```json
+{
+  "need": "real-time crypto prices with no signup",
+  "priorities": ["no-auth", "cost"],
+  "budget": "free"
+}
+```
+
+### `compare`
+
+Side-by-side comparison of two or more providers on pricing, rate limits, strengths, and weaknesses.
+
+```json
+{ "provider_ids": ["claude", "gemini"] }
+```
+
+### `list_providers`
+
+Browse the catalog, optionally filtered by category: `physical_health`, `mental_health`, `financial`, `social_impact`, `environment`, `ai`, `maps`.
+
+### `query`
+
+Execute a specific action against a specific provider. The low-level primitive that `recommend` ultimately calls into.
+
+```json
+{
+  "provider_id": "coingecko",
+  "action": "price",
+  "params": { "ids": "bitcoin", "vs_currencies": "usd" }
+}
+```
+
+## Self-hosting
+
+You can run your own procure instance if you want to bring your own upstream credentials or host on your own infrastructure.
+
+### Prerequisites
+
+- Node.js 18+
+- A Supabase project for accounts and usage logging. See [migration.sql](migration.sql) for the schema.
+- An Upstash Redis instance for per-minute rate limiting
+
+### Deploy to Railway
+
+procure runs as a single Node HTTP server defined in [dev-server.ts](dev-server.ts), which mounts the route handlers in [api/](api/) plus the admin, signup, and waitlist routes. Railway auto-detects the `start` script, so no `railway.toml` or `Procfile` is required.
+
+```bash
+npm install
+npm run build
+npm start     # runs dist/dev-server.js on $PORT
+```
+
+Point Railway at this repo and set the environment variables below in the Railway dashboard.
+
+### Environment variables
+
+**Platform (required):**
+
+| Variable | Description |
+|---|---|
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key (server-side only) |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
+| `ADMIN_PASSWORD` | Password gate for the admin API endpoints |
+
+**Upstream providers (optional). Omit a variable to disable that provider:**
+
+| Variable | Provider |
+|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic Claude ([console.anthropic.com](https://console.anthropic.com)) |
+| `GOOGLE_GEMINI_API_KEY` | Google Gemini ([aistudio.google.com](https://aistudio.google.com)) |
+| `HUGGINGFACE_API_KEY` | HuggingFace ([huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)) |
+| `FINNHUB_API_KEY` | Finnhub ([finnhub.io](https://finnhub.io)) |
+| `COINGECKO_API_KEY` | CoinGecko. Optional, boosts rate limit. |
+| `EVERY_ORG_API_KEY` | Every.org ([partners.every.org](https://partners.every.org)) |
+| `OPENWEATHER_API_KEY` | OpenWeatherMap ([openweathermap.org/api](https://openweathermap.org/api)) |
+| `GEOAPIFY_API_KEY` | Geoapify ([myprojects.geoapify.com](https://myprojects.geoapify.com)) |
+| `OPENFDA_API_KEY` | OpenFDA. Optional, boosts rate limit. |
+
+Providers without a configured key show `Status: Not configured` in `list_providers` and return a 503 when queried. OpenFDA and Mental Health Resources work with no key at all.
+
+### Provisioning keys
+
+Keys live in Supabase, not in an env var. Apply [migration.sql](migration.sql) to your project to create the `accounts` and `usage` tables, then create accounts through the admin endpoints (gated by `ADMIN_PASSWORD`) or by inserting rows directly. Each account row holds a `pl_...` key, a tier, a monthly quota, and a per-minute rate.
+
+### Local development
+
+```bash
+cp .env.example .env          # fill in your values
+npm install
+npx tsx dev-server.ts         # HTTP server with hot-restart via tsx
+```
+
+The server listens on `$PORT` (defaults to 3000). Hit `http://localhost:3000/api/providers` with your `x-pl-key` header to sanity check.
+
+To run the stdio MCP fallback instead (see below), use `npm run dev`.
+
+### Fallback: local stdio MCP
+
+For MCP clients that cannot speak HTTP, the repo also ships a thin stdio proxy in [src/](src/) that forwards to a remote procure backend:
 
 ```bash
 npm install
@@ -252,194 +354,41 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "procurement-labs": {
+    "procure": {
       "command": "node",
       "args": ["/absolute/path/to/procurementlabs/dist/index.js"],
       "env": {
         "PL_API_KEY": "pl_your_key_here",
-        "PL_BACKEND_URL": "https://your-app.vercel.app"
+        "PL_BACKEND_URL": "https://procure.example.com"
       }
     }
   }
 }
 ```
 
-**Or run locally for development:**
-
-```bash
-PL_API_KEY=pl_demo_key_2026 npm run dev
-```
-
----
-
-### 3. Generate an API Key
-
-API keys must start with `pl_`. Generate one:
-
-```bash
-node -e "console.log('pl_' + require('crypto').randomBytes(16).toString('hex'))"
-```
-
-Add it (comma-separated) to the `PL_VALID_KEYS` environment variable on your backend.
-
----
-
-## Environment Variables
-
-### Backend (Vercel / `.env.local`)
+MCP client env vars for the stdio path:
 
 | Variable | Required | Description |
 |---|---|---|
-| `PL_VALID_KEYS` | **Yes** | Comma-separated list of valid `pl_` keys |
-| `ANTHROPIC_API_KEY` | No | [anthropic.com](https://console.anthropic.com) |
-| `OPENAI_API_KEY` | No | [platform.openai.com](https://platform.openai.com) |
-| `GOOGLE_GEMINI_API_KEY` | No | [aistudio.google.com](https://aistudio.google.com) |
-| `HUGGINGFACE_API_KEY` | No | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
-| `AWS_ACCESS_KEY_ID` | No | AWS IAM user with Comprehend access |
-| `AWS_SECRET_ACCESS_KEY` | No | |
-| `AWS_REGION` | No | Default: `us-east-1` |
-| `GOOGLE_CLOUD_API_KEY` | No | Translation API enabled |
-| `GOOGLE_MAPS_API_KEY` | No | Maps, Places, Directions APIs enabled |
-| `ALPHA_VANTAGE_API_KEY` | No | [alphavantage.co](https://www.alphavantage.co/support/#api-key) |
-| `FINNHUB_API_KEY` | No | [finnhub.io](https://finnhub.io/dashboard) |
-| `GEOAPIFY_API_KEY` | No | [geoapify.com](https://www.geoapify.com/get-started-with-maps-api) |
-| `OPENWEATHER_API_KEY` | No | [openweathermap.org](https://openweathermap.org/api) |
-| `EVERY_ORG_API_KEY` | No | [partners.every.org](https://partners.every.org) |
-| `OPENFDA_API_KEY` | No | Optional — increases rate limits |
+| `PL_API_KEY` | Yes | Your `pl_` key |
+| `PL_BACKEND_URL` | No | Override backend URL. Default: `https://procurementlabs.up.railway.app` |
 
-Providers without a configured key will appear as `Status: Not configured` in `list_providers` and return a 503 if queried.
+## Adding a provider
 
-### MCP Client — local stdio only (Option B)
+1. Create `lib/providers/my-provider.ts` implementing the `Provider` interface from [lib/providers/types.ts](lib/providers/types.ts)
+2. Register it in [lib/providers/registry.ts](lib/providers/registry.ts)
+3. Add any required env vars to [.env.example](.env.example)
+4. Add metadata to [lib/reasoning/](lib/reasoning/) so the `recommend` tool can surface it
 
-| Variable | Required | Description |
-|---|---|---|
-| `PL_API_KEY` | **Yes** | Your `pl_` key |
-| `PL_BACKEND_URL` | No | Override backend URL (default: `https://procurementlabs.vercel.app`) |
-
-Not needed when using the remote HTTP connection (Option A).
-
----
-
-## Available MCP Tools
-
-### `list_providers`
-Browse all providers, optionally filtered by category.
-
-Categories: `physical_health`, `mental_health`, `financial`, `social_impact`, `environment`, `ai`, `maps`, `cloud`
-
-### `get_api_docs`
-View the full API integration documentation — authentication, REST endpoints, provider categories, and examples. Accepts an optional `section` parameter to narrow the output:
-- `overview` — project summary and base URL
-- `authentication` — how to obtain and use `pl_` keys
-- `endpoints` — full REST reference with request/response shapes
-- `providers` — all provider IDs, categories, and required env vars
-
-Omit `section` to receive the complete documentation in one response.
-
-### `recommend`
-Get intelligent recommendations for which provider best fits your needs.
-
-```json
-{
-  "need": "I need real-time stock prices",
-  "priorities": ["speed", "reliability"],
-  "budget": "free"
-}
-```
-
-Scores providers on relevance, your stated priorities, budget, and live availability. Returns ranked results with reasoning, pricing, and rate-limit summaries.
-
-### `compare`
-Compare two or more providers side by side on pricing, rate limits, strengths, weaknesses, and best-fit use cases.
-
-```json
-{ "provider_ids": ["claude", "gemini"] }
-```
-
----
-
-## REST API Reference
-
-If you are not using MCP and prefer to call the gateway directly via HTTP, use these REST endpoints.
-
-All endpoints require authentication via the `x-pl-key` header.
-- **Base URL:** `https://your-app.vercel.app` (or your local environment)
-- **Header:** `x-pl-key: pl_your_key_here`
-
-### `GET /api/providers`
-List all supported providers and their available actions.
-
-**Query Parameters:**
-- `category` (optional) - Filter by `physical_health`, `mental_health`, `financial`, `social_impact`, `environment`, `ai`, `maps`, or `cloud`.
-
-**Response (200 OK):**
-```json
-{
-  "providers": [
-    {
-      "id": "claude",
-      "name": "Anthropic Claude",
-      "category": "ai",
-      "description": "...",
-      "available": true,
-      "availableActions": [...]
-    }
-  ]
-}
-```
-
-### `POST /api/query`
-Execute a specific action against a provider. The gateway handles the provider's native credentials and rate limits transparently.
-
-**Request Body:**
-```json
-{
-  "provider_id": "claude",
-  "action": "chat",
-  "params": {
-    "message": "Summarize this contract clause: ..."
-  }
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "data": { ... }
-}
-```
-*Note: This endpoint returns an `X-RateLimit-Remaining` header representing your account's remaining quota balance.*
-
-### `GET /api/usage`
-Check your account's quota, detailed usage breakdown by provider, and renewal date.
-
-**Response (200 OK):**
-```json
-{
-  "tier": "free",
-  "quota": 500,
-  "per_minute_rate": 60,
-  "used": 150,
-  "remaining": 350,
-  "resets": "2026-05-01",
-  "breakdown": [
-    { "provider": "claude", "count": 100 },
-    { "provider": "coingecko", "count": 50 }
-  ]
-}
-```
-
----
-
-## Development
+## Scripts
 
 ```bash
-npm run dev    # run MCP server with tsx (no build step)
+npm run dev    # stdio MCP server via tsx, no build
 npm run build  # compile TypeScript → dist/
-npm start      # run compiled server
+npm start      # run compiled standalone server (dist/dev-server.js)
+npm test       # run test.ts against local backend
 ```
 
-### Adding a Provider
+---
 
-1. Create `api/_lib/providers/my-provider.ts` implementing the `Provider` interface from `types.ts`
-2. Register it in `api/_lib/providers/registry.ts`
+Built on [MCP](https://modelcontextprotocol.io), Hono, Supabase, and Upstash Redis.
