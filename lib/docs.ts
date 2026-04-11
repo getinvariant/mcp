@@ -135,7 +135,12 @@ Check your account quota, usage breakdown by provider, and renewal date.
 
 Use \`list_providers\` to see live availability (whether the server has each key configured).`;
 
-  const sections: Record<string, string> = { overview, authentication, endpoints, providers };
+  const sections: Record<string, string> = {
+    overview,
+    authentication,
+    endpoints,
+    providers,
+  };
 
   if (section && sections[section]) {
     return sections[section];

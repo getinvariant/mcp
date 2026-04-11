@@ -12,31 +12,36 @@ export interface ProviderIntelligence {
 
 export interface PricingInfo {
   model: "free" | "freemium" | "paid";
-  freeTier: string | null;       // e.g. "240 req/hour"
-  paidStartsAt: string | null;   // e.g. "$49/mo"
+  freeTier: string | null; // e.g. "240 req/hour"
+  paidStartsAt: string | null; // e.g. "$49/mo"
   notes: string | null;
 }
 
 export interface RateLimitInfo {
-  free: string | null;     // e.g. "60 calls/min"
+  free: string | null; // e.g. "60 calls/min"
   paid: string | null;
 }
 
 export interface Recommendation {
   provider_id: string;
   provider_name: string;
-  score: number;            // 0-100
+  score: number; // 0-100
   reasoning: string;
-  actions: string[];        // relevant actions for the use case
+  actions: string[]; // relevant actions for the use case
   pricing: PricingInfo;
   rateLimits: RateLimitInfo;
-  available: boolean;       // whether the API key is configured on the server
+  available: boolean; // whether the API key is configured on the server
 }
 
 export interface RecommendationRequest {
-  need: string;                // natural language description of what user needs
-  priorities?: Priority[];     // what matters most
+  need: string; // natural language description of what user needs
+  priorities?: Priority[]; // what matters most
   budget?: "free" | "low" | "any";
 }
 
-export type Priority = "cost" | "reliability" | "speed" | "data-quality" | "no-auth";
+export type Priority =
+  | "cost"
+  | "reliability"
+  | "speed"
+  | "data-quality"
+  | "no-auth";

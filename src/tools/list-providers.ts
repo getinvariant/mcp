@@ -10,7 +10,9 @@ export function registerListProviders(server: McpServer): void {
       category: z.string().optional().describe("Filter by category"),
     },
     async ({ category }) => {
-      const query = category ? `providers?category=${encodeURIComponent(category)}` : "providers";
+      const query = category
+        ? `providers?category=${encodeURIComponent(category)}`
+        : "providers";
       const result = await backendRequest(query, "GET");
 
       if (!result.ok) {
@@ -24,7 +26,12 @@ export function registerListProviders(server: McpServer): void {
 
       if (!providers || providers.length === 0) {
         return {
-          content: [{ type: "text", text: `No providers found${category ? ` for category: ${category}` : ""}.` }],
+          content: [
+            {
+              type: "text",
+              text: `No providers found${category ? ` for category: ${category}` : ""}.`,
+            },
+          ],
         };
       }
 
@@ -32,7 +39,10 @@ export function registerListProviders(server: McpServer): void {
         const actions = p.availableActions
           .map((a: any) => {
             const params = Object.entries(a.parameters)
-              .map(([k, v]: [string, any]) => `${k} (${v.type}${v.required ? ", required" : ""})`)
+              .map(
+                ([k, v]: [string, any]) =>
+                  `${k} (${v.type}${v.required ? ", required" : ""})`,
+              )
               .join(", ");
             return `    - ${a.action}: ${a.description} [${params}]`;
           })
@@ -50,6 +60,6 @@ export function registerListProviders(server: McpServer): void {
       return {
         content: [{ type: "text", text: lines.join("\n\n---\n\n") }],
       };
-    }
+    },
   );
 }

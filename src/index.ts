@@ -7,7 +7,6 @@ import { registerRecommend } from "./tools/recommend.js";
 import { registerGetApiDocs } from "./tools/get-api-docs.js";
 import { registerCompare } from "./tools/compare.js";
 
-
 async function main() {
   if (!config.apiKey) {
     console.error("Error: PL_API_KEY environment variable is required.");
@@ -24,7 +23,6 @@ async function main() {
   registerRecommend(server);
   registerGetApiDocs(server);
   registerCompare(server);
-
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

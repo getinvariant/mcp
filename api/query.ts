@@ -22,17 +22,25 @@ export default async function handler(req: any, res: any) {
 
   const provider = getProvider(provider_id);
   if (!provider) {
-    return res.status(404).json({ error: `Provider '${provider_id}' not found` });
+    return res
+      .status(404)
+      .json({ error: `Provider '${provider_id}' not found` });
   }
 
   if (!provider.isAvailable()) {
-    return res.status(503).json({ error: `Provider '${provider.info.name}' is not configured on the server` });
+    return res
+      .status(503)
+      .json({
+        error: `Provider '${provider.info.name}' is not configured on the server`,
+      });
   }
 
   const result = await provider.query(action, params || {});
 
   // log async — don't block the response
-  logUsage(auth.account!.id, provider_id, action, result.success).catch(() => {});
+  logUsage(auth.account!.id, provider_id, action, result.success).catch(
+    () => {},
+  );
 
   if (!result.success) {
     return res.status(502).json({ error: result.error });

@@ -7,9 +7,15 @@ export function registerRecommend(server: McpServer): void {
     "recommend",
     "Get intelligent recommendations for which API provider to use based on your needs. Compares pricing, rate limits, reliability, and capabilities.",
     {
-      need: z.string().describe("Describe what you need — e.g. 'I need real-time stock prices'"),
+      need: z
+        .string()
+        .describe(
+          "Describe what you need — e.g. 'I need real-time stock prices'",
+        ),
       priorities: z
-        .array(z.enum(["cost", "reliability", "speed", "data-quality", "no-auth"]))
+        .array(
+          z.enum(["cost", "reliability", "speed", "data-quality", "no-auth"]),
+        )
         .optional()
         .describe("What matters most to you"),
       budget: z
@@ -33,10 +39,12 @@ export function registerRecommend(server: McpServer): void {
       }
 
       const response = result.data as any;
-      return response?.result ?? {
-        content: [{ type: "text", text: "No response from server" }],
-        isError: true,
-      };
-    }
+      return (
+        response?.result ?? {
+          content: [{ type: "text", text: "No response from server" }],
+          isError: true,
+        }
+      );
+    },
   );
 }

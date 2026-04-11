@@ -141,7 +141,10 @@ export const providerKnowledge: Record<string, ProviderIntelligence> = {
       paidStartsAt: "$0.06/hour (dedicated endpoints)",
       notes: "Free tier for popular models. Thousands of models available.",
     },
-    rateLimits: { free: "Rate-limited (varies by model load)", paid: "Dedicated capacity" },
+    rateLimits: {
+      free: "Rate-limited (varies by model load)",
+      paid: "Dedicated capacity",
+    },
     strengths: [
       "Thousands of specialized models",
       "Open-source models (Mistral, Llama, etc.)",
@@ -414,7 +417,15 @@ export const intentKeywords: Record<string, string[]> = {
 export const categoryDescriptions: Record<string, string[]> = {
   physical_health: ["health", "medical", "drug", "pharmaceutical", "clinical"],
   mental_health: ["mental", "wellness", "crisis", "support", "therapy"],
-  financial: ["finance", "money", "trading", "market", "investment", "crypto", "stock"],
+  financial: [
+    "finance",
+    "money",
+    "trading",
+    "market",
+    "investment",
+    "crypto",
+    "stock",
+  ],
   social_impact: ["social", "nonprofit", "charity", "giving", "impact"],
   environment: ["weather", "climate", "environment", "air", "pollution"],
   ai: ["ai", "ml", "language model", "chatbot", "nlp", "text generation"],

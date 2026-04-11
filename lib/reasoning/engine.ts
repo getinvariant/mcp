@@ -1,6 +1,14 @@
 import { getAllProviders } from "../providers/registry.js";
-import { providerKnowledge, intentKeywords, categoryDescriptions } from "./provider-knowledge.js";
-import type { Recommendation, RecommendationRequest, Priority } from "./types.js";
+import {
+  providerKnowledge,
+  intentKeywords,
+  categoryDescriptions,
+} from "./provider-knowledge.js";
+import type {
+  Recommendation,
+  RecommendationRequest,
+  Priority,
+} from "./types.js";
 
 /**
  * The Reasoning Engine.
@@ -25,7 +33,10 @@ export function recommend(request: RecommendationRequest): Recommendation[] {
 
     // Check intent keywords
     for (const [keyword, providerIds] of Object.entries(intentKeywords)) {
-      if (needLower.includes(keyword) && providerIds.includes(provider.info.id)) {
+      if (
+        needLower.includes(keyword) &&
+        providerIds.includes(provider.info.id)
+      ) {
         // Longer keyword matches are worth more (more specific)
         relevance += Math.min(keyword.split(" ").length * 8, 20);
         matchedKeywords.push(keyword);
@@ -47,7 +58,9 @@ export function recommend(request: RecommendationRequest): Recommendation[] {
     // Check provider description and action names
     const providerText = [
       provider.info.description,
-      ...provider.info.availableActions.map((a) => `${a.action} ${a.description}`),
+      ...provider.info.availableActions.map(
+        (a) => `${a.action} ${a.description}`,
+      ),
     ]
       .join(" ")
       .toLowerCase();
@@ -96,13 +109,17 @@ export function recommend(request: RecommendationRequest): Recommendation[] {
           else priorityScore += 0;
           break;
         case "speed":
-          if (knowledge.dataFreshness === "static") priorityScore += 10; // instant, no API call
+          if (knowledge.dataFreshness === "static")
+            priorityScore += 10; // instant, no API call
           else if (knowledge.dataFreshness === "real-time") priorityScore += 7;
           else priorityScore += 4;
           break;
         case "data-quality":
           if (knowledge.reliability === "high") priorityScore += 8;
-          if (knowledge.dataFreshness === "real-time" || knowledge.dataFreshness === "near-real-time")
+          if (
+            knowledge.dataFreshness === "real-time" ||
+            knowledge.dataFreshness === "near-real-time"
+          )
             priorityScore += 5;
           break;
         case "no-auth":
@@ -137,18 +154,24 @@ export function recommend(request: RecommendationRequest): Recommendation[] {
     const availabilityScore = provider.isAvailable() ? 10 : 0;
 
     // ── Total ──────────────────────────────────────────────────────
-    const totalScore = relevance + priorityScore + budgetScore + availabilityScore;
+    const totalScore =
+      relevance + priorityScore + budgetScore + availabilityScore;
 
     // ── Build reasoning string ─────────────────────────────────────
     const reasons: string[] = [];
 
     if (matchedKeywords.length > 0) {
-      reasons.push(`Matches your need for: ${[...new Set(matchedKeywords)].join(", ")}`);
+      reasons.push(
+        `Matches your need for: ${[...new Set(matchedKeywords)].join(", ")}`,
+      );
     }
 
     if (knowledge.pricing.model === "free") {
       reasons.push("Completely free to use");
-    } else if (knowledge.pricing.model === "freemium" && knowledge.pricing.freeTier) {
+    } else if (
+      knowledge.pricing.model === "freemium" &&
+      knowledge.pricing.freeTier
+    ) {
       reasons.push(`Free tier: ${knowledge.pricing.freeTier}`);
     } else {
       reasons.push(`Paid: starts at ${knowledge.pricing.paidStartsAt}`);
@@ -179,9 +202,10 @@ export function recommend(request: RecommendationRequest): Recommendation[] {
       .map((a) => a.action);
 
     // If no specific action matched, include all
-    const actions = relevantActions.length > 0
-      ? relevantActions
-      : provider.info.availableActions.map((a) => a.action);
+    const actions =
+      relevantActions.length > 0
+        ? relevantActions
+        : provider.info.availableActions.map((a) => a.action);
 
     scored.push({
       provider_id: provider.info.id,
@@ -204,7 +228,9 @@ export function recommend(request: RecommendationRequest): Recommendation[] {
 /**
  * Compare two or more providers side by side.
  */
-export function compareProviders(providerIds: string[]): Record<string, unknown>[] {
+export function compareProviders(
+  providerIds: string[],
+): Record<string, unknown>[] {
   const providers = getAllProviders();
   const results: Record<string, unknown>[] = [];
 

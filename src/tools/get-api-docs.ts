@@ -10,7 +10,9 @@ export function registerGetApiDocs(server: McpServer): void {
       section: z
         .enum(["overview", "authentication", "endpoints", "providers"])
         .optional()
-        .describe("Narrow to a specific section (optional — omit for full docs)"),
+        .describe(
+          "Narrow to a specific section (optional — omit for full docs)",
+        ),
     },
     async ({ section }) => {
       const result = await backendRequest("mcp", "POST", {
@@ -28,10 +30,12 @@ export function registerGetApiDocs(server: McpServer): void {
       }
 
       const response = result.data as any;
-      return response?.result ?? {
-        content: [{ type: "text", text: "No response from server" }],
-        isError: true,
-      };
-    }
+      return (
+        response?.result ?? {
+          content: [{ type: "text", text: "No response from server" }],
+          isError: true,
+        }
+      );
+    },
   );
 }

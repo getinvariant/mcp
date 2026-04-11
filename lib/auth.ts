@@ -10,7 +10,7 @@ export interface AuthResult {
 }
 
 export async function authenticateRequest(
-  plKey: string | undefined
+  plKey: string | undefined,
 ): Promise<AuthResult> {
   if (!plKey || !plKey.startsWith("pl_")) {
     return { ok: false, error: "Missing or invalid API key", status: 401 };
@@ -23,7 +23,13 @@ export async function authenticateRequest(
 
   const quota = await checkAndIncrement(plKey, account);
   if (!quota.ok) {
-    return { ok: false, error: quota.error, status: 429, account, remaining: 0 };
+    return {
+      ok: false,
+      error: quota.error,
+      status: 429,
+      account,
+      remaining: 0,
+    };
   }
 
   return { ok: true, account, remaining: quota.remaining };

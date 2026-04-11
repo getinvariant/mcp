@@ -3,7 +3,7 @@ import { config } from "./config.js";
 export async function backendRequest(
   path: string,
   method: "GET" | "POST",
-  body?: unknown
+  body?: unknown,
 ): Promise<{ ok: boolean; data?: unknown; error?: string }> {
   const url = `${config.backendUrl}/api/${path}`;
 
@@ -25,6 +25,9 @@ export async function backendRequest(
 
     return { ok: true, data: json };
   } catch (err) {
-    return { ok: false, error: `Backend request failed: ${(err as Error).message}` };
+    return {
+      ok: false,
+      error: `Backend request failed: ${(err as Error).message}`,
+    };
   }
 }
