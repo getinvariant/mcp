@@ -8,7 +8,7 @@ export function registerGetApiDocs(server: McpServer): void {
     "View the full API integration documentation — authentication, available REST endpoints, provider categories, and example requests. Read this before building an integration.",
     {
       section: z
-        .enum(["overview", "authentication", "endpoints", "providers"])
+        .enum(["overview", "authentication", "endpoints", "providers", "multi-key"])
         .optional()
         .describe(
           "Narrow to a specific section (optional — omit for full docs)",

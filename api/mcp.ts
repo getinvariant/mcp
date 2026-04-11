@@ -85,6 +85,7 @@ async function handleMessage(
                     "authentication",
                     "endpoints",
                     "providers",
+                    "multi-key",
                   ],
                   description:
                     "Narrow to a specific section (optional — omit for full docs)",
