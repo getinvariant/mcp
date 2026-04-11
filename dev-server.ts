@@ -1273,8 +1273,13 @@ ${renderNav("how")}
         <pre>claude mcp add procurement-labs \\
   --transport http https://pclabs.dev/api/mcp \\
   --header "x-pl-key: pl_your_key"</pre>
-        <p>For <strong>Codex</strong>, run this command:</p>
-        <pre>codex mcp add procurement-labs --url https://pclabs.dev/api/mcp</pre>
+        <p>For <strong>Codex</strong>, edit <code>~/.codex/config.toml</code>:</p>
+        <pre>[mcp_servers.procurement-labs]
+type = "http"
+url = "https://pclabs.dev/api/mcp"
+
+[mcp_servers.procurement-labs.headers]
+x-pl-key = "pl_your_key"</pre>
         <p>For <strong>Cursor</strong>, add to <code>~/.cursor/mcp.json</code>:</p>
         <pre>{
   "mcpServers": {
@@ -1292,15 +1297,17 @@ ${renderNav("how")}
       <div class="step-num">3</div>
       <div class="step-body">
         <h3>Get smart recommendations</h3>
-        <p>Not sure which API to use? The reasoning layer analyzes your needs and compares providers on cost, rate limits, reliability, and capabilities.</p>
-        <pre>POST /api/recommend
-{ "need": "I need real-time stock data",
-  "priorities": ["cost", "reliability"],
-  "budget": "free" }
+        <p>Not sure which API to use? Just ask your agent. Procure exposes <code>recommend</code>, <code>compare</code>, <code>list_providers</code>, and <code>get_api_docs</code> as MCP tools — your agent picks the best provider for the job, with a score and reasoning.</p>
+        <pre>you: "find me a free API for real-time stock data"
 
-→ Recommends Finnhub (score: 85/100)
-  "Free tier: 60 calls/min. High reliability."</pre>
-        <p>Also available as the <code>recommend</code> and <code>compare</code> MCP tools.</p>
+agent calls recommend{
+  need: "real-time stock data",
+  priorities: ["cost","reliability"],
+  budget: "free"
+}
+
+→ Finnhub (score 85/100)
+  Free tier · 60 req/min · high reliability</pre>
       </div>
     </div>
 
@@ -1312,7 +1319,8 @@ ${renderNav("how")}
         <pre>"what's the weather in tokyo?"          → OpenWeatherMap
 "look up adverse events for ibuprofen"  → OpenFDA
 "get the BTC price"                     → CoinGecko
-"find nonprofits for climate change"    → Every.org</pre>
+"what's AAPL trading at?"               → Finnhub
+"find a crisis hotline for veterans"    → Mental Health</pre>
       </div>
     </div>
 
