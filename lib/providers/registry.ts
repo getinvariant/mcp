@@ -1,14 +1,20 @@
 import { Provider } from "./types.js";
 import { OpenFDAProvider } from "./openfda.js";
 import { MentalHealthProvider } from "./mental-health.js";
+import { NPPESProvider } from "./nppes.js";
 import { AnthropicProvider } from "./anthropic.js";
 import { GeminiProvider } from "./gemini.js";
 import { HuggingFaceProvider } from "./huggingface.js";
 import { EnvironmentProvider } from "./environment.js";
 import { CoinGeckoProvider } from "./coingecko.js";
 import { FinnhubProvider } from "./finnhub.js";
+import { WorldBankProvider } from "./world-bank.js";
 import { CharityProvider } from "./charity.js";
 import { GeoapifyProvider } from "./geoapify.js";
+import { OpenLibraryProvider } from "./open-library.js";
+import { KhanAcademyProvider } from "./khan-academy.js";
+import { UnsplashProvider } from "./unsplash.js";
+import { ArtInstituteProvider } from "./art-institute.js";
 
 const providers = new Map<string, Provider>();
 
@@ -18,6 +24,7 @@ function ensureInitialized() {
     // Health
     new OpenFDAProvider(),
     new MentalHealthProvider(),
+    new NPPESProvider(),
     // AI
     new AnthropicProvider(),
     new GeminiProvider(),
@@ -25,12 +32,19 @@ function ensureInitialized() {
     // Finance
     new CoinGeckoProvider(),
     new FinnhubProvider(),
+    new WorldBankProvider(),
     // Social Impact
     new CharityProvider(),
     // Environment
     new EnvironmentProvider(),
     // Maps
     new GeoapifyProvider(),
+    // Education
+    new OpenLibraryProvider(),
+    new KhanAcademyProvider(),
+    // Creative
+    new UnsplashProvider(),
+    new ArtInstituteProvider(),
   ];
   for (const p of all) {
     providers.set(p.info.id, p);

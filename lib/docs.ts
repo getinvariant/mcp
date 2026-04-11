@@ -29,7 +29,7 @@ Add the generated key to the \`PL_VALID_KEYS\` environment variable on the backe
 List all supported providers and their available actions.
 
 **Query params:**
-- \`category\` (optional) — filter by \`physical_health\`, \`mental_health\`, \`financial\`, \`social_impact\`, \`environment\`, \`ai\`, \`maps\`, or \`cloud\`
+- \`category\` (optional) — filter by \`physical_health\`, \`mental_health\`, \`financial\`, \`social_impact\`, \`environment\`, \`ai\`, \`maps\`, \`cloud\`, \`education\`, or \`creative\`
 
 **Response:**
 \`\`\`json
@@ -103,6 +103,7 @@ Check your account quota, usage breakdown by provider, and renewal date.
 
 ## physical_health
 - **openfda** — FDA drug adverse events, recalls, and labeling data. No API key required (optional key increases rate limits).
+- **nppes** — CMS NPI Registry: search healthcare providers by name, specialty, NPI, or location. No API key required.
 
 ## mental_health
 - **mental_health** — Mental health crisis resources and support information.
@@ -111,6 +112,7 @@ Check your account quota, usage breakdown by provider, and renewal date.
 - **alpha_vantage** — Real-time and historical stock prices, forex, and economic indicators. Requires \`ALPHA_VANTAGE_API_KEY\`.
 - **finnhub** — Stock quotes, company financials, earnings calendars. Requires \`FINNHUB_API_KEY\`.
 - **coingecko** — Cryptocurrency prices, market cap, and historical data. Free tier available.
+- **world_bank** — World Bank development indicators (GDP, population, poverty) for 300+ economies. No API key required.
 
 ## social_impact
 - **charity** — Search nonprofits and charities via Every.org. Requires \`EVERY_ORG_API_KEY\`.
@@ -132,6 +134,14 @@ Check your account quota, usage breakdown by provider, and renewal date.
 ## cloud
 - **aws_comprehend** — NLP: sentiment analysis, entity recognition, key phrases. Requires AWS credentials.
 - **google_translate** — Text translation via Google Cloud. Requires \`GOOGLE_CLOUD_API_KEY\`.
+
+## education
+- **open_library** — Search millions of books by title, author, ISBN, or subject via the Internet Archive. No API key required.
+- **khan_academy** — Browse Khan Academy's free educational content tree (subjects, courses, units). No API key required.
+
+## creative
+- **unsplash** — Search 3M+ royalty-free photos. Requires \`UNSPLASH_ACCESS_KEY\` (free registration).
+- **art_institute** — Search 120,000+ artworks from the Art Institute of Chicago. No API key required.
 
 Use \`list_providers\` to see live availability (whether the server has each key configured).`;
 

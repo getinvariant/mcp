@@ -358,6 +358,8 @@ const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   environment: { label: "Environment", icon: "E" },
   maps: { label: "Maps", icon: "G" },
   cloud: { label: "Cloud", icon: "C" },
+  education: { label: "Education", icon: "E" },
+  creative: { label: "Creative", icon: "C" },
 };
 
 interface AccountWithUsage {
@@ -470,6 +472,49 @@ function renderHomepage(): string {
       const meta = CATEGORY_META[cat] || { label: cat, icon: "·" };
       const count = providers.filter((p) => p.category === cat).length;
       return `<span class="cat-tag">${escapeHtml(meta.label.toLowerCase())} (${count})</span>`;
+    })
+    .join("");
+
+  const grouped: Record<string, typeof providers> = {};
+  for (const p of providers) {
+    if (!grouped[p.category]) grouped[p.category] = [];
+    grouped[p.category].push(p);
+  }
+
+  let idx = 0;
+  const providerGrid = Object.entries(grouped)
+    .map(([cat, provs]) => {
+      const meta = CATEGORY_META[cat] || { label: cat, icon: "·" };
+      const cards = provs
+        .map((p) => {
+          idx++;
+          const badge = p.available
+            ? `<span class="pg-badge pg-live">live</span>`
+            : `<span class="pg-badge pg-nokey">key needed</span>`;
+          const actionCount = p.actions.length;
+          return `<div class="pg-card" style="animation-delay:${idx * 0.06}s">
+            <div class="pg-card-top">
+              <span class="pg-num">${String(idx).padStart(2, "0")}</span>
+              ${badge}
+            </div>
+            <h4 class="pg-name">${escapeHtml(p.name)}</h4>
+            <p class="pg-desc">${escapeHtml(p.description)}</p>
+            <div class="pg-card-foot">
+              <span class="pg-id">${escapeHtml(p.id)}</span>
+              <span class="pg-actions">${actionCount} action${actionCount !== 1 ? "s" : ""}</span>
+            </div>
+          </div>`;
+        })
+        .join("");
+      return `<div class="pg-group">
+        <div class="pg-group-head">
+          <span class="pg-icon">${escapeHtml(meta.icon)}</span>
+          <span class="pg-label">${escapeHtml(meta.label)}</span>
+          <span class="pg-line"></span>
+          <span class="pg-count">${provs.length}</span>
+        </div>
+        <div class="pg-cards">${cards}</div>
+      </div>`;
     })
     .join("");
 
@@ -597,6 +642,42 @@ ${SHARED_STYLES}
   .cat-tag:hover{border-color:var(--amber);color:var(--amber);background:rgba(255,183,39,0.08);transform:translate(-2px,-2px);box-shadow:3px 3px 0 var(--amber);}
   .cat-tag-more{color:var(--amber);border-style:dashed;border-color:var(--amber);}
   .cat-tag-more::before{content:'+ ';}
+
+  /* ── PROVIDER GRID ── */
+  .provider-showcase{margin:0 0 6rem;padding:4rem 0 0;}
+  .ps-head{display:grid;grid-template-columns:0.65fr 2.35fr;gap:3.5rem;align-items:start;margin-bottom:3.5rem;}
+  .ps-head-left{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:var(--muted);}
+  .ps-head-left span{display:block;color:var(--cyan);font-family:var(--serif);font-size:clamp(1.8rem,2.5vw,2.4rem);font-style:italic;text-transform:none;letter-spacing:-0.02em;margin-top:0.6rem;line-height:1;}
+  .ps-head-right{font-family:var(--sans);font-size:1rem;color:#8a8578;line-height:1.55;padding-top:0.25rem;}
+  .ps-head-right strong{color:var(--fg);font-weight:600;}
+
+  .pg-group{margin-bottom:3rem;}
+  .pg-group-head{display:flex;align-items:center;gap:0.85rem;margin-bottom:1.25rem;padding-bottom:0.85rem;border-bottom:1px solid var(--line);}
+  .pg-icon{width:1.6rem;height:1.6rem;display:flex;align-items:center;justify-content:center;background:var(--amber);color:#000;font-family:var(--mono);font-size:0.65rem;font-weight:700;flex-shrink:0;}
+  .pg-label{font-family:var(--serif);font-style:italic;font-size:1.35rem;font-weight:400;color:var(--fg);letter-spacing:-0.015em;text-transform:lowercase;}
+  .pg-line{flex:1;height:1px;background:var(--line);}
+  .pg-count{font-family:var(--mono);font-size:0.62rem;color:var(--amber);border:1.5px solid var(--amber);padding:0.15rem 0.5rem;text-transform:uppercase;letter-spacing:0.1em;}
+
+  .pg-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;}
+  .pg-card{background:#0a0a0a;border:1.5px solid var(--line-strong);padding:1.35rem 1.4rem 1.15rem;position:relative;transition:all .25s ease;animation:rise 0.7s ease both;}
+  .pg-card:hover{border-color:var(--fg);transform:translate(-3px,-3px);box-shadow:5px 5px 0 var(--amber);}
+  .pg-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;}
+  .pg-num{font-family:var(--mono);font-size:0.58rem;color:#3a362d;letter-spacing:0.15em;}
+  .pg-badge{font-family:var(--mono);font-size:0.52rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;padding:0.18rem 0.45rem;border:1.5px solid currentColor;}
+  .pg-live{color:var(--amber);}
+  .pg-live::before{content:'● ';font-size:0.5em;vertical-align:1px;animation:pulse 1.6s ease-in-out infinite;}
+  .pg-nokey{color:var(--muted);}
+  .pg-name{font-family:var(--serif);font-size:1.15rem;font-weight:400;color:var(--fg);line-height:1.15;margin-bottom:0.6rem;letter-spacing:-0.01em;}
+  .pg-desc{font-family:var(--sans);font-size:0.78rem;color:#8a8578;line-height:1.5;margin-bottom:1rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .pg-card-foot{display:flex;justify-content:space-between;align-items:center;padding-top:0.65rem;border-top:1px solid var(--line);}
+  .pg-id{font-family:var(--mono);font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+  .pg-actions{font-family:var(--mono);font-size:0.58rem;color:var(--cyan);text-transform:uppercase;letter-spacing:0.1em;}
+
+  @media(max-width:1100px){.pg-cards{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){
+    .pg-cards{grid-template-columns:1fr;}
+    .ps-head{grid-template-columns:1fr;gap:1rem;}
+  }
 
   /* ── DEMO TERMINAL ── */
   .demo-wrap{margin:6rem 0;}
@@ -874,6 +955,16 @@ ${renderNav()}
   <div class="categories reveal">
     <div class="cat-head">online today<span>every api, one key.</span></div>
     <div class="cat-tags">${categoryList}<span class="cat-tag cat-tag-more">more coming fast</span></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="provider-showcase reveal">
+    <div class="ps-head">
+      <div class="ps-head-left">the full roster<span>what's wired.</span></div>
+      <div class="ps-head-right"><strong>${total} providers</strong> across ${Object.keys(grouped).length} categories. every one of these is callable from your agent with a single key — zero vendor accounts needed.</div>
+    </div>
+    ${providerGrid}
   </div>
 </div>
 
