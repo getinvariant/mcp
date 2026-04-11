@@ -60,12 +60,12 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
 
   server.tool(
     "get_api_docs",
-    "View the full API integration documentation — authentication, available REST endpoints, provider categories, and example requests. Read this before building an integration.",
+    "View the full API integration documentation: authentication, available REST endpoints, provider categories, and example requests. Read this before building an integration.",
     {
       section: z
         .enum(["overview", "authentication", "endpoints", "providers"])
         .optional()
-        .describe("Narrow to a specific section (optional — omit for full docs)"),
+        .describe("Narrow to a specific section (optional; omit for full docs)"),
     },
     async ({ section }) => {
       const docs = buildApiDocs(section);
@@ -78,7 +78,7 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
     "recommend",
     "Get intelligent recommendations for which API provider to use based on your needs. Compares pricing, rate limits, reliability, and capabilities. Use this before querying to pick the best provider.",
     {
-      need: z.string().describe("Describe what you need — e.g. 'I need real-time stock prices' or 'cheapest way to do sentiment analysis'"),
+      need: z.string().describe("Describe what you need. e.g. 'I need real-time stock prices' or 'cheapest way to do sentiment analysis'"),
       priorities: z.array(z.enum(["cost", "reliability", "speed", "data-quality", "no-auth"])).optional()
         .describe("What matters most to you"),
       budget: z.enum(["free", "low", "any"]).optional().describe("Budget constraint"),
@@ -89,7 +89,7 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
         return { content: [{ type: "text", text: "No matching providers found for that need. Try rephrasing or use list_providers to browse all available APIs." }] };
       }
       const text = results.map((r, i) => [
-        `## ${i + 1}. ${r.provider_name} (${r.provider_id}) — Score: ${r.score}/100`,
+        `## ${i + 1}. ${r.provider_name} (${r.provider_id}) · Score: ${r.score}/100`,
         `${r.reasoning}`,
         `Actions: ${r.actions.join(", ")}`,
         `Pricing: ${r.pricing.model}${r.pricing.freeTier ? ` (free tier: ${r.pricing.freeTier})` : ""}`,
@@ -104,7 +104,7 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
     "compare",
     "Compare two or more providers side by side on pricing, rate limits, strengths, weaknesses, and capabilities.",
     {
-      provider_ids: z.array(z.string()).min(2).describe("Provider IDs to compare — e.g. ['claude', 'gemini']"),
+      provider_ids: z.array(z.string()).min(2).describe("Provider IDs to compare. e.g. ['claude', 'gemini']"),
     },
     async ({ provider_ids }) => {
       const results = compareProviders(provider_ids);
@@ -278,35 +278,78 @@ interface AccountWithUsage {
 const SHARED_HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">`;
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">`;
 
 const SHARED_STYLES = `
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Inter',-apple-system,sans-serif;background-color:#050505;background-image:radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);background-size:20px 20px;color:#ededed;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
-  a{color:#888;text-decoration:none;transition:color .2s ease}
-  a:hover{color:#fff}
-  .container{max-width:1000px;margin:0 auto;padding:0 2rem}
-  nav{border-bottom:1px solid rgba(255,255,255,0.05);padding:1.25rem 0;position:sticky;top:0;z-index:50;background:rgba(5,5,5,0.9);backdrop-filter:blur(10px);}
-  nav .container{display:flex;justify-content:space-between;align-items:center}
-  nav .logo{font-family:'Geist Mono','JetBrains Mono',monospace;font-weight:700;color:#fff;font-size:1rem;letter-spacing:-0.03em;text-transform:lowercase;display:flex;align-items:center;gap:0.5rem;}
-  nav .links{display:flex;gap:2rem;font-size:0.85rem;font-weight:500;}
-  nav .links a{color:#777}
-  nav .links a:hover{color:#fff}
-  nav .links a.active{color:#fff}
-  .btn{display:inline-flex;align-items:center;justify-content:center;padding:0.75rem 1.75rem;border-radius:0.5rem;font-size:0.9rem;font-weight:600;letter-spacing:-0.01em;transition:all .2s ease;cursor:pointer;border:1px solid transparent;text-decoration:none;}
-  .btn-primary{background:#fff;color:#000}
-  .btn-primary:hover{background:#ddd;color:#000;transform:translateY(-1px)}
-  .btn-ghost{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.1);color:#ccc}
-  .btn-ghost:hover{border-color:rgba(255,255,255,0.3);color:#fff;background:rgba(255,255,255,0.05)}
-  .page-footer{border-top:1px solid rgba(255,255,255,0.05);padding:3rem 0;margin-top:5rem;display:flex;justify-content:space-between;font-size:0.8rem;color:#555}
+  *{margin:0;padding:0;box-sizing:border-box;border-radius:0 !important;}
+  :root{
+    --bg:#060606;
+    --fg:#f2ede1;
+    --muted:#6a6a66;
+    --dim:#38342c;
+    --amber:#ffb727;
+    --cyan:#5fd3ff;
+    --red:#ff3b14;
+    --cream:#f2ede1;
+    --line:rgba(242,237,225,0.12);
+    --line-strong:rgba(242,237,225,0.28);
+    --serif:'Instrument Serif','Times New Roman',serif;
+    --mono:'Geist Mono','JetBrains Mono','Courier New',monospace;
+    --sans:'Space Grotesk','Helvetica Neue',sans-serif;
+  }
+  html,body{overflow-x:hidden;}
+  body{font-family:var(--mono);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+      radial-gradient(circle at 80% -10%, rgba(255,183,39,0.06), transparent 45%),
+      radial-gradient(circle at 0% 110%, rgba(95,211,255,0.05), transparent 45%);
+    background-size:48px 48px,48px 48px,100% 100%,100% 100%;
+  }
+  ::selection{background:var(--amber);color:#000;}
+  a{color:var(--fg);text-decoration:none;transition:color .18s ease, background .18s ease}
+  a:hover{color:var(--amber)}
+  .container{max-width:1440px;margin:0 auto;padding:0 3rem;}
+  @media(max-width:900px){.container{padding:0 1.25rem;}}
+
+  /* ── nav ── */
+  nav{border-bottom:2px solid var(--fg);padding:1rem 0;position:sticky;top:0;z-index:50;background:rgba(6,6,6,0.94);backdrop-filter:blur(10px);}
+  nav .container{display:flex;justify-content:space-between;align-items:center;gap:2rem;}
+  nav .logo{font-family:var(--mono);font-weight:700;color:var(--fg);font-size:1.1rem;letter-spacing:-0.04em;text-transform:uppercase;display:flex;align-items:center;gap:0.6rem;}
+  nav .logo::before{content:'';display:inline-block;width:14px;height:14px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
+  nav .links{display:flex;gap:2.25rem;font-size:0.8rem;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;}
+  nav .links a{color:var(--muted);position:relative;padding:0.25rem 0;}
+  nav .links a::after{content:'';position:absolute;left:0;bottom:-4px;width:0;height:2px;background:var(--amber);transition:width .25s ease;}
+  nav .links a:hover, nav .links a.active{color:var(--fg);}
+  nav .links a:hover::after, nav .links a.active::after{width:100%;}
+
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
+  @keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+  @keyframes rise{0%{opacity:0;transform:translateY(40px);}100%{opacity:1;transform:translateY(0);}}
+  @keyframes slide-in-left{0%{opacity:0;transform:translateX(-80px);}100%{opacity:1;transform:translateX(0);}}
+  @keyframes slide-in-right{0%{opacity:0;transform:translateX(80px);}100%{opacity:1;transform:translateX(0);}}
+  @keyframes flicker{0%,100%{opacity:1;}45%{opacity:1;}46%{opacity:0.4;}47%{opacity:1;}70%{opacity:0.8;}71%{opacity:1;}}
+  @keyframes glitch{0%,100%{transform:translate(0);}20%{transform:translate(-2px,1px);}40%{transform:translate(2px,-1px);}60%{transform:translate(-1px,-1px);}80%{transform:translate(1px,2px);}}
+  @keyframes sweep{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+  @keyframes blink-caret{0%,50%{opacity:1;}51%,100%{opacity:0;}}
+
+  /* ── brutalist buttons ── */
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:0.95rem 2rem;font-family:var(--mono);font-size:0.85rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;transition:all .2s ease;cursor:pointer;border:2px solid var(--fg);text-decoration:none;position:relative;overflow:hidden;}
+  .btn-primary{background:var(--fg);color:#000;}
+  .btn-primary:hover{background:var(--amber);border-color:var(--amber);color:#000;transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--fg);}
+  .btn-ghost{background:transparent;color:var(--fg);}
+  .btn-ghost:hover{background:var(--fg);color:#000;transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
+
+  .page-footer{border-top:2px solid var(--fg);padding:3rem 0;margin-top:5rem;display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
 `;
 
 function renderNav(active?: string): string {
   return `<nav><div class="container">
-    <a href="/" class="logo">procure</a>
+    <a href="/" class="logo">PROCURE//LABS</a>
     <div class="links">
-      <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>how it works</a>
-      <a href="/login"${active === "login" ? ' class="active"' : ""}>login</a>
+      <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
+      <a href="/login"${active === "login" ? ' class="active"' : ""}>LOGIN</a>
     </div>
   </div></nav>`;
 }
@@ -331,165 +374,326 @@ ${SHARED_HEAD}
 <style>
 ${SHARED_STYLES}
 
-  /* ── hero ── */
-  .hero{padding:3rem 0 2rem;text-align:center;}
-  .hero h1{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:2.8rem;font-weight:700;color:#fff;letter-spacing:-0.05em;margin-bottom:1rem;line-height:1.1;text-transform:lowercase;}
-  .hero .tagline{font-size:1rem;color:#777;max-width:760px;margin:0 auto 1rem;line-height:1.7;}
-  .hero .tagline:last-of-type{margin-bottom:1.5rem;}
+  /* ── ticker marquee ── */
+  .ticker{border-bottom:2px solid var(--fg);background:#0a0a0a;overflow:hidden;padding:0.65rem 0;white-space:nowrap;font-family:var(--mono);font-size:0.75rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);}
+  .ticker-track{display:inline-flex;animation:marquee 38s linear infinite;will-change:transform;}
+  .ticker span{display:inline-block;padding:0 2.25rem;}
+  .ticker span::before{content:'◆';color:var(--amber);margin-right:2.25rem;}
 
-  /* ── ascii art box ── */
-  .ascii-box{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.72rem;line-height:1.35;color:#ccc;text-align:center;margin:0 auto 1.5rem;white-space:pre;user-select:none;letter-spacing:0.02em;}
+  /* ── HERO ── */
+  .hero-wrap{position:relative;padding:4rem 0 2rem;min-height:calc(100vh - 96px);}
+  .hero-wrap::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 85% 15%, rgba(255,183,39,0.08), transparent 40%);pointer-events:none;}
+  .hero-grid{display:grid;grid-template-columns:1.35fr 0.75fr;gap:3.5rem;align-items:start;position:relative;z-index:1;}
+  .hero-left{padding-right:0;}
+  .kicker{display:inline-flex;align-items:center;gap:0.85rem;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:2rem;border:2px solid var(--amber);padding:0.55rem 1rem;animation:rise 0.8s ease both;}
+  .kicker .pulse-dot{display:inline-block;width:9px;height:9px;background:var(--amber);animation:pulse 1.4s ease-in-out infinite;}
 
-  /* ── game canvas ── */
-  .game-wrap{position:relative;max-width:700px;margin:0 auto 3rem;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;overflow:hidden;background:#0a0a0a;}
-  .game-canvas{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.75rem;line-height:1.25;color:#555;white-space:pre;padding:1rem 1.5rem;height:140px;overflow:hidden;display:flex;align-items:flex-end;}
+  h1.hero-display{
+    font-family:var(--serif);
+    font-size:clamp(3.6rem, 9.5vw, 10.5rem);
+    font-weight:400;
+    line-height:0.88;
+    letter-spacing:-0.035em;
+    color:var(--fg);
+    margin:0 0 1.75rem;
+    animation:rise 0.95s 0.1s ease both;
+  }
+  h1.hero-display .ital{font-style:italic;color:var(--amber);display:inline-block;position:relative;}
+  h1.hero-display .ital::after{content:'';position:absolute;left:-0.1em;right:-0.05em;bottom:0.12em;height:0.1em;background:var(--amber);opacity:0.35;transform-origin:left center;animation:draw-in 0.7s 1.5s cubic-bezier(.3,.8,.3,1) both;}
+  @keyframes draw-in{0%{transform:scaleX(0);}100%{transform:scaleX(1);}}
+  h1.hero-display .strike{position:relative;color:#8a8578;}
+  h1.hero-display .strike::after{content:'';position:absolute;left:-0.04em;right:-0.04em;top:52%;height:0.14em;background:var(--red);transform:skew(-14deg) scaleX(0);transform-origin:left center;animation:strike-in 0.55s 1.1s cubic-bezier(.3,.8,.3,1) both;}
+  @keyframes strike-in{0%{transform:skew(-14deg) scaleX(0);}100%{transform:skew(-14deg) scaleX(1);}}
+  h1.hero-display .block{display:block;}
+  h1.hero-display .mono{font-family:var(--mono);font-size:0.55em;letter-spacing:-0.02em;vertical-align:0.25em;color:var(--cyan);}
+
+  .hero-sub{
+    font-family:var(--sans);
+    font-size:clamp(1.05rem, 1.55vw, 1.4rem);
+    line-height:1.45;
+    color:#b4ae9f;
+    max-width:640px;
+    margin:2rem 0 0;
+    animation:rise 0.95s 0.25s ease both;
+  }
+  .hero-sub strong{color:var(--fg);font-weight:600;background:linear-gradient(transparent 62%, rgba(255,183,39,0.35) 62%);padding:0 2px;}
+
+  .hero-meta{display:flex;gap:2.5rem;font-family:var(--mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-top:3rem;animation:rise 0.95s 0.45s ease both;flex-wrap:wrap;}
+  .hero-meta span::before{content:'> ';color:var(--cyan);}
+  .hero-meta span:hover{color:var(--fg);}
+
+  .hero-right{position:relative;padding-top:2rem;animation:slide-in-right 1s 0.3s ease both;}
+  .ascii-box{font-family:var(--mono);font-size:0.72rem;line-height:1.2;color:var(--fg);white-space:pre;user-select:none;border:2px solid var(--fg);padding:1.4rem 1.1rem;background:#0a0a0a;box-shadow:-9px 9px 0 var(--amber);position:relative;animation:flicker 6s ease-in-out infinite;}
+  .ascii-box::before{content:'ASCII.TERMINAL // v0.1';position:absolute;top:-10px;left:1rem;background:var(--bg);padding:0 0.5rem;font-size:0.6rem;color:var(--amber);letter-spacing:0.18em;font-weight:600;}
+  .status-card{border:2px solid var(--fg);padding:1.25rem 1.35rem;margin-top:2.5rem;background:#0a0a0a;font-family:var(--mono);font-size:0.75rem;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:0.5rem 1.25rem;box-shadow:-6px 6px 0 var(--cyan);animation:rise 0.9s 0.6s ease both;}
+  .status-card .k{color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;font-size:0.65rem;}
+  .status-card .v{color:var(--fg);font-weight:600;font-size:0.78rem;}
+  .status-card .v.live{color:var(--amber);}
+  .status-card .v.live::before{content:'● ';animation:pulse 1.4s ease-in-out infinite;}
+
+  /* ── WAITLIST ── */
+  .waitlist-hero{max-width:620px;margin-top:3rem;animation:rise 0.95s 0.55s ease both;}
+  .waitlist-hero .wl-label{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:0.95rem;display:flex;align-items:center;gap:0.75rem;}
+  .waitlist-hero .wl-label::before{content:'';width:42px;height:2px;background:var(--amber);}
+  .waitlist-hero form{display:flex;gap:0;border:2px solid var(--fg);background:#0a0a0a;transition:box-shadow 0.2s, transform 0.2s;}
+  .waitlist-hero form:focus-within{box-shadow:-8px 8px 0 var(--amber);transform:translate(-2px,-2px);}
+  .waitlist-hero input[type="email"]{flex:1;padding:1.1rem 1.25rem;background:transparent;border:none;border-right:2px solid var(--fg);color:var(--fg);font-size:0.95rem;outline:none;font-family:var(--mono);}
+  .waitlist-hero input[type="email"]::placeholder{color:#55524a;}
+  .waitlist-hero .btn-wait{padding:1.1rem 1.9rem;background:var(--fg);color:#000;border:none;font-size:0.8rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.14em;font-family:var(--mono);transition:background 0.2s;}
+  .waitlist-hero .btn-wait:hover{background:var(--amber);}
+  .waitlist-hero .msg{font-size:0.75rem;margin-top:1rem;min-height:1.2em;font-weight:500;text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono);}
+  .waitlist-hero .msg.ok{color:var(--amber);}
+  .waitlist-hero .msg.err{color:var(--red);}
+
+  /* ── STATS STRIP ── */
+  .stats-strip{border-top:2px solid var(--fg);border-bottom:2px solid var(--fg);margin:5rem 0 6rem;background:#0a0a0a;display:grid;grid-template-columns:repeat(4,1fr);position:relative;}
+  .stats-strip::after{content:'';position:absolute;left:0;bottom:-2px;height:2px;width:60%;background:linear-gradient(90deg, var(--amber), var(--cyan), var(--amber));animation:sweep 5s ease-in-out infinite;}
+  .stats-strip .s{padding:2.75rem 1.75rem 2rem;border-right:2px solid var(--fg);position:relative;transition:background 0.3s, color 0.3s;cursor:default;}
+  .stats-strip .s:last-child{border-right:none;}
+  .stats-strip .s:hover{background:var(--fg);}
+  .stats-strip .s:hover .sv{color:#000;}
+  .stats-strip .s:hover .sv .unit{color:var(--red);}
+  .stats-strip .s:hover .sl{color:#333;}
+  .stats-strip .sv{font-family:var(--serif);font-size:clamp(3.2rem,6vw,5.8rem);font-weight:400;color:var(--fg);line-height:0.92;font-variant-numeric:tabular-nums;letter-spacing:-0.045em;transition:color 0.3s;}
+  .stats-strip .sv .unit{font-size:0.42em;color:var(--amber);margin-left:0.12em;font-family:var(--mono);font-weight:500;vertical-align:0.45em;transition:color 0.3s;}
+  .stats-strip .sl{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.16em;margin-top:1rem;font-weight:500;transition:color 0.3s;}
+  .stats-strip .s::before{content:attr(data-num);position:absolute;top:0.75rem;right:0.85rem;font-family:var(--mono);font-size:0.62rem;color:#3a362d;letter-spacing:0.15em;}
+
+  /* ── GAME SECTION ── */
+  .game-section{display:grid;grid-template-columns:0.8fr 2.2fr;gap:3rem;align-items:center;margin:5rem 0;padding:3rem 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+  .game-label{padding-left:0;}
+  .game-label .eyebrow{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.22em;color:var(--amber);margin-bottom:1.25rem;display:inline-block;border:2px solid var(--amber);padding:0.45rem 0.8rem;}
+  .game-label h2{font-family:var(--serif);font-size:clamp(2.4rem,4.5vw,3.8rem);line-height:0.92;color:var(--fg);margin-bottom:1.25rem;font-style:italic;letter-spacing:-0.025em;}
+  .game-label h2 .num{font-style:normal;color:var(--amber);font-family:var(--mono);font-size:0.5em;letter-spacing:0;vertical-align:0.35em;margin-right:0.15em;}
+  .game-label p{font-family:var(--mono);font-size:0.82rem;line-height:1.65;color:#8a8578;max-width:280px;}
+  .game-wrap{position:relative;border:2px solid var(--fg);overflow:hidden;background:#050505;box-shadow:-10px 10px 0 var(--cyan);}
+  .game-wrap::before{content:'RUN.EXE';position:absolute;top:0.75rem;left:1rem;font-family:var(--mono);font-size:0.68rem;color:var(--amber);letter-spacing:0.22em;z-index:2;font-weight:600;}
+  .game-wrap::after{content:'◆ AUTO-PILOT';position:absolute;top:0.75rem;right:1rem;font-family:var(--mono);font-size:0.68rem;color:var(--muted);letter-spacing:0.15em;z-index:2;animation:flicker 3.5s ease-in-out infinite;}
+  .game-canvas{font-family:var(--mono);font-size:0.92rem;line-height:1.12;color:var(--cream);white-space:pre;padding:2.5rem 1.25rem 1.5rem;overflow:hidden;}
   #game-display{width:100%;}
 
-  /* ── waitlist (hero position) ── */
-  .waitlist-hero{text-align:center;margin-bottom:3rem;}
-  .waitlist-hero p{font-size:0.85rem;color:#666;margin-bottom:1rem;}
-  .waitlist-hero form{display:flex;gap:0.5rem;max-width:420px;margin:0 auto}
-  .waitlist-hero input[type="email"]{flex:1;padding:0.7rem 1rem;background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:0.375rem;color:#fff;font-size:0.85rem;outline:none;font-family:'Geist Mono','JetBrains Mono',monospace;transition:border-color 0.2s}
-  .waitlist-hero input[type="email"]:focus{border-color:rgba(255,255,255,0.3)}
-  .waitlist-hero .btn-wait{padding:0.7rem 1.25rem;background:#fff;color:#000;border:none;border-radius:0.375rem;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
-  .waitlist-hero .btn-wait:hover{background:#ddd;transform:translateY(-1px)}
-  .waitlist-hero .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em;font-weight:500;}
-  .waitlist-hero .msg.ok{color:#999}
-  .waitlist-hero .msg.err{color:#f87171}
+  /* ── PITCH SPLIT ── */
+  .pitch-split{display:grid;grid-template-columns:1fr 1.05fr;gap:5rem;margin:7rem 0;align-items:start;}
+  .pitch-split .ps-left .eye{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:var(--cyan);margin-bottom:1.25rem;display:block;}
+  .pitch-split .ps-left h2{font-family:var(--serif);font-size:clamp(2.4rem,5vw,4.4rem);line-height:0.92;color:var(--fg);letter-spacing:-0.025em;}
+  .pitch-split .ps-left h2 em{color:var(--amber);}
+  .pitch-split .ps-right{font-family:var(--sans);font-size:1.1rem;line-height:1.65;color:#b4ae9f;padding-top:0.75rem;}
+  .pitch-split .ps-right p+p{margin-top:1.35rem;}
+  .pitch-split .ps-right strong{color:var(--fg);font-weight:600;border-bottom:1.5px solid var(--amber);}
 
-  /* ── pitch ── */
-  .pitch{text-align:center;max-width:620px;margin:0 auto 4rem;font-size:0.95rem;color:#666;line-height:1.8;}
-  .pitch strong{color:#ccc;font-weight:600;}
+  /* ── CATEGORIES ── */
+  .categories{margin:6rem 0 5rem;padding:3rem 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;grid-template-columns:0.65fr 2.35fr;gap:3.5rem;align-items:start;}
+  .categories .cat-head{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:var(--muted);}
+  .categories .cat-head span{display:block;color:var(--amber);font-family:var(--serif);font-size:clamp(1.8rem,2.5vw,2.4rem);font-style:italic;text-transform:none;letter-spacing:-0.02em;margin-top:0.6rem;line-height:1;}
+  .cat-tags{display:flex;flex-wrap:wrap;gap:0.55rem;}
+  .cat-tag{font-family:var(--mono);font-size:0.78rem;color:var(--fg);padding:0.6rem 1.1rem;border:1.5px solid var(--line-strong);background:transparent;text-transform:uppercase;letter-spacing:0.08em;transition:all 0.2s;cursor:default;}
+  .cat-tag:hover{border-color:var(--amber);color:var(--amber);background:rgba(255,183,39,0.08);transform:translate(-2px,-2px);box-shadow:3px 3px 0 var(--amber);}
+  .cat-tag-more{color:var(--amber);border-style:dashed;border-color:var(--amber);}
+  .cat-tag-more::before{content:'+ ';}
 
-  /* ── stats ── */
-  .stats-row{display:flex;gap:1px;background:rgba(255,255,255,0.05);border-radius:0.75rem;overflow:hidden;border:1px solid rgba(255,255,255,0.08);margin-bottom:4rem}
-  .stats-row .s{flex:1;padding:1.5rem 1.25rem;background:#0a0a0a;text-align:center}
-  .stats-row .sv{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:1.75rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-0.03em;}
-  .stats-row .sl{font-size:0.7rem;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-top:0.35rem;font-weight:600;}
-
-  /* ── categories (plain text) ── */
-  .categories{margin-bottom:3rem;text-align:center;}
-  .categories h2{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.75rem;text-transform:lowercase;letter-spacing:0.08em;color:#555;margin-bottom:1rem;font-weight:500;}
-  .cat-tags{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;max-width:640px;margin:0 auto;}
-  .cat-tag{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.75rem;color:#888;padding:0.35rem 0.75rem;border:1px solid rgba(255,255,255,0.08);border-radius:0.25rem;background:transparent;}
-  .cat-tag-more{color:#5a5a5a;border-style:dashed;border-color:rgba(255,255,255,0.14);}
-  .cat-tag-more::before{content:'+ ';color:#6aace8;}
-
-  /* ── demo animation ── */
-  .demo-wrap{margin-bottom:4rem;}
-  .demo-wrap h2{text-align:center;font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.75rem;text-transform:lowercase;letter-spacing:0.08em;color:#555;margin-bottom:1rem;font-weight:500;}
-  .demo-sub{text-align:center;font-size:0.82rem;color:#666;margin-bottom:1.25rem;max-width:620px;margin-left:auto;margin-right:auto;line-height:1.6;}
-  .demo-term{max-width:760px;margin:0 auto;background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;overflow:hidden;font-family:'Geist Mono','JetBrains Mono',monospace;box-shadow:0 0 40px rgba(0,0,0,0.4);}
-  .demo-head{padding:0.55rem 1rem;background:rgba(255,255,255,0.03);font-size:0.7rem;color:#555;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:0.5rem;}
-  .demo-head .dots{display:flex;gap:0.35rem;}
-  .demo-head .dot{width:10px;height:10px;border-radius:50%;background:#2a2a2a;}
-  .demo-body{padding:1.25rem 1.5rem;font-size:0.78rem;line-height:1.65;min-height:320px;}
-  .d-line{opacity:0;transform:translateY(3px);transition:opacity 0.35s ease,transform 0.35s ease;white-space:pre-wrap;word-break:break-word;font-family:inherit;}
+  /* ── DEMO TERMINAL ── */
+  .demo-wrap{margin:6rem 0;}
+  .demo-wrap-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.75rem;padding-bottom:1.25rem;border-bottom:1px solid var(--line);gap:2rem;}
+  .demo-wrap-head .left{font-family:var(--serif);font-size:clamp(2rem,4vw,3.4rem);font-style:italic;color:var(--fg);line-height:0.95;letter-spacing:-0.02em;}
+  .demo-wrap-head .left em{font-style:normal;color:var(--amber);}
+  .demo-wrap-head .right{font-family:var(--mono);font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;text-align:right;flex-shrink:0;}
+  .demo-wrap-head .right::before{content:'// ';color:var(--cyan);}
+  .demo-term{background:#050505;border:2px solid var(--fg);overflow:hidden;font-family:var(--mono);box-shadow:-10px 10px 0 var(--amber);}
+  .demo-head{padding:0.75rem 1.25rem;background:#0a0a0a;font-size:0.72rem;color:var(--muted);border-bottom:2px solid var(--fg);display:flex;align-items:center;gap:0.95rem;text-transform:uppercase;letter-spacing:0.1em;}
+  .demo-head .dots{display:flex;gap:0.42rem;}
+  .demo-head .dot{width:11px;height:11px;background:var(--dim);}
+  .demo-head .dot:nth-child(1){background:var(--red);}
+  .demo-head .dot:nth-child(2){background:var(--amber);}
+  .demo-head .dot:nth-child(3){background:var(--cyan);}
+  .demo-head .meta{margin-left:auto;color:var(--muted);font-size:0.65rem;}
+  .demo-body{padding:1.9rem 2.25rem;font-size:0.95rem;line-height:1.7;min-height:380px;}
+  .d-line{opacity:0;transform:translateY(4px);transition:opacity 0.35s ease,transform 0.35s ease;white-space:pre-wrap;word-break:break-word;font-family:inherit;}
   .d-line.visible{opacity:1;transform:translateY(0);}
-  .d-in{color:#e5e5e5;}
-  .d-sys{color:#6aace8;}
-  .d-box{color:#777;}
-  .d-ok{color:#7fbf7f;}
-  .d-done{color:#e8c36a;margin-top:0.5rem;font-weight:600;}
-  .d-dim{color:#555;}
-  @media(max-width:640px){
-    .demo-body{font-size:0.65rem;padding:1rem;min-height:280px;}
-  }
+  .d-in{color:var(--fg);font-weight:500;}
+  .d-sys{color:var(--cyan);}
+  .d-box{color:#8a8578;}
+  .d-ok{color:var(--amber);}
+  .d-done{color:var(--amber);margin-top:0.85rem;font-weight:700;}
+  .d-dim{color:var(--dim);}
 
-  /* ── terminal ── */
-  .terminal{background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;padding:1.5rem 2rem;max-width:640px;margin:0 auto 4rem;font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.8rem;line-height:1.6;}
-  .terminal .prompt{color:#555}
-  .terminal .cmd{color:#ddd}
-  .terminal .out{color:#666;margin-top:0.75rem;border-top:1px dashed rgba(255,255,255,0.08);padding-top:0.75rem;}
+  /* ── INSTALL ── */
+  .install-wrap{display:grid;grid-template-columns:0.9fr 1.1fr;gap:3.5rem;margin:6rem 0;align-items:center;}
+  .install-left h3{font-family:var(--serif);font-size:clamp(2.2rem,4vw,3.4rem);line-height:0.95;color:var(--fg);margin-bottom:1.25rem;font-style:italic;letter-spacing:-0.02em;}
+  .install-left h3 em{font-style:normal;color:var(--amber);}
+  .install-left p{font-family:var(--mono);font-size:0.88rem;color:#8a8578;line-height:1.7;max-width:440px;}
+  .terminal{background:#0a0a0a;border:2px solid var(--fg);padding:1.75rem 2rem;font-family:var(--mono);font-size:0.88rem;line-height:1.85;box-shadow:-10px 10px 0 var(--fg);position:relative;}
+  .terminal::before{content:'~/shell';position:absolute;top:-10px;left:1rem;background:var(--bg);padding:0 0.5rem;font-size:0.62rem;color:var(--amber);letter-spacing:0.15em;}
+  .terminal .prompt{color:var(--amber);}
+  .terminal .cmd{color:var(--fg);}
+  .terminal .out{color:var(--muted);margin-top:1.1rem;border-top:1px dashed var(--line);padding-top:1.1rem;font-size:0.8rem;}
+  .terminal .out::before{content:'└─ ';color:var(--cyan);}
 
-  /* ── popup overlay ── */
-  .popup-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
-  .popup-overlay.visible{display:flex}
-  .popup-card{background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;padding:2rem;max-width:400px;width:90%;position:relative;text-align:center;}
-  .popup-card h3{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:1rem;color:#fff;margin-bottom:0.5rem;font-weight:600;text-transform:lowercase;}
-  .popup-card p{font-size:0.85rem;color:#777;margin-bottom:1.5rem;line-height:1.5;}
-  .popup-card form{display:flex;gap:0.5rem;}
-  .popup-card input[type="email"]{flex:1;padding:0.65rem 1rem;background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:0.375rem;color:#fff;font-size:0.85rem;outline:none;font-family:'Geist Mono','JetBrains Mono',monospace;}
-  .popup-card input[type="email"]:focus{border-color:rgba(255,255,255,0.3)}
-  .popup-card .btn-wait{padding:0.65rem 1rem;background:#fff;color:#000;border:none;border-radius:0.375rem;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit}
-  .popup-card .btn-wait:hover{background:#ddd}
-  .popup-close{position:absolute;top:0.75rem;right:1rem;background:none;border:none;color:#555;font-size:1.25rem;cursor:pointer;padding:0.25rem;line-height:1;}
-  .popup-close:hover{color:#fff}
-  .popup-card .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em}
-  .popup-card .msg.ok{color:#999}
-  .popup-card .msg.err{color:#f87171}
+  /* ── POPUP ── */
+  .popup-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+  .popup-overlay.visible{display:flex;animation:rise 0.4s ease both;}
+  .popup-card{background:var(--bg);border:2px solid var(--fg);padding:2.5rem 2.25rem 2.25rem;max-width:460px;width:90%;position:relative;box-shadow:-12px 12px 0 var(--amber);}
+  .popup-card::before{content:'◆ LIMITED ACCESS';position:absolute;top:-11px;left:1rem;background:var(--bg);padding:0 0.55rem;font-family:var(--mono);font-size:0.65rem;color:var(--amber);letter-spacing:0.18em;font-weight:600;}
+  .popup-card h3{font-family:var(--serif);font-size:2rem;color:var(--fg);margin-bottom:0.75rem;font-style:italic;line-height:0.95;}
+  .popup-card h3 em{color:var(--amber);font-style:italic;}
+  .popup-card p{font-family:var(--sans);font-size:0.98rem;color:#b4ae9f;margin-bottom:1.6rem;line-height:1.55;}
+  .popup-card form{display:flex;gap:0;border:2px solid var(--fg);background:#0a0a0a;}
+  .popup-card input[type="email"]{flex:1;padding:0.95rem 1.1rem;background:transparent;border:none;border-right:2px solid var(--fg);color:var(--fg);font-size:0.9rem;outline:none;font-family:var(--mono);}
+  .popup-card .btn-wait{padding:0.95rem 1.4rem;background:var(--fg);color:#000;border:none;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.12em;transition:background 0.2s;}
+  .popup-card .btn-wait:hover{background:var(--amber);}
+  .popup-close{position:absolute;top:0.75rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;line-height:1;}
+  .popup-close:hover{color:var(--red);}
+  .popup-card .msg{font-size:0.75rem;margin-top:0.95rem;min-height:1.2em;text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono);}
+  .popup-card .msg.ok{color:var(--amber);}
+  .popup-card .msg.err{color:var(--red);}
 
-  /* ── collab section (light theme, paid tier) ── */
-  .collab{background:#ffffff;color:#0a0a0a;padding:5rem 0 0;position:relative;overflow:hidden;border-top:1px solid #e0e0e0;}
-  .collab-inner{max-width:1000px;margin:0 auto;padding:0 2rem;position:relative;}
-  .collab-eyebrow{display:inline-block;font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.7rem;color:#fff;background:#0a0a0a;border:1px solid #0a0a0a;padding:0.35rem 0.85rem;border-radius:999px;text-transform:lowercase;letter-spacing:0.08em;margin-bottom:1.25rem;}
-  .collab-header{text-align:center;margin-bottom:3rem;}
-  .collab-header h2{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:2rem;font-weight:700;color:#0a0a0a;letter-spacing:-0.04em;line-height:1.2;margin-bottom:1rem;text-transform:lowercase;max-width:700px;margin-left:auto;margin-right:auto;}
-  .collab-header p{font-size:0.95rem;color:#555;max-width:640px;margin:0 auto;line-height:1.7;}
-  .collab-header p strong{color:#0a0a0a;font-weight:600;}
+  /* ── COLLAB (LIGHT THEME) ── */
+  .collab{background:#f2ede1;color:#0a0a0a;padding:6rem 0 0;position:relative;overflow:hidden;border-top:4px solid var(--fg);margin-top:7rem;}
+  .collab::before{content:'TEAMS // v0.2';position:absolute;top:2rem;right:3rem;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.22em;color:#0a0a0a;border:2px solid #0a0a0a;padding:0.4rem 0.75rem;font-weight:600;}
+  .collab-inner{max-width:1440px;margin:0 auto;padding:0 3rem;position:relative;}
+  .collab-eyebrow{display:inline-block;font-family:var(--mono);font-size:0.7rem;color:#f2ede1;background:#0a0a0a;border:2px solid #0a0a0a;padding:0.5rem 0.95rem;text-transform:uppercase;letter-spacing:0.16em;margin-bottom:1.75rem;font-weight:600;}
+  .collab-header{max-width:960px;margin-bottom:5rem;}
+  .collab-header h2{font-family:var(--serif);font-size:clamp(3rem,7vw,7.2rem);font-weight:400;color:#0a0a0a;letter-spacing:-0.035em;line-height:0.88;margin-bottom:1.75rem;}
+  .collab-header h2 em{color:#c24600;font-style:italic;}
+  .collab-header p{font-family:var(--sans);font-size:clamp(1.05rem,1.4vw,1.3rem);color:#555;max-width:700px;line-height:1.5;}
+  .collab-header p strong{color:#0a0a0a;font-weight:600;background:#ffb727;padding:0 0.25em;}
 
-  .collab-contrast{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:860px;margin:0 auto 4rem;}
-  .collab-col{border:1px solid #e5e5e5;border-radius:0.75rem;padding:1.75rem;background:#fafafa;}
-  .collab-col.after{background:#0a0a0a;color:#e5e5e5;border-color:#0a0a0a;}
-  .collab-col h3{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.7rem;text-transform:lowercase;letter-spacing:0.1em;color:#888;margin-bottom:1rem;font-weight:500;}
-  .collab-col.after h3{color:#999;}
+  .collab-contrast{display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:1240px;margin:0 0 5rem;border:2px solid #0a0a0a;}
+  .collab-col{padding:2.5rem 2.25rem;background:#f7f2e4;}
+  .collab-col.before{border-right:2px solid #0a0a0a;}
+  .collab-col.after{background:#0a0a0a;color:#f2ede1;}
+  .collab-col h3{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:#888;margin-bottom:1.75rem;font-weight:600;padding-bottom:0.95rem;border-bottom:1px solid #ddd;}
+  .collab-col.after h3{color:#888;border-bottom-color:#333;}
   .collab-col ul{list-style:none;padding:0;margin:0;}
-  .collab-col li{font-size:0.85rem;line-height:1.7;padding:0.4rem 0;color:#555;display:flex;gap:0.5rem;}
-  .collab-col.after li{color:#d5d5d5;}
-  .collab-col li::before{content:'·';color:#aaa;font-weight:700;flex-shrink:0;}
-  .collab-col.after li::before{color:#fff;content:'→';}
+  .collab-col li{font-family:var(--sans);font-size:0.98rem;line-height:1.55;padding:0.75rem 0;color:#555;display:flex;gap:0.85rem;border-bottom:1px dashed #e2dccc;}
+  .collab-col li:last-child{border-bottom:none;}
+  .collab-col.after li{color:#c9c4b7;border-bottom-color:#222;}
+  .collab-col li::before{content:'×';color:#c24600;font-weight:700;flex-shrink:0;font-size:1.15rem;line-height:1.3;}
+  .collab-col.after li::before{color:#ffb727;content:'✓';}
 
-  .collab-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;max-width:860px;margin:0 auto 4rem;}
-  .collab-feat{border:1px solid #e5e5e5;border-radius:0.75rem;padding:1.5rem 1.75rem;background:#fafafa;transition:border-color 0.2s, background 0.2s;}
-  .collab-feat:hover{border-color:#0a0a0a;background:#fff;}
-  .collab-feat h4{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:0.85rem;color:#0a0a0a;margin-bottom:0.5rem;font-weight:600;text-transform:lowercase;}
-  .collab-feat p{font-size:0.82rem;color:#666;line-height:1.6;margin:0;}
+  .collab-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;max-width:1240px;margin:0 0 0;border-top:2px solid #0a0a0a;border-bottom:2px solid #0a0a0a;}
+  .collab-feat{padding:2.25rem 1.65rem;background:#f7f2e4;border-right:1px solid #0a0a0a;transition:background 0.25s, color 0.25s;position:relative;}
+  .collab-feat:last-child{border-right:none;}
+  .collab-feat:hover{background:#0a0a0a;color:#f2ede1;}
+  .collab-feat:hover h4{color:#ffb727;}
+  .collab-feat:hover p{color:#c9c4b7;}
+  .collab-feat .num{font-family:var(--mono);font-size:0.68rem;color:#888;letter-spacing:0.18em;margin-bottom:0.85rem;display:block;}
+  .collab-feat h4{font-family:var(--serif);font-size:1.55rem;color:#0a0a0a;margin-bottom:0.75rem;font-weight:400;font-style:italic;line-height:1.05;transition:color 0.25s;}
+  .collab-feat p{font-family:var(--sans);font-size:0.92rem;color:#555;line-height:1.55;margin:0;transition:color 0.25s;}
 
-  .collab-cta{max-width:520px;margin:0 auto 2rem;text-align:center;}
-  .collab-cta h3{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:1.1rem;color:#0a0a0a;margin-bottom:0.5rem;font-weight:600;text-transform:lowercase;}
-  .collab-cta p.cta-sub{font-size:0.88rem;color:#666;margin-bottom:1.25rem;line-height:1.6;}
-  .collab-cta form{display:flex;gap:0.5rem;}
-  .collab-cta input[type="email"]{flex:1;padding:0.75rem 1rem;background:#fff;border:1px solid #d5d5d5;border-radius:0.5rem;color:#0a0a0a;font-size:0.9rem;outline:none;font-family:'Geist Mono','JetBrains Mono',monospace;}
-  .collab-cta input[type="email"]:focus{border-color:#0a0a0a;}
-  .collab-cta .btn-team{padding:0.75rem 1.25rem;background:#0a0a0a;color:#fff;border:1px solid #0a0a0a;border-radius:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.2s;}
-  .collab-cta .btn-team:hover{background:#222;}
-  .collab-cta .msg{font-size:0.8rem;margin-top:0.75rem;min-height:1.2em;}
+  .collab-cta-wrap{display:grid;grid-template-columns:1fr 1fr;gap:4rem;max-width:1240px;margin:0;align-items:center;padding:3.5rem 0;border-bottom:2px solid #0a0a0a;}
+  .collab-cta-wrap .cta-left h3{font-family:var(--serif);font-size:clamp(2.25rem,4vw,3.6rem);color:#0a0a0a;line-height:0.95;font-weight:400;font-style:italic;margin-bottom:0.85rem;letter-spacing:-0.02em;}
+  .collab-cta-wrap .cta-left h3 em{color:#c24600;}
+  .collab-cta-wrap .cta-left p{font-family:var(--sans);font-size:1.05rem;color:#555;line-height:1.55;max-width:460px;}
+  .collab-cta form{display:flex;gap:0;border:2px solid #0a0a0a;background:#fff;}
+  .collab-cta input[type="email"]{flex:1;padding:1.1rem 1.25rem;background:transparent;border:none;border-right:2px solid #0a0a0a;color:#0a0a0a;font-size:0.92rem;outline:none;font-family:var(--mono);}
+  .collab-cta .btn-team{padding:1.1rem 1.6rem;background:#0a0a0a;color:#f2ede1;border:none;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.14em;transition:background 0.2s;}
+  .collab-cta .btn-team:hover{background:#c24600;}
+  .collab-cta .msg{font-size:0.75rem;margin-top:0.95rem;min-height:1.2em;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.1em;}
   .collab-cta .msg.ok{color:#2d6a2d;}
   .collab-cta .msg.err{color:#a02020;}
-  .collab-pricing{text-align:center;font-size:0.75rem;color:#888;font-family:'Geist Mono','JetBrains Mono',monospace;margin-bottom:4rem;letter-spacing:0.04em;}
+  .collab-pricing{text-align:left;font-family:var(--mono);font-size:0.72rem;color:#888;letter-spacing:0.14em;text-transform:uppercase;max-width:1240px;margin:0;padding:2rem 0;border-bottom:1px solid #ddd;}
 
+  .collab-footer{max-width:1240px;padding:2.5rem 0;margin:0;display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.75rem;color:#555;text-transform:uppercase;letter-spacing:0.12em;}
+  .collab-footer a{color:#0a0a0a;text-decoration:none;border-bottom:1.5px solid #0a0a0a;padding-bottom:1px;transition:color 0.2s, border-color 0.2s;}
+  .collab-footer a:hover{color:#c24600;border-bottom-color:#c24600;}
 
-  .collab-footer{border-top:1px solid #e5e5e5;padding:2.5rem 0;margin-top:2rem;display:flex;justify-content:space-between;font-size:0.8rem;color:#666;}
-  .collab-footer a{color:#0a0a0a;text-decoration:none;border-bottom:1px solid #ccc;}
-  .collab-footer a:hover{border-bottom-color:#0a0a0a;}
+  /* ── scroll reveal ── */
+  .reveal{opacity:0;transform:translateY(50px);transition:opacity 0.9s cubic-bezier(.2,.7,.2,1), transform 0.9s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:translateY(0);}
 
-  @media(max-width:768px){
-    .stats-row{flex-direction:column}
-    .ascii-box{font-size:0.5rem}
-    .game-canvas{font-size:0.55rem;height:100px;}
-    .collab-header h2{font-size:1.75rem;}
+  @media(max-width:1100px){
+    .hero-grid{grid-template-columns:1fr;gap:2.5rem;}
+    .hero-right{padding-top:0;}
+    .pitch-split{grid-template-columns:1fr;gap:2rem;}
+    .install-wrap{grid-template-columns:1fr;gap:2rem;}
+    .categories{grid-template-columns:1fr;gap:1.25rem;}
+    .game-section{grid-template-columns:1fr;gap:1.5rem;}
+    .collab-cta-wrap{grid-template-columns:1fr;gap:2rem;}
+  }
+  @media(max-width:900px){
+    .stats-strip{grid-template-columns:repeat(2,1fr);}
+    .stats-strip .s:nth-child(1),.stats-strip .s:nth-child(2){border-bottom:2px solid var(--fg);}
+    .stats-strip .s:nth-child(2){border-right:none;}
+    .collab-grid{grid-template-columns:1fr 1fr;}
+    .collab-feat:nth-child(2){border-right:none;}
+    .collab-feat:nth-child(1),.collab-feat:nth-child(2){border-bottom:1px solid #0a0a0a;}
     .collab-contrast{grid-template-columns:1fr;}
-    .collab-grid{grid-template-columns:1fr;}
+    .collab-col.before{border-right:none;border-bottom:2px solid #0a0a0a;}
+    .hero-meta{gap:1.25rem;}
   }
   @media(max-width:640px){
-    .hero{padding:2.5rem 0 2rem}
-    .hero h1{font-size:1.8rem}
-    .waitlist-hero form{flex-direction:column}
-    .popup-card form{flex-direction:column}
-    .ascii-box{font-size:0.4rem}
-    .game-canvas{font-size:0.45rem;height:80px;padding:0.5rem 0.75rem}
-    .collab{padding:4rem 0 0;}
+    .hero-wrap{padding:2.5rem 0 1.5rem;min-height:auto;}
+    h1.hero-display{font-size:3.4rem;}
+    .stats-strip{grid-template-columns:1fr;}
+    .stats-strip .s{border-right:none;border-bottom:2px solid var(--fg);}
+    .stats-strip .s:last-child{border-bottom:none;}
+    .waitlist-hero form{flex-direction:column;}
+    .waitlist-hero input[type="email"]{border-right:none;border-bottom:2px solid var(--fg);}
+    .popup-card form{flex-direction:column;}
+    .popup-card input[type="email"]{border-right:none;border-bottom:2px solid var(--fg);}
+    .ascii-box{font-size:0.52rem;}
+    .game-canvas{font-size:0.55rem;padding:1.75rem 0.75rem 1rem;}
     .collab-inner{padding:0 1.25rem;}
-    .collab-header h2{font-size:1.5rem;}
-    .collab-cta form{flex-direction:column;}
+    .collab-grid{grid-template-columns:1fr;}
+    .collab-feat{border-right:none !important;border-bottom:1px solid #0a0a0a;}
+    .collab-feat:last-child{border-bottom:none;}
+    .collab::before{display:none;}
+    .demo-body{font-size:0.78rem;padding:1.25rem;min-height:320px;}
+    .demo-wrap-head{flex-direction:column;align-items:flex-start;gap:0.5rem;}
+    .demo-wrap-head .right{text-align:left;}
   }
 </style>
 </head>
 <body>
 ${renderNav()}
+
+<div class="ticker">
+  <div class="ticker-track">
+    <span>one key · every api</span>
+    <span>the api layer, subtracted</span>
+    <span>zero .env files on your machine</span>
+    <span>zero provider accounts</span>
+    <span>built for agents, not humans</span>
+    <span>alpha drops soon</span>
+    <span>one key · every api</span>
+    <span>the api layer, subtracted</span>
+    <span>zero .env files on your machine</span>
+    <span>zero provider accounts</span>
+    <span>built for agents, not humans</span>
+    <span>alpha drops soon</span>
+  </div>
+</div>
+
 <div class="container">
-  <div class="hero">
-    <div class="ascii-box">
+  <div class="hero-wrap">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="kicker"><span class="pulse-dot"></span>alpha · waitlist open <span class="mono" style="color:var(--cyan);">// v0.1</span></div>
+        <h1 class="hero-display">
+          stop <span class="strike">integrating</span><span class="block">apis.</span>
+          <span class="block">start <span class="ital">shipping.</span></span>
+        </h1>
+        <p class="hero-sub">
+          procure is the <strong>mcp gateway your agent needs</strong>. one key unlocks every provider we've already signed up for. no raw tokens, no rate limiters, no vendor dashboards. ever.
+        </p>
+        <div class="waitlist-hero">
+          <div class="wl-label">get the key before anyone else</div>
+          <form id="waitlist-form">
+            <input type="email" name="email" placeholder="you@working.hard" required>
+            <button type="submit" class="btn-wait">claim →</button>
+          </form>
+          <div class="msg" id="waitlist-msg"></div>
+        </div>
+        <div class="hero-meta">
+          <span>no auth hell</span>
+          <span>no .env files</span>
+          <span>no cron for rotation</span>
+          <span>no vendor dashboards</span>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="ascii-box">
  ┌──────────────────────────────────────────────┐
  │                                              │
  │   ╱╲      procurement       ╱╲              │
@@ -499,88 +703,131 @@ ${renderNav()}
  │  ▓▓▓▓  ╲   for agents   ╱  ▓▓▓▓             │
  │                                              │
  └──────────────────────────────────────────────┘</div>
-    <h1>one key. every api.<br>zero friction.</h1>
-    <p class="tagline">procurement labs is an <strong>mcp gateway that removes the api layer from your workflow entirely</strong>. you never register for a provider, never touch a raw key, never write rate-limit logic.</p>
-    <p class="tagline">we maintain the provider credentials. your agent queries us through mcp, and we handle auth, retries, fallbacks, and usage tracking behind the scenes. the one key you install unlocks all of them at once.</p>
+        <div class="status-card">
+          <div class="k">status</div><div class="v live">gateway online</div>
+          <div class="k">providers</div><div class="v">${total} wired</div>
+          <div class="k">transport</div><div class="v">mcp · http</div>
+          <div class="k">overhead</div><div class="v">~12ms</div>
+          <div class="k">alpha cost</div><div class="v">zero</div>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
 
-  <div class="waitlist-hero">
-    <p>alpha drops soon. get early access</p>
-    <form id="waitlist-form">
-      <input type="email" name="email" placeholder="you@example.com" required>
-      <button type="submit" class="btn-wait">join waitlist</button>
-    </form>
-    <div class="msg" id="waitlist-msg"></div>
+<div class="container">
+  <div class="stats-strip reveal">
+    <div class="s" data-num="01 ▸">
+      <div class="sv" data-target="${total}">0</div>
+      <div class="sl">providers wired</div>
+    </div>
+    <div class="s" data-num="02 ▸">
+      <div class="sv" data-target="${live}">0</div>
+      <div class="sl">live right now</div>
+    </div>
+    <div class="s" data-num="03 ▸">
+      <div class="sv" data-target="${categories.length}">0</div>
+      <div class="sl">categories shipped</div>
+    </div>
+    <div class="s" data-num="04 ▸">
+      <div class="sv" data-target="500">0<span class="unit">/mo</span></div>
+      <div class="sl">free requests</div>
+    </div>
   </div>
+</div>
 
-  <div class="demo-wrap">
-    <h2>how it looks in your terminal</h2>
-    <p class="demo-sub">one prompt. your agent hits multiple apis through us. you never see a key.</p>
+<div class="container">
+  <div class="game-section reveal">
+    <div class="game-label">
+      <span class="eyebrow">run.exe // loop</span>
+      <h2><span class="num">00/</span>an endless <em>auto&#8209;pilot.</em></h2>
+      <p>watch the circle do what your agent should: leap the obstacles on its own while you worry about literally anything else.</p>
+    </div>
+    <div class="game-wrap">
+      <div class="game-canvas"><div id="game-display"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="pitch-split reveal">
+    <div class="ps-left">
+      <span class="eye">// the pitch</span>
+      <h2>you shouldn't be <em>the glue</em> between your agent and every vendor.</h2>
+    </div>
+    <div class="ps-right">
+      <p>we already signed up for weather, finance, health, maps, identity, geo, and more. your ai agent just <strong>asks for data</strong>, and we fetch it.</p>
+      <p>no provider accounts. no .env files. no credentials sitting on your laptop. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
+      <p>your code shrinks. your bugs shrink. your on-call rotation shrinks.</p>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="categories reveal">
+    <div class="cat-head">online today<span>every api, one key.</span></div>
+    <div class="cat-tags">${categoryList}<span class="cat-tag cat-tag-more">more coming fast</span></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="demo-wrap reveal">
+    <div class="demo-wrap-head">
+      <div class="left">this is what it <em>looks like.</em></div>
+      <div class="right">live replay · on loop</div>
+    </div>
     <div class="demo-term">
       <div class="demo-head">
         <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-        <span>~ claude code</span>
+        <span>~/claude-code</span>
+        <span class="meta">procure // mcp // v0.1</span>
       </div>
       <div class="demo-body" id="demo-body"></div>
     </div>
   </div>
+</div>
 
-  <div class="game-wrap">
-    <div class="game-canvas"><div id="game-display"></div></div>
+<div class="container">
+  <div class="install-wrap reveal">
+    <div class="install-left">
+      <h3>install, <em>then forget.</em></h3>
+      <p>three lines in your terminal. procure hands your agent every api we've already signed up for. you never see a key again.</p>
+    </div>
+    <div class="terminal">
+      <div><span class="prompt">$</span> <span class="cmd">claude mcp add procure \\</span></div>
+      <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
+      <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
+      <div class="out">done. restart your session to use ${total} providers.</div>
+    </div>
   </div>
-
-  <div class="pitch">
-    stop integrating apis. we already signed up for weather, finance, health, maps, and more. your ai agent just asks for data, we fetch it. no provider accounts, no .env files, no credentials on your machine.
-  </div>
-
-  <div class="stats-row">
-    <div class="s"><div class="sv" data-target="${total}">0</div><div class="sl">providers</div></div>
-    <div class="s"><div class="sv" data-target="${live}">0</div><div class="sl">live</div></div>
-    <div class="s"><div class="sv" data-target="${categories.length}">0</div><div class="sl">categories</div></div>
-    <div class="s"><div class="sv" data-target="500">0</div><div class="sl">free requests/mo</div></div>
-  </div>
-
-  <div class="categories">
-    <h2>available categories</h2>
-    <div class="cat-tags">${categoryList}<span class="cat-tag cat-tag-more">more coming</span></div>
-  </div>
-
-  <div class="terminal">
-    <div><span class="prompt">$</span> <span class="cmd">claude mcp add procure \\</span></div>
-    <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
-    <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
-    <div class="out">done. restart your session to use ${total} providers.</div>
-  </div>
-
-
 </div>
 
 <section class="collab">
   <div class="collab-inner">
     <div class="collab-header">
-      <span class="collab-eyebrow">procure teams · coming soon</span>
-      <h2>api key governance for your whole team.</h2>
-      <p>the same one-key experience, extended to orgs. <strong>workspace credentials, per-seat usage, one-click rotation, instant offboarding.</strong></p>
+      <span class="collab-eyebrow">◆ procure // teams · soon</span>
+      <h2>api key governance<br>for your <em>whole team.</em></h2>
+      <p>the same one-key magic, extended to orgs. <strong>workspace credentials, per-seat usage, one-click rotation, instant offboarding.</strong></p>
     </div>
 
     <div class="collab-contrast">
       <div class="collab-col before">
-        <h3>today, at most teams</h3>
+        <h3>today // at most teams</h3>
         <ul>
-          <li>api keys pasted into slack dms and 1password vaults nobody actually maintains</li>
-          <li>rotations happen by email chain and usually break something in prod</li>
-          <li>no way to answer "who burned through our openai quota last week"</li>
+          <li>api keys pasted into slack dms and vaults nobody maintains</li>
+          <li>rotations happen by email chain and break something in prod</li>
+          <li>no way to answer "who burned through our openai quota"</li>
           <li>someone leaves → scramble to rotate every credential they touched</li>
-          <li>junior devs accidentally commit a .env file to github, twice a year</li>
+          <li>junior devs commit a .env file to github, twice a year</li>
         </ul>
       </div>
       <div class="collab-col after">
-        <h3>with pl teams</h3>
+        <h3>tomorrow // with procure teams</h3>
         <ul>
-          <li>one workspace holds every provider credential. engineers never see the raw keys</li>
-          <li>each seat gets its own pl_key; admins control which providers it can reach</li>
+          <li>one workspace holds every credential. engineers never see raw keys</li>
+          <li>each seat gets its own pl_key. admins control provider access</li>
           <li>per-seat usage and cost attribution, down to the api call</li>
-          <li>rotate any provider credential in one click. zero downtime, nobody needs to know</li>
+          <li>rotate any credential in one click. zero downtime, nobody notices</li>
           <li>offboard a dev? revoke their seat. done. no credential hunt.</li>
         </ul>
       </div>
@@ -588,51 +835,58 @@ ${renderNav()}
 
     <div class="collab-grid">
       <div class="collab-feat">
+        <span class="num">01 ▸</span>
         <h4>workspace credentials</h4>
-        <p>your org's provider keys live in one encrypted vault. every engineer pulls from it without ever touching the raw values.</p>
+        <p>your org's provider keys live in one encrypted vault. engineers pull without ever seeing raw values.</p>
       </div>
       <div class="collab-feat">
+        <span class="num">02 ▸</span>
         <h4>per-seat attribution</h4>
-        <p>see exactly which engineer called which provider, when, and how much it cost. finance will love you.</p>
+        <p>see which engineer called which provider, when, and how much it cost. finance will love you.</p>
       </div>
       <div class="collab-feat">
+        <span class="num">03 ▸</span>
         <h4>one-click rotation</h4>
-        <p>rotate a leaked key in the dashboard. every seat picks up the new credential transparently on its next call. no deploys, no outages.</p>
+        <p>rotate a leaked key in the dashboard. every seat picks up the new credential on its next call.</p>
       </div>
       <div class="collab-feat">
+        <span class="num">04 ▸</span>
         <h4>instant offboarding</h4>
-        <p>revoke a departing engineer's seat and their access to every provider vanishes at once. no hunting through 20 services.</p>
+        <p>revoke a departing engineer's seat. access to every provider vanishes at once.</p>
       </div>
     </div>
 
-    <div class="collab-cta">
-      <h3>early access for teams</h3>
-      <p class="cta-sub">we're talking to design partners now. drop your work email and we'll reach out when teams goes live.</p>
-      <form id="teams-form">
-        <input type="email" name="email" placeholder="you@company.com" required>
-        <button type="submit" class="btn-team">request access</button>
-      </form>
-      <div class="msg" id="teams-msg"></div>
+    <div class="collab-cta-wrap">
+      <div class="cta-left">
+        <h3>early access <em>for teams.</em></h3>
+        <p>we're talking to design partners now. drop your work email and we'll reach out when teams goes live.</p>
+      </div>
+      <div class="collab-cta">
+        <form id="teams-form">
+          <input type="email" name="email" placeholder="you@company.com" required>
+          <button type="submit" class="btn-team">request →</button>
+        </form>
+        <div class="msg" id="teams-msg"></div>
+      </div>
     </div>
 
-    <p class="collab-pricing">paid tier · generous free trial during beta · pricing at launch</p>
+    <p class="collab-pricing">◆ paid tier · generous free trial during beta · pricing at launch ◆</p>
 
     <footer class="collab-footer">
-      <span>procure, by procurement labs</span>
-      <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+      <span>© procure // by procurement labs</span>
+      <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
     </footer>
   </div>
 </section>
 
-<!-- email popup (5s delay) -->
 <div class="popup-overlay" id="email-popup">
   <div class="popup-card">
     <button class="popup-close" id="popup-close" aria-label="Close">&times;</button>
-    <h3>don't miss early access</h3>
-    <p>we're opening to a small first wave. drop your email. no spam, just the key when it's ready.</p>
+    <h3>don't miss the <em>first wave.</em></h3>
+    <p>we're opening to a small first cohort. drop your email. no spam, just the key when it's ready.</p>
     <form id="popup-form">
       <input type="email" name="email" placeholder="you@example.com" required>
-      <button type="submit" class="btn-wait">notify me</button>
+      <button type="submit" class="btn-wait">notify →</button>
     </form>
     <div class="msg" id="popup-msg"></div>
   </div>
@@ -642,77 +896,139 @@ ${renderNav()}
   // cookie check
   if (document.cookie.match(/pl_key=/)) {
     var links = document.querySelectorAll('nav .links a');
-    links.forEach(function(a) { if (a.textContent === 'Login') { a.href = '/dashboard'; a.textContent = 'Dashboard'; } });
+    links.forEach(function(a) { if (a.textContent === 'LOGIN') { a.href = '/dashboard'; a.textContent = 'DASHBOARD'; } });
   }
 
-  // ── ascii game (sphere jumping over mountains) ──
-  (function() {
-    var W = 80, H = 10;
-    var sphereX = 12, sphereY = 0, velY = 0, jumping = false;
-    var gravity = 0.4, jumpForce = -2.2;
-    var frame = 0;
-    var scrollOffset = 0;
+  // ── scroll reveal observer ──
+  function animateCountUp(el){
+    if (el.dataset.counted === '1') return;
+    el.dataset.counted = '1';
+    var target = parseInt(el.getAttribute('data-target'), 10);
+    if (isNaN(target)) return;
+    var unitSpan = el.querySelector('.unit');
+    var textNode = document.createTextNode('0');
+    el.textContent = '';
+    el.appendChild(textNode);
+    if (unitSpan) el.appendChild(unitSpan);
+    var start = 0, duration = 1400, t0 = performance.now();
+    function tick(now){
+      var p = Math.min(1, (now - t0) / duration);
+      var eased = 1 - Math.pow(1 - p, 4);
+      var v = Math.round(start + (target - start) * eased);
+      textNode.nodeValue = String(v);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  (function(){
+    var els = document.querySelectorAll('.reveal');
+    function revealEl(el){
+      el.classList.add('in');
+      if (el.classList.contains('stats-strip')){
+        el.querySelectorAll('.sv[data-target]').forEach(animateCountUp);
+      }
+    }
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(revealEl);
+      return;
+    }
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){
+          revealEl(e.target);
+          obs.unobserve(e.target);
+        }
+      });
+    }, {threshold: 0.05, rootMargin: '0px 0px 200px 0px'});
+    els.forEach(function(el){ obs.observe(el); });
+    // safety net: after 1.5s, force-reveal anything still hidden so no content stays invisible
+    setTimeout(function(){
+      document.querySelectorAll('.reveal:not(.in)').forEach(revealEl);
+    }, 1500);
+  })();
 
-    // sphere flash colors (warm tones only — no pink/purple/green)
-    var colors = ['#fff', '#fff', '#fff', '#fff', '#e8c36a', '#6aace8', '#e8a86a', '#c4c4c4', '#fff', '#fff'];
-    var currentColor = '#fff';
+  // ── ascii game (sphere auto-jumping over mountains) ──
+  (function() {
+    var W = 110, H = 11;
+    var sphereX = 18;
+    var jumping = false;
+    var jumpProgress = 0;
+    var scrollOffset = 0;
+    var scrollSpeed = 0.5;
+
+    // precomputed 26-frame sine jump arc, apex height 5 cells
+    var JUMP_FRAMES = 26;
+    var JUMP_HEIGHT = 5;
+    var jumpArc = [];
+    for (var i = 0; i < JUMP_FRAMES; i++) {
+      jumpArc.push(-Math.sin(i / JUMP_FRAMES * Math.PI) * JUMP_HEIGHT);
+    }
+
+    var colors = ['#f2ede1','#f2ede1','#f2ede1','#ffb727','#5fd3ff','#ff3b14','#f2ede1'];
+    var currentColor = '#f2ede1';
     var flashTimer = 0;
 
-    // mountain pattern (repeating) using simple ASCII
+    // 4-row mountains, 8-cell bases, gaps wide enough for jump-to-land cycle
     var mountainPattern = [
-      '                                /\\\\                                                   /\\\\                                      ',
-      '                  /\\\\           /  \\\\                                                 /  \\\\                /\\\\                   ',
-      '                 /  \\\\         /    \\\\                                               /    \\\\              /  \\\\                  ',
-      '                /    \\\\       /      \\\\                  /\\\\                        /      \\\\            /    \\\\                 ',
-      '               /      \\\\     /        \\\\               /  \\\\                      /        \\\\          /      \\\\                ',
-      '______________/________\\\\___/          \\\\______________/    \\\\____________________/          \\\\________/        \\\\_______________',
+      '         /\\\\                            /\\\\                        /\\\\                               /\\\\          ',
+      '        /  \\\\                          /  \\\\                      /  \\\\                             /  \\\\         ',
+      '       /    \\\\                        /    \\\\                    /    \\\\                           /    \\\\        ',
+      '______/______\\\\______________________/______\\\\__________________/______\\\\_________________________/______\\\\_______',
     ];
     var patternW = mountainPattern[0].length;
+    var groundStart = H - mountainPattern.length - 1; // top row of mountain block
+    var baseSphereRow = groundStart + mountainPattern.length - 2; // row just above ground line
 
-    function getGroundY() { return H - mountainPattern.length - 1; }
+    function mountainAhead(offset) {
+      var worldX = Math.floor(sphereX + offset + scrollOffset) % patternW;
+      if (worldX < 0) worldX += patternW;
+      for (var row = 0; row < mountainPattern.length; row++) {
+        var c = mountainPattern[row].charAt(worldX);
+        if (c && c !== ' ' && c !== '_') return true;
+      }
+      return false;
+    }
 
     function tick() {
-      frame++;
-      scrollOffset += 0.35;
+      scrollOffset += scrollSpeed;
 
-      // auto-jump
-      if (!jumping && Math.random() < 0.018) {
-        jumping = true;
-        velY = jumpForce;
-      }
-
-      // physics
-      if (jumping) {
-        sphereY += velY;
-        velY += gravity;
-        if (sphereY >= 0) {
-          sphereY = 0;
-          jumping = false;
-          velY = 0;
+      // detect upcoming mountain — trigger so apex lines up with peak passing sphereX
+      if (!jumping) {
+        if (mountainAhead(4) || mountainAhead(5) || mountainAhead(6)) {
+          jumping = true;
+          jumpProgress = 0;
         }
       }
 
-      // flash color occasionally
-      flashTimer--;
-      if (flashTimer <= 0 && Math.random() < 0.02) {
-        currentColor = colors[Math.floor(Math.random() * colors.length)];
-        flashTimer = 8 + Math.floor(Math.random() * 15);
+      var sphereY = 0;
+      if (jumping) {
+        sphereY = jumpArc[jumpProgress];
+        jumpProgress++;
+        if (jumpProgress >= JUMP_FRAMES) {
+          jumping = false;
+          sphereY = 0;
+        }
       }
-      if (flashTimer <= 0) currentColor = '#fff';
 
-      render();
+      flashTimer--;
+      if (flashTimer <= 0 && Math.random() < 0.03) {
+        currentColor = colors[Math.floor(Math.random() * colors.length)];
+        flashTimer = 6 + Math.floor(Math.random() * 12);
+      }
+      if (flashTimer <= 0) currentColor = '#f2ede1';
+
+      render(sphereY);
       requestAnimationFrame(tick);
     }
 
-    function render() {
+    function render(sphereY) {
       var grid = [];
       for (var y = 0; y < H; y++) {
         grid[y] = [];
         for (var x = 0; x < W; x++) grid[y][x] = ' ';
       }
 
-      // draw mountains
-      var groundStart = getGroundY();
+      // mountains
       for (var my = 0; my < mountainPattern.length; my++) {
         for (var x = 0; x < W; x++) {
           var srcX = Math.floor((x + scrollOffset) % patternW);
@@ -723,24 +1039,23 @@ ${renderNav()}
         }
       }
 
-      // draw sphere
-      var sy = groundStart - 1 + Math.round(sphereY);
+      // sphere
+      var sy = baseSphereRow + Math.round(sphereY);
       if (sy >= 0 && sy < H) grid[sy][sphereX] = 'O';
 
-      // build output as DOM nodes (no innerHTML)
       var el = document.getElementById('game-display');
       if (!el) return;
-
       while (el.firstChild) el.removeChild(el.firstChild);
 
       for (var i = 0; i < H; i++) {
         var line = grid[i].join('');
         var si = line.indexOf('O');
-        if (si !== -1 && currentColor !== '#fff') {
+        if (si !== -1) {
           el.appendChild(document.createTextNode(line.substring(0, si)));
           var span = document.createElement('span');
           span.style.color = currentColor;
           span.style.fontWeight = 'bold';
+          span.style.textShadow = '0 0 10px ' + currentColor;
           span.textContent = 'O';
           el.appendChild(span);
           el.appendChild(document.createTextNode(line.substring(si + 1)));
@@ -2162,7 +2477,7 @@ function renderDashboard(): string {
   function renderAccounts(accounts) {
     const tbody = document.getElementById('accounts-body');
     tbody.innerHTML = accounts.map(a => {
-      var safeEmail = a.email ? escapeHtml(a.email) : '<span style="color:#404040">—</span>';
+      var safeEmail = a.email ? escapeHtml(a.email) : '<span style="color:#404040">·</span>';
       const pct = Math.min(100, (a.used / a.quota) * 100);
       const cls = barClass(a.used, a.quota);
       const date = new Date(a.createdAt).toLocaleDateString();
