@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "OPENWEATHER_API_KEY";
 
 export class EnvironmentProvider implements Provider {
   info: ProviderInfo = {
@@ -43,15 +46,14 @@ export class EnvironmentProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.OPENWEATHER_API_KEY;
+    return keyPool.hasKeys(ENV);
   }
 
   async query(
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
-    const apiKey = process.env.OPENWEATHER_API_KEY;
-    if (!apiKey)
+    if (!keyPool.hasKeys(ENV))
       return { success: false, error: "OpenWeatherMap API key not configured" };
 
     const base = "https://api.openweathermap.org/data/2.5";
@@ -62,9 +64,12 @@ export class EnvironmentProvider implements Provider {
         if (!city)
           return { success: false, error: "Missing required parameter: city" };
         const units = (params.units as string) || "metric";
-        const url = `${base}/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=${units}`;
         try {
-          const res = await fetch(url);
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=${units}`,
+            ),
+          );
           if (!res.ok) {
             const text = await res.text();
             return {
@@ -101,9 +106,12 @@ export class EnvironmentProvider implements Provider {
             success: false,
             error: "Missing required parameters: lat, lon",
           };
-        const url = `${base}/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
         try {
-          const res = await fetch(url);
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`,
+            ),
+          );
           if (!res.ok)
             return {
               success: false,

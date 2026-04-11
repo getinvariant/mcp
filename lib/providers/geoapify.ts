@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "GEOAPIFY_API_KEY";
 
 export class GeoapifyProvider implements Provider {
   info: ProviderInfo = {
@@ -74,15 +77,14 @@ export class GeoapifyProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.GEOAPIFY_API_KEY;
+    return keyPool.hasKeys(ENV);
   }
 
   async query(
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
-    const apiKey = process.env.GEOAPIFY_API_KEY;
-    if (!apiKey)
+    if (!keyPool.hasKeys(ENV))
       return { success: false, error: "Geoapify API key not configured" };
 
     const base = "https://api.geoapify.com/v1";
@@ -97,8 +99,10 @@ export class GeoapifyProvider implements Provider {
               error: "Missing required parameter: query",
             };
           const limit = (params.limit as number) || 5;
-          const res = await fetch(
-            `${base}/geocode/search?text=${encodeURIComponent(query)}&limit=${limit}&apiKey=${apiKey}`,
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/geocode/search?text=${encodeURIComponent(query)}&limit=${limit}&apiKey=${apiKey}`,
+            ),
           );
           if (!res.ok)
             return { success: false, error: `Geoapify error (${res.status})` };
@@ -124,8 +128,10 @@ export class GeoapifyProvider implements Provider {
               success: false,
               error: "Missing required parameters: lat, lon",
             };
-          const res = await fetch(
-            `${base}/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${apiKey}`,
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${apiKey}`,
+            ),
           );
           if (!res.ok)
             return { success: false, error: `Geoapify error (${res.status})` };
@@ -163,8 +169,10 @@ export class GeoapifyProvider implements Provider {
           }
           const mode = (params.mode as string) || "drive";
           const waypoints = `${from_lon},${from_lat}|${to_lon},${to_lat}`;
-          const res = await fetch(
-            `${base}/routing?waypoints=${encodeURIComponent(waypoints)}&mode=${mode}&apiKey=${apiKey}`,
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/routing?waypoints=${encodeURIComponent(waypoints)}&mode=${mode}&apiKey=${apiKey}`,
+            ),
           );
           if (!res.ok)
             return { success: false, error: `Geoapify error (${res.status})` };

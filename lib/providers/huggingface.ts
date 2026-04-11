@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "HUGGINGFACE_API_KEY";
 
 export class HuggingFaceProvider implements Provider {
   info: ProviderInfo = {
@@ -57,15 +60,14 @@ export class HuggingFaceProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.HUGGINGFACE_API_KEY;
+    return keyPool.hasKeys(ENV);
   }
 
   async query(
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
-    const apiKey = process.env.HUGGINGFACE_API_KEY;
-    if (!apiKey)
+    if (!keyPool.hasKeys(ENV))
       return { success: false, error: "HuggingFace API key not configured" };
 
     switch (action) {
@@ -82,17 +84,19 @@ export class HuggingFaceProvider implements Provider {
         const url = `https://api-inference.huggingface.co/models/${model}`;
 
         try {
-          const res = await fetch(url, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              inputs: prompt,
-              parameters: { max_new_tokens },
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(url, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                inputs: prompt,
+                parameters: { max_new_tokens },
+              }),
             }),
-          });
+          );
           if (!res.ok) {
             const text = await res.text();
             return {
@@ -120,19 +124,21 @@ export class HuggingFaceProvider implements Provider {
         const url = `https://api-inference.huggingface.co/models/${model}`;
 
         try {
-          const res = await fetch(url, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ inputs: text }),
-          });
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(url, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ inputs: text }),
+            }),
+          );
           if (!res.ok) {
-            const text = await res.text();
+            const errText = await res.text();
             return {
               success: false,
-              error: `HuggingFace API error (${res.status}): ${text}`,
+              error: `HuggingFace API error (${res.status}): ${errText}`,
             };
           }
           const data = await res.json();

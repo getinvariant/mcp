@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "FINNHUB_API_KEY";
 
 export class FinnhubProvider implements Provider {
   info: ProviderInfo = {
@@ -78,15 +81,14 @@ export class FinnhubProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.FINNHUB_API_KEY;
+    return keyPool.hasKeys(ENV);
   }
 
   async query(
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
-    const apiKey = process.env.FINNHUB_API_KEY;
-    if (!apiKey)
+    if (!keyPool.hasKeys(ENV))
       return { success: false, error: "Finnhub API key not configured" };
 
     const base = "https://finnhub.io/api/v1";
@@ -100,8 +102,10 @@ export class FinnhubProvider implements Provider {
               success: false,
               error: "Missing required parameter: symbol",
             };
-          const res = await fetch(
-            `${base}/quote?symbol=${encodeURIComponent(symbol)}&token=${apiKey}`,
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/quote?symbol=${encodeURIComponent(symbol)}&token=${apiKey}`,
+            ),
           );
           if (!res.ok)
             return { success: false, error: `Finnhub error (${res.status})` };
@@ -134,8 +138,10 @@ export class FinnhubProvider implements Provider {
           fromDate.setDate(fromDate.getDate() - 7);
           const from =
             (params.from as string) || fromDate.toISOString().slice(0, 10);
-          const res = await fetch(
-            `${base}/company-news?symbol=${encodeURIComponent(symbol)}&from=${from}&to=${to}&token=${apiKey}`,
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/company-news?symbol=${encodeURIComponent(symbol)}&from=${from}&to=${to}&token=${apiKey}`,
+            ),
           );
           if (!res.ok)
             return { success: false, error: `Finnhub error (${res.status})` };
@@ -151,8 +157,10 @@ export class FinnhubProvider implements Provider {
               success: false,
               error: "Missing required parameters: from, to",
             };
-          const res = await fetch(
-            `${base}/forex/rates?base=${encodeURIComponent(from)}&token=${apiKey}`,
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/forex/rates?base=${encodeURIComponent(from)}&token=${apiKey}`,
+            ),
           );
           if (!res.ok)
             return { success: false, error: `Finnhub error (${res.status})` };
@@ -165,8 +173,10 @@ export class FinnhubProvider implements Provider {
 
         case "market_news": {
           const category = (params.category as string) || "general";
-          const res = await fetch(
-            `${base}/news?category=${encodeURIComponent(category)}&token=${apiKey}`,
+          const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+            fetch(
+              `${base}/news?category=${encodeURIComponent(category)}&token=${apiKey}`,
+            ),
           );
           if (!res.ok)
             return { success: false, error: `Finnhub error (${res.status})` };

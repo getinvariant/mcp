@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "EVERY_ORG_API_KEY";
 
 export class CharityProvider implements Provider {
   info: ProviderInfo = {
@@ -34,7 +37,7 @@ export class CharityProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.EVERY_ORG_API_KEY;
+    return keyPool.hasKeys(ENV);
   }
 
   async query(
@@ -45,8 +48,7 @@ export class CharityProvider implements Provider {
       return { success: false, error: `Unknown action: ${action}` };
     }
 
-    const apiKey = process.env.EVERY_ORG_API_KEY;
-    if (!apiKey)
+    if (!keyPool.hasKeys(ENV))
       return { success: false, error: "Every.org API key not configured" };
 
     const query = params.query as string;
@@ -54,10 +56,13 @@ export class CharityProvider implements Provider {
       return { success: false, error: "Missing required parameter: query" };
 
     const take = (params.take as number) || 10;
-    const url = `https://partners.every.org/v0.2/search/${encodeURIComponent(query)}?apiKey=${apiKey}&take=${take}`;
 
     try {
-      const res = await fetch(url);
+      const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+        fetch(
+          `https://partners.every.org/v0.2/search/${encodeURIComponent(query)}?apiKey=${apiKey}&take=${take}`,
+        ),
+      );
       if (!res.ok)
         return { success: false, error: `Every.org API error (${res.status})` };
       const data = await res.json();

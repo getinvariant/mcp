@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "GOOGLE_GEMINI_API_KEY";
 
 export class GeminiProvider implements Provider {
   info: ProviderInfo = {
@@ -34,15 +37,14 @@ export class GeminiProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.GOOGLE_GEMINI_API_KEY;
+    return keyPool.hasKeys(ENV);
   }
 
   async query(
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
-    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-    if (!apiKey)
+    if (!keyPool.hasKeys(ENV))
       return { success: false, error: "Google Gemini API key not configured" };
 
     if (action !== "chat")
@@ -53,16 +55,20 @@ export class GeminiProvider implements Provider {
       return { success: false, error: "Missing required parameter: message" };
 
     const model = (params.model as string) || "gemini-1.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: message }] }],
-        }),
-      });
+      const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+        fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: message }] }],
+            }),
+          },
+        ),
+      );
 
       if (!res.ok) {
         const text = await res.text();

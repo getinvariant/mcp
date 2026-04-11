@@ -7,6 +7,8 @@ export enum ProviderCategory {
   AI = "ai",
   MAPS = "maps",
   CLOUD = "cloud",
+  EDUCATION = "education",
+  CREATIVE = "creative",
 }
 
 export interface ActionInfo {
