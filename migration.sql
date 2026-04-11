@@ -27,6 +27,3 @@ create table monthly_usage (
 
 create index idx_usage_log_account on usage_log(account_id, created_at);
 create index idx_monthly_usage_account on monthly_usage(account_id, month);
-
-insert into accounts (pl_key, tier, monthly_quota, per_minute_rate)
-values ('pl_demo_key_2026', 'free', 500, 20);

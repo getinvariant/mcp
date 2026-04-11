@@ -3,12 +3,20 @@
  * Procurement Labs — Comprehensive API Test Suite
  *
  * Usage:
- *   Local:  PL_API_KEY=pl_demo_key_2026 PL_BACKEND_URL=http://localhost:3000 npx tsx test.ts
- *   Prod:   PL_API_KEY=pl_demo_key_2026 PL_BACKEND_URL=https://pclabs.dev/api/mcp npx tsx test.ts
+ *   Local:  PL_API_KEY=pl_your_test_key PL_BACKEND_URL=http://localhost:3000 npx tsx test.ts
+ *   Prod:   PL_API_KEY=pl_your_test_key PL_BACKEND_URL=https://pclabs.dev npx tsx test.ts
+ *
+ * Both env vars are REQUIRED. There is no demo-key fallback — issue yourself
+ * a fresh key via /api/signup before running the suite.
  */
 
 const BASE_URL = process.env.PL_BACKEND_URL || "http://localhost:3000";
-const PL_KEY = process.env.PL_API_KEY || "pl_demo_key_2026";
+const PL_KEY = process.env.PL_API_KEY;
+if (!PL_KEY) {
+  console.error("Error: PL_API_KEY environment variable is required.");
+  console.error("Issue yourself a key via POST /api/signup first.");
+  process.exit(1);
+}
 
 const GREEN  = "\x1b[32m";
 const RED    = "\x1b[31m";

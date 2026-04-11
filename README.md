@@ -110,7 +110,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or 
   "mcpServers": {
     "procure": {
       "type": "http",
-      "url": "https://procure.example.com/api/mcp",
+      "url": "https://pclabs.dev/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -133,7 +133,7 @@ Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project):
 {
   "mcpServers": {
     "procure": {
-      "url": "https://procure.example.com/api/mcp",
+      "url": "https://pclabs.dev/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -152,7 +152,7 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
 {
   "mcpServers": {
     "procure": {
-      "url": "https://procure.example.com/api/mcp",
+      "url": "https://pclabs.dev/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -168,7 +168,7 @@ Or via UI: Cascade panel → MCP Servers → Configure.
 1. Open the Cline sidebar
 2. Click the MCP Servers tab (plug icon)
 3. Add Server → HTTP
-4. Paste `https://procure.example.com/api/mcp` as the URL
+4. Paste `https://pclabs.dev/api/mcp` as the URL
 5. Add header `x-pl-key: pl_your_key_here`
 
 #### Continue.dev
@@ -182,7 +182,7 @@ Edit `~/.continue/config.json`:
       "name": "procure",
       "transport": {
         "type": "http",
-        "url": "https://procure.example.com/api/mcp",
+        "url": "https://pclabs.dev/api/mcp",
         "headers": {
           "x-pl-key": "pl_your_key_here"
         }
@@ -199,7 +199,7 @@ Edit `~/.codex/config.toml`:
 ```toml
 [mcp_servers.procure]
 type = "http"
-url = "https://procure.example.com/api/mcp"
+url = "https://pclabs.dev/api/mcp"
 
 [mcp_servers.procure.headers]
 x-pl-key = "pl_your_key_here"
@@ -214,7 +214,7 @@ response = client.responses.create(
     model="codex-mini-latest",
     tools=[{
         "type": "mcp",
-        "server_url": "https://procure.example.com/api/mcp",
+        "server_url": "https://pclabs.dev/api/mcp",
         "headers": { "x-pl-key": "pl_your_key_here" }
     }],
     input="What crypto prices are available?"
@@ -231,7 +231,7 @@ extensions:
     type: mcp
     enabled: true
     transport: http
-    url: https://procure.example.com/api/mcp
+    url: https://pclabs.dev/api/mcp
     headers:
       x-pl-key: pl_your_key_here
 ```
