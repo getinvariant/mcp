@@ -13,7 +13,15 @@ import { recommend, compareProviders } from "./lib/reasoning/engine.js";
 
 import { buildApiDocs } from "./lib/docs.js";
 
-import { getAccount, getAccountByEmail, getUsage, getAllAccounts, createAccount, addToWaitlist, getRoutingStats } from "./lib/db.js";
+import {
+  getAccount,
+  getAccountByEmail,
+  getUsage,
+  getAllAccounts,
+  createAccount,
+  addToWaitlist,
+  getRoutingStats,
+} from "./lib/db.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -21,9 +29,14 @@ import { z } from "zod";
 const PORT = Number(process.env.PORT) || 3000;
 
 // ─── Streamable HTTP MCP ────────────────────────────────────────────────────
-const mcpSessions = new Map<string, { transport: StreamableHTTPServerTransport; server: McpServer }>();
+const mcpSessions = new Map<
+  string,
+  { transport: StreamableHTTPServerTransport; server: McpServer }
+>();
 
-async function createMcpSession(accountId: string): Promise<{ transport: StreamableHTTPServerTransport; server: McpServer }> {
+async function createMcpSession(
+  accountId: string,
+): Promise<{ transport: StreamableHTTPServerTransport; server: McpServer }> {
   const server = new McpServer({ name: "procurement-labs", version: "0.1.0" });
 
   server.tool(
@@ -32,15 +45,26 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
     { category: z.string().optional() },
     async ({ category }) => {
       let providers = getAllProviders();
-      if (category) providers = providers.filter((p) => p.info.category === category);
+      if (category)
+        providers = providers.filter((p) => p.info.category === category);
       if (providers.length === 0) {
-        return { content: [{ type: "text", text: `No providers found${category ? ` for category: ${category}` : ""}.` }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: `No providers found${category ? ` for category: ${category}` : ""}.`,
+            },
+          ],
+        };
       }
       const lines = providers.map((p) => {
         const actions = p.info.availableActions
           .map((a) => {
             const paramStr = Object.entries(a.parameters)
-              .map(([k, v]) => `${k} (${(v as any).type}${(v as any).required ? ", required" : ""})`)
+              .map(
+                ([k, v]) =>
+                  `${k} (${(v as any).type}${(v as any).required ? ", required" : ""})`,
+              )
               .join(", ");
             return `    - ${a.action}: ${a.description} [${paramStr}]`;
           })
@@ -54,9 +78,8 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
         ].join("\n");
       });
       return { content: [{ type: "text", text: lines.join("\n\n---\n\n") }] };
-    }
+    },
   );
-
 
   server.tool(
     "get_api_docs",
@@ -65,57 +88,95 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
       section: z
         .enum(["overview", "authentication", "endpoints", "providers"])
         .optional()
-        .describe("Narrow to a specific section (optional; omit for full docs)"),
+        .describe(
+          "Narrow to a specific section (optional; omit for full docs)",
+        ),
     },
     async ({ section }) => {
       const docs = buildApiDocs(section);
       return { content: [{ type: "text", text: docs }] };
-    }
+    },
   );
-
 
   server.tool(
     "recommend",
     "Get intelligent recommendations for which API provider to use based on your needs. Compares pricing, rate limits, reliability, and capabilities. Use this before querying to pick the best provider.",
     {
-      need: z.string().describe("Describe what you need. e.g. 'I need real-time stock prices' or 'cheapest way to do sentiment analysis'"),
-      priorities: z.array(z.enum(["cost", "reliability", "speed", "data-quality", "no-auth"])).optional()
+      need: z
+        .string()
+        .describe(
+          "Describe what you need. e.g. 'I need real-time stock prices' or 'cheapest way to do sentiment analysis'",
+        ),
+      priorities: z
+        .array(
+          z.enum(["cost", "reliability", "speed", "data-quality", "no-auth"]),
+        )
+        .optional()
         .describe("What matters most to you"),
-      budget: z.enum(["free", "low", "any"]).optional().describe("Budget constraint"),
+      budget: z
+        .enum(["free", "low", "any"])
+        .optional()
+        .describe("Budget constraint"),
     },
     async ({ need, priorities, budget }) => {
       const results = recommend({ need, priorities, budget });
       if (results.length === 0) {
-        return { content: [{ type: "text", text: "No matching providers found for that need. Try rephrasing or use list_providers to browse all available APIs." }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No matching providers found for that need. Try rephrasing or use list_providers to browse all available APIs.",
+            },
+          ],
+        };
       }
-      const text = results.map((r, i) => [
-        `## ${i + 1}. ${r.provider_name} (${r.provider_id}) · Score: ${r.score}/100`,
-        `${r.reasoning}`,
-        `Actions: ${r.actions.join(", ")}`,
-        `Pricing: ${r.pricing.model}${r.pricing.freeTier ? ` (free tier: ${r.pricing.freeTier})` : ""}`,
-        `Rate limits: ${r.rateLimits.free || "N/A"}`,
-        `Available: ${r.available ? "✅ Ready" : "❌ Needs API key"}`,
-      ].join("\n")).join("\n\n---\n\n");
+      const text = results
+        .map((r, i) =>
+          [
+            `## ${i + 1}. ${r.provider_name} (${r.provider_id}) · Score: ${r.score}/100`,
+            `${r.reasoning}`,
+            `Actions: ${r.actions.join(", ")}`,
+            `Pricing: ${r.pricing.model}${r.pricing.freeTier ? ` (free tier: ${r.pricing.freeTier})` : ""}`,
+            `Rate limits: ${r.rateLimits.free || "N/A"}`,
+            `Available: ${r.available ? "✅ Ready" : "❌ Needs API key"}`,
+          ].join("\n"),
+        )
+        .join("\n\n---\n\n");
       return { content: [{ type: "text", text }] };
-    }
+    },
   );
 
   server.tool(
     "compare",
     "Compare two or more providers side by side on pricing, rate limits, strengths, weaknesses, and capabilities.",
     {
-      provider_ids: z.array(z.string()).min(2).describe("Provider IDs to compare. e.g. ['claude', 'gemini']"),
+      provider_ids: z
+        .array(z.string())
+        .min(2)
+        .describe("Provider IDs to compare. e.g. ['claude', 'gemini']"),
     },
     async ({ provider_ids }) => {
       const results = compareProviders(provider_ids);
       if (results.length === 0) {
-        return { content: [{ type: "text", text: "No matching providers found. Use list_providers to see valid IDs." }], isError: true };
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No matching providers found. Use list_providers to see valid IDs.",
+            },
+          ],
+          isError: true,
+        };
       }
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
-    }
+      return {
+        content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+      };
+    },
   );
 
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID() });
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+  });
 
   transport.onclose = () => {
     const sid = transport.sessionId;
@@ -129,11 +190,17 @@ async function createMcpSession(accountId: string): Promise<{ transport: Streama
 
 // ─── OAuth 2.0 ──────────────────────────────────────────────────────────────
 
-type PendingCode = { apiKey: string; redirectUri: string; codeChallenge: string; expiresAt: number };
+type PendingCode = {
+  apiKey: string;
+  redirectUri: string;
+  codeChallenge: string;
+  expiresAt: number;
+};
 const pendingCodes = new Map<string, PendingCode>();
 setInterval(() => {
   const now = Date.now();
-  for (const [code, data] of pendingCodes) if (data.expiresAt < now) pendingCodes.delete(code);
+  for (const [code, data] of pendingCodes)
+    if (data.expiresAt < now) pendingCodes.delete(code);
 }, 60_000);
 
 function getBaseUrl(req: http.IncomingMessage): string {
@@ -143,7 +210,12 @@ function getBaseUrl(req: http.IncomingMessage): string {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function verifyPKCE(verifier: string, challenge: string): boolean {
@@ -151,24 +223,38 @@ function verifyPKCE(verifier: string, challenge: string): boolean {
   return hash === challenge;
 }
 
-function parseFormBody(req: http.IncomingMessage): Promise<Record<string, string>> {
+function parseFormBody(
+  req: http.IncomingMessage,
+): Promise<Record<string, string>> {
   return new Promise((resolve) => {
     let data = "";
     req.on("data", (chunk) => (data += chunk));
     req.on("end", () => {
       const parsed = querystring.parse(data);
       const result: Record<string, string> = {};
-      for (const [k, v] of Object.entries(parsed)) result[k] = Array.isArray(v) ? v[0]! : (v ?? "");
+      for (const [k, v] of Object.entries(parsed))
+        result[k] = Array.isArray(v) ? v[0]! : (v ?? "");
       resolve(result);
     });
   });
 }
 
 function renderAuthorizeForm(opts: {
-  clientId: string; redirectUri: string; state: string;
-  codeChallenge: string; codeChallengeMethod: string; error?: string;
+  clientId: string;
+  redirectUri: string;
+  state: string;
+  codeChallenge: string;
+  codeChallengeMethod: string;
+  error?: string;
 }): string {
-  const { clientId, redirectUri, state, codeChallenge, codeChallengeMethod, error } = opts;
+  const {
+    clientId,
+    redirectUri,
+    state,
+    codeChallenge,
+    codeChallengeMethod,
+    error,
+  } = opts;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -217,7 +303,11 @@ function parseBody(req: http.IncomingMessage): Promise<any> {
     let data = "";
     req.on("data", (chunk) => (data += chunk));
     req.on("end", () => {
-      try { resolve(JSON.parse(data)); } catch { resolve({}); }
+      try {
+        resolve(JSON.parse(data));
+      } catch {
+        resolve({});
+      }
     });
   });
 }
@@ -225,7 +315,10 @@ function parseBody(req: http.IncomingMessage): Promise<any> {
 function makeRes(res: http.ServerResponse) {
   const r: any = res;
   const originalEnd = res.end.bind(res);
-  r.status = (code: number) => { res.statusCode = code; return r; };
+  r.status = (code: number) => {
+    res.statusCode = code;
+    return r;
+  };
   r.json = (obj: unknown) => {
     res.setHeader("Content-Type", "application/json");
     originalEnd(JSON.stringify(obj));
@@ -247,7 +340,10 @@ function getHealthData() {
       name: a.action,
       description: a.description,
       params: Object.entries(a.parameters).map(([k, v]) => ({
-        name: k, type: v.type, required: v.required, description: v.description,
+        name: k,
+        type: v.type,
+        required: v.required,
+        description: v.description,
       })),
     })),
   }));
@@ -360,11 +456,13 @@ function renderHomepage(): string {
   const live = providers.filter((p) => p.available).length;
   const categories = Object.keys(CATEGORY_META);
 
-  const categoryList = categories.map(cat => {
-    const meta = CATEGORY_META[cat] || { label: cat, icon: "·" };
-    const count = providers.filter(p => p.category === cat).length;
-    return `<span class="cat-tag">${escapeHtml(meta.label.toLowerCase())} (${count})</span>`;
-  }).join("");
+  const categoryList = categories
+    .map((cat) => {
+      const meta = CATEGORY_META[cat] || { label: cat, icon: "·" };
+      const count = providers.filter((p) => p.category === cat).length;
+      return `<span class="cat-tag">${escapeHtml(meta.label.toLowerCase())} (${count})</span>`;
+    })
+    .join("");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1550,7 +1648,10 @@ function renderDashboard(): string {
           const actionList = p.actions
             .map((a) => {
               const params = a.params
-                .map((pr) => `<span class="param${pr.required ? " required" : ""}">${pr.name}</span>`)
+                .map(
+                  (pr) =>
+                    `<span class="param${pr.required ? " required" : ""}">${pr.name}</span>`,
+                )
                 .join(" ");
               return `<div class="action"><code>${a.name}</code><span class="action-desc">${a.description}</span><div class="params">${params}</div></div>`;
             })
@@ -2574,62 +2675,85 @@ const server = http.createServer(async (req, res) => {
   if (path === "/.well-known/oauth-authorization-server") {
     const base = getBaseUrl(req);
     res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({
-      issuer: base,
-      authorization_endpoint: `${base}/authorize`,
-      token_endpoint: `${base}/token`,
-      registration_endpoint: `${base}/register`,
-      response_types_supported: ["code"],
-      grant_types_supported: ["authorization_code"],
-      code_challenge_methods_supported: ["S256"],
-      token_endpoint_auth_methods_supported: ["none"],
-    }));
+    return res.end(
+      JSON.stringify({
+        issuer: base,
+        authorization_endpoint: `${base}/authorize`,
+        token_endpoint: `${base}/token`,
+        registration_endpoint: `${base}/register`,
+        response_types_supported: ["code"],
+        grant_types_supported: ["authorization_code"],
+        code_challenge_methods_supported: ["S256"],
+        token_endpoint_auth_methods_supported: ["none"],
+      }),
+    );
   }
 
   if (path === "/register" && req.method === "POST") {
     const regBody = await parseBody(req);
     res.writeHead(201, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({
-      client_id: crypto.randomBytes(16).toString("hex"),
-      redirect_uris: regBody.redirect_uris ?? [],
-      grant_types: ["authorization_code"],
-      response_types: ["code"],
-      token_endpoint_auth_method: "none",
-    }));
+    return res.end(
+      JSON.stringify({
+        client_id: crypto.randomBytes(16).toString("hex"),
+        redirect_uris: regBody.redirect_uris ?? [],
+        grant_types: ["authorization_code"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+      }),
+    );
   }
 
   if (path === "/authorize") {
     if (req.method === "GET") {
       const params = querystring.parse(qs || "");
-      const get = (k: string) => (Array.isArray(params[k]) ? params[k]![0] : params[k] as string) ?? "";
+      const get = (k: string) =>
+        (Array.isArray(params[k]) ? params[k]![0] : (params[k] as string)) ??
+        "";
       if (get("response_type") !== "code") {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "unsupported_response_type" }));
       }
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      return res.end(renderAuthorizeForm({
-        clientId: get("client_id"), redirectUri: get("redirect_uri"),
-        state: get("state"), codeChallenge: get("code_challenge"),
-        codeChallengeMethod: get("code_challenge_method") || "S256",
-      }));
+      return res.end(
+        renderAuthorizeForm({
+          clientId: get("client_id"),
+          redirectUri: get("redirect_uri"),
+          state: get("state"),
+          codeChallenge: get("code_challenge"),
+          codeChallengeMethod: get("code_challenge_method") || "S256",
+        }),
+      );
     }
     if (req.method === "POST") {
       const body = await parseFormBody(req);
-      const { client_id, redirect_uri, state, code_challenge, code_challenge_method, api_key } = body;
+      const {
+        client_id,
+        redirect_uri,
+        state,
+        code_challenge,
+        code_challenge_method,
+        api_key,
+      } = body;
       const account = await getAccount(api_key);
       if (!account) {
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        return res.end(renderAuthorizeForm({
-          clientId: client_id ?? "", redirectUri: redirect_uri ?? "",
-          state: state ?? "", codeChallenge: code_challenge ?? "",
-          codeChallengeMethod: code_challenge_method ?? "S256",
-          error: "Invalid API key. Check your key and try again.",
-        }));
+        return res.end(
+          renderAuthorizeForm({
+            clientId: client_id ?? "",
+            redirectUri: redirect_uri ?? "",
+            state: state ?? "",
+            codeChallenge: code_challenge ?? "",
+            codeChallengeMethod: code_challenge_method ?? "S256",
+            error: "Invalid API key. Check your key and try again.",
+          }),
+        );
       }
       const code = crypto.randomBytes(20).toString("hex");
       pendingCodes.set(code, {
-        apiKey: api_key, redirectUri: redirect_uri ?? "",
-        codeChallenge: code_challenge ?? "", expiresAt: Date.now() + 5 * 60_000,
+        apiKey: api_key,
+        redirectUri: redirect_uri ?? "",
+        codeChallenge: code_challenge ?? "",
+        expiresAt: Date.now() + 5 * 60_000,
       });
       const callback = new URL(redirect_uri ?? "");
       if (state) callback.searchParams.set("state", state);
@@ -2653,15 +2777,31 @@ const server = http.createServer(async (req, res) => {
     if (!pending || pending.expiresAt < Date.now()) {
       pendingCodes.delete(code ?? "");
       res.writeHead(400, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "invalid_grant", error_description: "Code expired or not found" }));
+      return res.end(
+        JSON.stringify({
+          error: "invalid_grant",
+          error_description: "Code expired or not found",
+        }),
+      );
     }
-    if (pending.redirectUri !== redirect_uri || !code_verifier || !verifyPKCE(code_verifier, pending.codeChallenge)) {
+    if (
+      pending.redirectUri !== redirect_uri ||
+      !code_verifier ||
+      !verifyPKCE(code_verifier, pending.codeChallenge)
+    ) {
       res.writeHead(400, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "invalid_grant", error_description: "PKCE or redirect_uri mismatch" }));
+      return res.end(
+        JSON.stringify({
+          error: "invalid_grant",
+          error_description: "PKCE or redirect_uri mismatch",
+        }),
+      );
     }
     pendingCodes.delete(code!);
     res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ access_token: pending.apiKey, token_type: "bearer" }));
+    return res.end(
+      JSON.stringify({ access_token: pending.apiKey, token_type: "bearer" }),
+    );
   }
 
   // ── API routes ─────────────────────────────────────────────────────────────
@@ -2669,7 +2809,10 @@ const server = http.createServer(async (req, res) => {
 
   // Lift Bearer token → x-pl-key so existing handlers validate it transparently
   const authHeader = req.headers["authorization"];
-  if (authHeader?.toLowerCase().startsWith("bearer ") && !req.headers["x-pl-key"]) {
+  if (
+    authHeader?.toLowerCase().startsWith("bearer ") &&
+    !req.headers["x-pl-key"]
+  ) {
     (req.headers as any)["x-pl-key"] = authHeader.slice(7);
   }
 
@@ -2706,7 +2849,9 @@ const server = http.createServer(async (req, res) => {
 
   if (path === "/api/health") {
     res.setHeader("Content-Type", "application/json");
-    return res.end(JSON.stringify({ status: "ok", providers: getHealthData() }));
+    return res.end(
+      JSON.stringify({ status: "ok", providers: getHealthData() }),
+    );
   }
 
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
@@ -2728,7 +2873,9 @@ const server = http.createServer(async (req, res) => {
     // Check for existing session
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     if (sessionId && mcpSessions.has(sessionId)) {
-      return mcpSessions.get(sessionId)!.transport.handleRequest(req, res, body);
+      return mcpSessions
+        .get(sessionId)!
+        .transport.handleRequest(req, res, body);
     }
 
     // New session (must be initialize request or POST without session)
@@ -2775,20 +2922,22 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ error: "Invalid admin password" }));
     }
     const accounts = await getAllAccounts();
-    const withUsage = await Promise.all(accounts.map(async (a) => {
-      const breakdown = await getUsage(a.id);
-      const used = breakdown.reduce((sum, r) => sum + r.count, 0);
-      return {
-        key: a.pl_key,
-        email: a.email,
-        tier: a.tier,
-        quota: a.monthly_quota,
-        used,
-        remaining: Math.max(0, a.monthly_quota - used),
-        perMinuteRate: a.per_minute_rate,
-        createdAt: a.created_at,
-      };
-    }));
+    const withUsage = await Promise.all(
+      accounts.map(async (a) => {
+        const breakdown = await getUsage(a.id);
+        const used = breakdown.reduce((sum, r) => sum + r.count, 0);
+        return {
+          key: a.pl_key,
+          email: a.email,
+          tier: a.tier,
+          quota: a.monthly_quota,
+          used,
+          remaining: Math.max(0, a.monthly_quota - used),
+          perMinuteRate: a.per_minute_rate,
+          createdAt: a.created_at,
+        };
+      }),
+    );
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ accounts: withUsage }));
   }
@@ -2804,14 +2953,26 @@ const server = http.createServer(async (req, res) => {
       email: body.email,
       tier: body.tier,
       monthlyQuota: body.monthly_quota ? Number(body.monthly_quota) : undefined,
-      perMinuteRate: body.per_minute_rate ? Number(body.per_minute_rate) : undefined,
+      perMinuteRate: body.per_minute_rate
+        ? Number(body.per_minute_rate)
+        : undefined,
     });
     if (!account) {
       res.writeHead(500, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Failed to create account" }));
     }
     res.writeHead(201, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ account: { key: account.pl_key, email: account.email, tier: account.tier, quota: account.monthly_quota, perMinuteRate: account.per_minute_rate } }));
+    return res.end(
+      JSON.stringify({
+        account: {
+          key: account.pl_key,
+          email: account.email,
+          tier: account.tier,
+          quota: account.monthly_quota,
+          perMinuteRate: account.per_minute_rate,
+        },
+      }),
+    );
   }
 
   // ── Public signup ─────────────────────────────────────────────────────────
@@ -2831,7 +2992,13 @@ const server = http.createServer(async (req, res) => {
       "Content-Type": "application/json",
       "Set-Cookie": `pl_key=${plKey}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
     });
-    return res.end(JSON.stringify({ key: plKey, tier: account.tier, quota: account.monthly_quota }));
+    return res.end(
+      JSON.stringify({
+        key: plKey,
+        tier: account.tier,
+        quota: account.monthly_quota,
+      }),
+    );
   }
 
   if (path === "/api/routing-stats" && req.method === "GET") {
@@ -2839,7 +3006,9 @@ const server = http.createServer(async (req, res) => {
     const isAdmin = req.headers["x-admin-pass"] === adminPass;
     if (!plKey && !isAdmin) {
       res.writeHead(401, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "Missing x-pl-key or x-admin-pass" }));
+      return res.end(
+        JSON.stringify({ error: "Missing x-pl-key or x-admin-pass" }),
+      );
     }
     let stats;
     if (isAdmin) {
@@ -2860,7 +3029,12 @@ const server = http.createServer(async (req, res) => {
   // Users sign in with their API key directly via the key-based sign-in flow.
   if (path === "/api/signin-email") {
     res.writeHead(410, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ error: "Email sign-in has been disabled. Please sign in with your API key." }));
+    return res.end(
+      JSON.stringify({
+        error:
+          "Email sign-in has been disabled. Please sign in with your API key.",
+      }),
+    );
   }
 
   if (path === "/api/waitlist" && req.method === "POST") {

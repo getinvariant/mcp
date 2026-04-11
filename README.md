@@ -17,18 +17,18 @@ procure collapses all of it into one managed layer. You connect once over MCP or
 
 ## Provider catalog
 
-| Provider | Category | Rate Limit | Key needed? |
-|---|---|---|---|
-| OpenFDA | Physical Health | 240 req/min | No |
-| Mental Health Resources | Mental Health | unlimited | No |
-| **CoinGecko** | Finance | ~50 req/min | No |
-| **Finnhub** | Finance | 60 req/min | Free signup |
-| Every.org | Social Impact | generous | Free signup |
-| OpenWeatherMap | Environment | 60 req/min | Free signup |
-| Anthropic Claude | AI | . | Paid |
-| Google Gemini | AI | 1,500 req/day | Free (AI Studio) |
-| HuggingFace | AI | generous | Free signup |
-| **Geoapify** | Maps | 3,000 req/day | Free, no card |
+| Provider                | Category        | Rate Limit    | Key needed?      |
+| ----------------------- | --------------- | ------------- | ---------------- |
+| OpenFDA                 | Physical Health | 240 req/min   | No               |
+| Mental Health Resources | Mental Health   | unlimited     | No               |
+| **CoinGecko**           | Finance         | ~50 req/min   | No               |
+| **Finnhub**             | Finance         | 60 req/min    | Free signup      |
+| Every.org               | Social Impact   | generous      | Free signup      |
+| OpenWeatherMap          | Environment     | 60 req/min    | Free signup      |
+| Anthropic Claude        | AI              | .             | Paid             |
+| Google Gemini           | AI              | 1,500 req/day | Free (AI Studio) |
+| HuggingFace             | AI              | generous      | Free signup      |
+| **Geoapify**            | Maps            | 3,000 req/day | Free, no card    |
 
 On the hosted instance procure handles every "Free signup" row for you. You never see those portals. Self-hosted instances can bring their own keys via environment variables.
 
@@ -70,13 +70,13 @@ procure exposes the same engine through two interfaces.
 
 **2. REST (for custom code).** Plain HTTP endpoints if you are building your own integration:
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/api/providers` | GET | List every provider and its status |
-| `/api/query` | POST | Execute an action on a provider |
-| `/api/recommend` | POST | Ask procure to pick the best provider for a goal |
-| `/api/usage` | GET | Your current quota, tier, and per-provider breakdown |
-| `/api/mcp` | POST | MCP JSON-RPC endpoint (same tools, agent-friendly shape) |
+| Endpoint         | Method | Purpose                                                  |
+| ---------------- | ------ | -------------------------------------------------------- |
+| `/api/providers` | GET    | List every provider and its status                       |
+| `/api/query`     | POST   | Execute an action on a provider                          |
+| `/api/recommend` | POST   | Ask procure to pick the best provider for a goal         |
+| `/api/usage`     | GET    | Your current quota, tier, and per-provider breakdown     |
+| `/api/mcp`       | POST   | MCP JSON-RPC endpoint (same tools, agent-friendly shape) |
 
 Every endpoint requires an `x-pl-key: pl_...` header.
 
@@ -302,27 +302,27 @@ Point Railway at this repo and set the environment variables below in the Railwa
 
 **Platform (required):**
 
-| Variable | Description |
-|---|---|
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_KEY` | Supabase service role key (server-side only) |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
-| `ADMIN_PASSWORD` | Password gate for the admin API endpoints |
+| Variable                   | Description                                  |
+| -------------------------- | -------------------------------------------- |
+| `SUPABASE_URL`             | Supabase project URL                         |
+| `SUPABASE_SERVICE_KEY`     | Supabase service role key (server-side only) |
+| `UPSTASH_REDIS_REST_URL`   | Upstash Redis REST URL                       |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token                     |
+| `ADMIN_PASSWORD`           | Password gate for the admin API endpoints    |
 
 **Upstream providers (optional). Omit a variable to disable that provider:**
 
-| Variable | Provider |
-|---|---|
-| `ANTHROPIC_API_KEY` | Anthropic Claude ([console.anthropic.com](https://console.anthropic.com)) |
-| `GOOGLE_GEMINI_API_KEY` | Google Gemini ([aistudio.google.com](https://aistudio.google.com)) |
-| `HUGGINGFACE_API_KEY` | HuggingFace ([huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)) |
-| `FINNHUB_API_KEY` | Finnhub ([finnhub.io](https://finnhub.io)) |
-| `COINGECKO_API_KEY` | CoinGecko. Optional, boosts rate limit. |
-| `EVERY_ORG_API_KEY` | Every.org ([partners.every.org](https://partners.every.org)) |
-| `OPENWEATHER_API_KEY` | OpenWeatherMap ([openweathermap.org/api](https://openweathermap.org/api)) |
-| `GEOAPIFY_API_KEY` | Geoapify ([myprojects.geoapify.com](https://myprojects.geoapify.com)) |
-| `OPENFDA_API_KEY` | OpenFDA. Optional, boosts rate limit. |
+| Variable                | Provider                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`     | Anthropic Claude ([console.anthropic.com](https://console.anthropic.com))              |
+| `GOOGLE_GEMINI_API_KEY` | Google Gemini ([aistudio.google.com](https://aistudio.google.com))                     |
+| `HUGGINGFACE_API_KEY`   | HuggingFace ([huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)) |
+| `FINNHUB_API_KEY`       | Finnhub ([finnhub.io](https://finnhub.io))                                             |
+| `COINGECKO_API_KEY`     | CoinGecko. Optional, boosts rate limit.                                                |
+| `EVERY_ORG_API_KEY`     | Every.org ([partners.every.org](https://partners.every.org))                           |
+| `OPENWEATHER_API_KEY`   | OpenWeatherMap ([openweathermap.org/api](https://openweathermap.org/api))              |
+| `GEOAPIFY_API_KEY`      | Geoapify ([myprojects.geoapify.com](https://myprojects.geoapify.com))                  |
+| `OPENFDA_API_KEY`       | OpenFDA. Optional, boosts rate limit.                                                  |
 
 Providers without a configured key show `Status: Not configured` in `list_providers` and return a 503 when queried. OpenFDA and Mental Health Resources work with no key at all.
 
@@ -368,10 +368,10 @@ npm run build
 
 MCP client env vars for the stdio path:
 
-| Variable | Required | Description |
-|---|---|---|
-| `PL_API_KEY` | Yes | Your `pl_` key |
-| `PL_BACKEND_URL` | No | Override backend URL. Default: `https://pclabs.dev/api/mcp` |
+| Variable         | Required | Description                                                 |
+| ---------------- | -------- | ----------------------------------------------------------- |
+| `PL_API_KEY`     | Yes      | Your `pl_` key                                              |
+| `PL_BACKEND_URL` | No       | Override backend URL. Default: `https://pclabs.dev/api/mcp` |
 
 ## Adding a provider
 

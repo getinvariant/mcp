@@ -18,7 +18,7 @@ export interface QuotaResult {
 
 export async function checkAndIncrement(
   plKey: string,
-  account: Account
+  account: Account,
 ): Promise<QuotaResult> {
   const rateKey = `pl:rate:${plKey}`;
   const monthKey = `pl:month:${plKey}:${currentMonth()}`;
@@ -37,7 +37,11 @@ export async function checkAndIncrement(
   if (monthCount === 1) await redis.expire(monthKey, 45 * 86400);
 
   if (minuteCount > account.per_minute_rate) {
-    return { ok: false, remaining: 0, error: "Rate limit exceeded. Retry in 60s." };
+    return {
+      ok: false,
+      remaining: 0,
+      error: "Rate limit exceeded. Retry in 60s.",
+    };
   }
 
   if (monthCount > account.monthly_quota) {

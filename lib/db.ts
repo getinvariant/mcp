@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_KEY || ""
+  process.env.SUPABASE_SERVICE_KEY || "",
 );
 
 export interface Account {
@@ -25,7 +25,9 @@ export async function getAccount(plKey: string): Promise<Account | null> {
   return data as Account;
 }
 
-export async function getAccountByEmail(email: string): Promise<Account | null> {
+export async function getAccountByEmail(
+  email: string,
+): Promise<Account | null> {
   const { data, error } = await supabase
     .from("accounts")
     .select("*")
@@ -39,7 +41,7 @@ export async function logUsage(
   accountId: string,
   providerId: string,
   action: string,
-  success: boolean
+  success: boolean,
 ): Promise<void> {
   const month = new Date().toISOString().slice(0, 7); // '2026-04'
 
@@ -125,7 +127,9 @@ export async function getRoutingStats(accountId?: string): Promise<{
   const { data } = await query;
   const rows = (data || []) as any[];
   const fallbacks = rows.filter((r) => r.fallback).length;
-  const smartRoutes = rows.filter((r) => r.requested_provider !== r.actual_provider).length;
+  const smartRoutes = rows.filter(
+    (r) => r.requested_provider !== r.actual_provider,
+  ).length;
   const byCounts: Record<string, number> = {};
   for (const r of rows) {
     byCounts[r.actual_provider] = (byCounts[r.actual_provider] || 0) + 1;
@@ -142,7 +146,7 @@ export async function getRoutingStats(accountId?: string): Promise<{
 
 export async function getUsage(
   accountId: string,
-  month?: string
+  month?: string,
 ): Promise<{ provider_id: string; count: number }[]> {
   const m = month || new Date().toISOString().slice(0, 7);
   const { data } = await supabase

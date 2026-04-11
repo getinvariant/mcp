@@ -8,7 +8,7 @@ This is the only credential you need: a **`pl_` key** from us.
 
 ## 0. What is this?
 
-`procure` is a single MCP gateway that fronts a bunch of APIs. Instead of signing up for OpenWeather + CoinGecko + Finnhub + … you sign up *once* with us. Your agent talks to one URL with one header. We hold the upstream keys.
+`procure` is a single MCP gateway that fronts a bunch of APIs. Instead of signing up for OpenWeather + CoinGecko + Finnhub + … you sign up _once_ with us. Your agent talks to one URL with one header. We hold the upstream keys.
 
 **One key in. Every API out.**
 
@@ -100,7 +100,7 @@ x-pl-key = "pl_your_key"
 
 Ask your agent:
 
-> *"List all the providers procure has."*
+> _"List all the providers procure has."_
 
 It should call the `list_providers` tool and print 5+ providers with `Status: Ready`. If you see `Not configured`, that one's offline — pick a different one.
 
@@ -110,16 +110,16 @@ If your agent says "I don't see procure" or "no MCP tools available," you forgot
 
 ## 4. Try it
 
-These all work *right now* on the hosted gateway. Type them into your agent verbatim:
+These all work _right now_ on the hosted gateway. Type them into your agent verbatim:
 
-| Ask your agent… | What happens |
-|---|---|
-| `what's the weather in tokyo?` | OpenWeatherMap → temp, humidity, conditions |
-| `get the bitcoin price in USD` | CoinGecko → live BTC quote |
-| `what's AAPL trading at right now?` | Finnhub → live stock quote |
-| `look up adverse events for ibuprofen` | OpenFDA → real FDA reports |
-| `find me a crisis hotline for veterans` | Mental Health Resources |
-| `recommend a free API for crypto prices with no signup` | Returns ranked list with scores |
+| Ask your agent…                                         | What happens                                |
+| ------------------------------------------------------- | ------------------------------------------- |
+| `what's the weather in tokyo?`                          | OpenWeatherMap → temp, humidity, conditions |
+| `get the bitcoin price in USD`                          | CoinGecko → live BTC quote                  |
+| `what's AAPL trading at right now?`                     | Finnhub → live stock quote                  |
+| `look up adverse events for ibuprofen`                  | OpenFDA → real FDA reports                  |
+| `find me a crisis hotline for veterans`                 | Mental Health Resources                     |
+| `recommend a free API for crypto prices with no signup` | Returns ranked list with scores             |
 
 The agent will figure out which provider to call. You don't pick — that's the whole point.
 
@@ -129,12 +129,12 @@ The agent will figure out which provider to call. You don't pick — that's the 
 
 If you're curious what's actually wired up:
 
-| Tool | What it does |
-|---|---|
+| Tool             | What it does                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `list_providers` | Browse the catalog (filter by `category`: `physical_health`, `financial`, `environment`, `ai`, `maps`, `mental_health`, `social_impact`) |
-| `get_api_docs` | Full integration docs in-context. Have your agent read this first if it's confused |
-| `recommend` | "I need X, here's my budget" → ranked providers with reasoning |
-| `compare` | Side-by-side comparison of two providers |
+| `get_api_docs`   | Full integration docs in-context. Have your agent read this first if it's confused                                                       |
+| `recommend`      | "I need X, here's my budget" → ranked providers with reasoning                                                                           |
+| `compare`        | Side-by-side comparison of two providers                                                                                                 |
 
 You don't have to call these directly. Your agent will pick them up.
 
@@ -149,7 +149,7 @@ You typed the key wrong, or the header name is wrong. It must be exactly `x-pl-k
 You hit the per-minute cap (10 req/min on free tier). Wait 60 seconds. If you keep hitting it, batch your calls or ask the agent to slow down.
 
 **Agent says it has no tools / can't see procure**
-Restart the AI client *fully*. Most clients only load MCP servers at startup — editing the config while the app is running does nothing.
+Restart the AI client _fully_. Most clients only load MCP servers at startup — editing the config while the app is running does nothing.
 
 **A specific provider returns "Not configured"**
 That provider's upstream key isn't set on the gateway right now. Use `list_providers` to see what's actually live. The free, no-key providers (OpenFDA, CoinGecko, Mental Health) are always on.
@@ -171,4 +171,4 @@ https://pclabs.dev/dashboard — shows your quota, per-provider usage, and your 
 
 ## Need help?
 
-Find one of us (Fardeen, Toba, Sumandal). We're hosting.
+Find one of us — **Usman, Sefika, Tobasum, or Fardeen**. We're hosting all day.

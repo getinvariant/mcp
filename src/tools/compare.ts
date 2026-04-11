@@ -28,10 +28,12 @@ export function registerCompare(server: McpServer): void {
       }
 
       const response = result.data as any;
-      return response?.result ?? {
-        content: [{ type: "text", text: "No response from server" }],
-        isError: true,
-      };
-    }
+      return (
+        response?.result ?? {
+          content: [{ type: "text", text: "No response from server" }],
+          isError: true,
+        }
+      );
+    },
   );
 }
