@@ -174,7 +174,7 @@ function renderAuthorizeForm(opts: {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Procure | Connect</title>
+<title>Procurement Labs | Connect</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Inter',-apple-system,sans-serif;background:#0a0a0a;color:#e5e5e5;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem}
@@ -277,6 +277,15 @@ interface AccountWithUsage {
 
 const SHARED_HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Procurement Labs — one key unlocks every API your agent needs.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Procurement Labs">
+<meta property="og:title" content="Procurement Labs">
+<meta property="og:description" content="One key unlocks every API your agent needs.">
+<meta property="og:url" content="https://pclabs.dev">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Procurement Labs">
+<meta name="twitter:description" content="One key unlocks every API your agent needs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">`;
@@ -346,7 +355,7 @@ const SHARED_STYLES = `
 
 function renderNav(active?: string): string {
   return `<nav><div class="container">
-    <a href="/" class="logo">PROCURE//LABS</a>
+    <a href="/" class="logo">PROCUREMENT LABS</a>
     <div class="links">
       <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
       <a href="/login"${active === "login" ? ' class="active"' : ""}>LOGIN</a>
@@ -370,7 +379,7 @@ function renderHomepage(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>procure, by procurement labs</title>
+<title>Procurement Labs</title>
 <style>
 ${SHARED_STYLES}
 
@@ -674,7 +683,7 @@ ${renderNav()}
           <span class="block">start <span class="ital">shipping.</span></span>
         </h1>
         <p class="hero-sub">
-          procure is the <strong>mcp gateway your agent needs</strong>. one key unlocks every provider we've already signed up for. no raw tokens, no rate limiters, no vendor dashboards. ever.
+          the <strong>mcp gateway your agent needs</strong>. one key unlocks every provider we've already signed up for. no raw tokens, no rate limiters, no vendor dashboards. ever.
         </p>
         <div class="waitlist-hero">
           <div class="wl-label">get the key before anyone else</div>
@@ -780,7 +789,7 @@ ${renderNav()}
       <div class="demo-head">
         <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
         <span>~/claude-code</span>
-        <span class="meta">procure // mcp // v0.1</span>
+        <span class="meta">procurement labs // mcp // v0.1</span>
       </div>
       <div class="demo-body" id="demo-body"></div>
     </div>
@@ -791,10 +800,10 @@ ${renderNav()}
   <div class="install-wrap reveal">
     <div class="install-left">
       <h3>install, <em>then forget.</em></h3>
-      <p>three lines in your terminal. procure hands your agent every api we've already signed up for. you never see a key again.</p>
+      <p>three lines in your terminal. every api we've already signed up for, handed to your agent. you never see a key again.</p>
     </div>
     <div class="terminal">
-      <div><span class="prompt">$</span> <span class="cmd">claude mcp add procure \\</span></div>
+      <div><span class="prompt">$</span> <span class="cmd">claude mcp add procurement-labs \\</span></div>
       <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
       <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
       <div class="out">done. restart your session to use ${total} providers.</div>
@@ -805,7 +814,7 @@ ${renderNav()}
 <section class="collab">
   <div class="collab-inner">
     <div class="collab-header">
-      <span class="collab-eyebrow">◆ procure // teams · soon</span>
+      <span class="collab-eyebrow">◆ teams · soon</span>
       <h2>api key governance<br>for your <em>whole team.</em></h2>
       <p>the same one-key magic, extended to orgs. <strong>workspace credentials, per-seat usage, one-click rotation, instant offboarding.</strong></p>
     </div>
@@ -822,7 +831,7 @@ ${renderNav()}
         </ul>
       </div>
       <div class="collab-col after">
-        <h3>tomorrow // with procure teams</h3>
+        <h3>tomorrow // with procurement labs teams</h3>
         <ul>
           <li>one workspace holds every credential. engineers never see raw keys</li>
           <li>each seat gets its own pl_key. admins control provider access</li>
@@ -873,7 +882,7 @@ ${renderNav()}
     <p class="collab-pricing">◆ paid tier · generous free trial during beta · pricing at launch ◆</p>
 
     <footer class="collab-footer">
-      <span>© procure // by procurement labs</span>
+      <span>© procurement labs</span>
       <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
     </footer>
   </div>
@@ -1227,55 +1236,78 @@ function renderHowItWorks(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>How It Works | Procure</title>
+<title>How It Works | Procurement Labs</title>
 <style>
 ${SHARED_STYLES}
-  .page-title{padding:3rem 0 1rem}
-  .page-title h1{font-size:1.5rem;font-weight:600;color:#fff;letter-spacing:-0.02em}
-  .page-title p{color:#525252;font-size:0.85rem;margin-top:0.5rem}
+  .page-hero{padding:5rem 0 3rem;position:relative;}
+  .page-hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 85% 10%, rgba(255,183,39,0.07), transparent 45%);pointer-events:none;}
+  .page-hero .kicker{display:inline-flex;align-items:center;gap:0.75rem;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:1.75rem;border:2px solid var(--amber);padding:0.55rem 1rem;animation:rise 0.8s ease both;}
+  .page-hero .kicker::before{content:'';display:inline-block;width:9px;height:9px;background:var(--amber);animation:pulse 1.4s ease-in-out infinite;}
+  .page-hero h1{font-family:var(--serif);font-size:clamp(3rem, 7vw, 6.5rem);font-weight:400;line-height:0.9;letter-spacing:-0.035em;color:var(--fg);margin-bottom:1.5rem;animation:rise 0.95s 0.1s ease both;}
+  .page-hero h1 em{font-style:italic;color:var(--amber);}
+  .page-hero .lede{font-family:var(--sans);font-size:clamp(1.05rem, 1.4vw, 1.3rem);color:#b4ae9f;max-width:640px;margin-top:1.5rem;line-height:1.45;animation:rise 0.95s 0.25s ease both;}
 
-  .steps{padding:2rem 0}
-  .step{display:flex;gap:1.5rem;margin-bottom:2.5rem}
-  .step-num{width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;background:#1c1c1c;border-radius:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:#525252;flex-shrink:0;margin-top:0.1rem}
-  .step-body h3{font-size:0.95rem;font-weight:500;color:#e5e5e5;margin-bottom:0.5rem}
-  .step-body p{font-size:0.85rem;color:#737373;margin-bottom:0.75rem}
-  .step-body pre{background:#111;border:1px solid #262626;border-radius:0.5rem;padding:1rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;overflow-x:auto;margin-bottom:0.5rem}
-  .step-body code{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;background:#1c1c1c;padding:0.1rem 0.4rem;border-radius:0.25rem}
+  .steps{padding:2rem 0 4rem;display:grid;gap:2.5rem;}
+  .step{display:grid;grid-template-columns:auto 1fr;gap:2rem;border:2px solid var(--fg);background:#0a0a0a;padding:2rem 2.25rem;position:relative;transition:transform .2s ease, box-shadow .2s ease;animation:rise 0.9s ease both;}
+  .step:nth-child(1){animation-delay:0.1s;}
+  .step:nth-child(2){animation-delay:0.2s;}
+  .step:nth-child(3){animation-delay:0.3s;}
+  .step:nth-child(4){animation-delay:0.4s;}
+  .step:nth-child(5){animation-delay:0.5s;}
+  .step:hover{transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
+  .step:nth-child(even):hover{box-shadow:6px 6px 0 var(--cyan);}
+  .step-num{font-family:var(--serif);font-style:italic;font-size:3.5rem;line-height:0.8;color:var(--amber);min-width:3.5rem;}
+  .step-body h3{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--fg);margin-bottom:0.75rem;letter-spacing:-0.02em;}
+  .step-body h3 em{font-style:italic;color:var(--amber);}
+  .step-body p{font-family:var(--sans);font-size:0.95rem;color:#b4ae9f;margin-bottom:1rem;line-height:1.55;max-width:680px;}
+  .step-body p a{color:var(--cyan);border-bottom:1px solid var(--cyan);}
+  .step-body p strong{color:var(--fg);}
+  .step-body pre{border:2px solid var(--line-strong);background:#050505;padding:1.1rem 1.35rem;font-family:var(--mono);font-size:0.78rem;color:var(--cream);overflow-x:auto;margin:0.5rem 0 1rem;box-shadow:-4px 4px 0 var(--line-strong);white-space:pre;}
+  .step-body code{font-family:var(--mono);font-size:0.78rem;color:var(--amber);background:#050505;padding:0.15rem 0.45rem;border:1px solid var(--line-strong);}
 
-  .cta-box{background:#111;border:1px solid #262626;border-radius:0.75rem;padding:2rem;text-align:center;margin-top:2rem}
-  .cta-box p{color:#525252;font-size:0.85rem;margin-bottom:1rem}
+  .cta-strip{border:2px solid var(--fg);background:#0a0a0a;padding:3rem 2.5rem;margin:3rem 0 4rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;box-shadow:-8px 8px 0 var(--cyan);}
+  .cta-strip .cta-copy{flex:1;min-width:260px;}
+  .cta-strip h2{font-family:var(--serif);font-size:clamp(1.8rem,3vw,2.8rem);color:var(--fg);line-height:0.95;margin-bottom:0.5rem;letter-spacing:-0.02em;}
+  .cta-strip h2 em{font-style:italic;color:var(--amber);}
+  .cta-strip p{font-family:var(--mono);font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;}
 
-  @media(max-width:640px){.step{flex-direction:column;gap:0.75rem}}
+  @media(max-width:720px){
+    .step{grid-template-columns:1fr;gap:1rem;padding:1.5rem 1.35rem;}
+    .step-num{font-size:2.5rem;}
+    .step-body h3{font-size:1.5rem;}
+    .cta-strip{padding:2rem 1.35rem;}
+  }
 </style>
 </head>
 <body>
 ${renderNav("how")}
 <div class="container">
-  <div class="page-title">
-    <h1>How It Works</h1>
-    <p>From zero to querying APIs in under a minute.</p>
+  <div class="page-hero">
+    <div class="kicker">// the how</div>
+    <h1>from zero to <em>shipping</em><br>in under a minute.</h1>
+    <p class="lede">five steps. one key. every provider your agent will ever need, already plugged in.</p>
   </div>
 
   <div class="steps">
     <div class="step">
-      <div class="step-num">1</div>
+      <div class="step-num">01</div>
       <div class="step-body">
-        <h3>Create an account</h3>
-        <p>Enter your email on the <a href="/login">sign up page</a>. You'll get a unique API key instantly. No credit card, no approval process. The free tier gives you 500 requests per month.</p>
+        <h3>create <em>your key.</em></h3>
+        <p>drop your email on the <a href="/login">sign up page</a>. you get a unique api key instantly. no credit card. no approval. the free tier is 500 requests per month, forever.</p>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">2</div>
+      <div class="step-num">02</div>
       <div class="step-body">
-        <h3>Add to your AI tool</h3>
-        <p>Works with any MCP-compatible client. One command for Claude Code:</p>
+        <h3>wire it to <em>your agent.</em></h3>
+        <p>works with any mcp-compatible client. one command for <strong>claude code</strong>:</p>
         <pre>claude mcp add procurement-labs \\
   --transport http https://pclabs.dev/api/mcp \\
   --header "x-pl-key: pl_your_key"</pre>
-        <p>For <strong>Codex</strong>, run this command:</p>
+        <p>for <strong>codex</strong>:</p>
         <pre>codex mcp add procurement-labs --url https://pclabs.dev/api/mcp</pre>
-        <p>For <strong>Cursor</strong>, add to <code>~/.cursor/mcp.json</code>:</p>
+        <p>for <strong>cursor</strong>, add to <code>~/.cursor/mcp.json</code>:</p>
         <pre>{
   "mcpServers": {
     "procurement-labs": {
@@ -1284,31 +1316,31 @@ ${renderNav("how")}
     }
   }
 }</pre>
-        <p>Works the same way in Windsurf, Claude Desktop, and claude.ai.</p>
+        <p>same flow in windsurf, claude desktop, and claude.ai.</p>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">3</div>
+      <div class="step-num">03</div>
       <div class="step-body">
-        <h3>Get smart recommendations</h3>
-        <p>Not sure which API to use? The reasoning layer analyzes your needs and compares providers on cost, rate limits, reliability, and capabilities.</p>
+        <h3>let it <em>pick the api.</em></h3>
+        <p>not sure which provider fits the job? the reasoning layer scores them on cost, rate limits, reliability, and capabilities.</p>
         <pre>POST /api/recommend
 { "need": "I need real-time stock data",
   "priorities": ["cost", "reliability"],
   "budget": "free" }
 
-→ Recommends Finnhub (score: 85/100)
+→ Finnhub  (score: 85/100)
   "Free tier: 60 calls/min. High reliability."</pre>
-        <p>Also available as the <code>recommend</code> and <code>compare</code> MCP tools.</p>
+        <p>also exposed as the <code>recommend</code> and <code>compare</code> mcp tools.</p>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">4</div>
+      <div class="step-num">04</div>
       <div class="step-body">
-        <h3>Use it</h3>
-        <p>Ask your AI agent naturally. It will call the right provider automatically.</p>
+        <h3>talk to it <em>in english.</em></h3>
+        <p>ask your agent naturally. it routes to the right provider automatically.</p>
         <pre>"what's the weather in tokyo?"          → OpenWeatherMap
 "look up adverse events for ibuprofen"  → OpenFDA
 "get the BTC price"                     → CoinGecko
@@ -1317,28 +1349,31 @@ ${renderNav("how")}
     </div>
 
     <div class="step">
-      <div class="step-num">5</div>
+      <div class="step-num">05</div>
       <div class="step-body">
-        <h3>Track usage</h3>
-        <p>Visit the <a href="/dashboard">dashboard</a> to see your quota, per-provider breakdown, and rate limits in real time. Your key is remembered, no need to sign in again.</p>
+        <h3>watch the <em>usage tick.</em></h3>
+        <p>head to the <a href="/dashboard">dashboard</a> for live quota, per-provider breakdown, and rate limits. your key sticks around in a cookie, no re-login.</p>
       </div>
     </div>
   </div>
 
-  <div class="cta-box">
-    <p>Ready to get started?</p>
-    <a href="/login" class="btn btn-primary">Create your key</a>
+  <div class="cta-strip">
+    <div class="cta-copy">
+      <h2>ready to <em>ship?</em></h2>
+      <p>500 requests/month · zero credit card</p>
+    </div>
+    <a href="/login" class="btn btn-primary">claim your key →</a>
   </div>
 
   <footer class="page-footer">
-    <span>procure, by procurement labs</span>
-    <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+    <span>© procurement labs</span>
+    <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
   </footer>
 </div>
 <script>
   if (document.cookie.match(/pl_key=/)) {
     var links = document.querySelectorAll('nav .links a');
-    links.forEach(function(a) { if (a.textContent === 'Login') { a.href = '/dashboard'; a.textContent = 'Dashboard'; } });
+    links.forEach(function(a) { if (a.textContent === 'LOGIN') { a.href = '/dashboard'; a.textContent = 'DASHBOARD'; } });
   }
 </script>
 </body>
@@ -1350,79 +1385,95 @@ function renderLogin(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>Sign In | Procure</title>
+<title>Sign In | Procurement Labs</title>
 <style>
 ${SHARED_STYLES}
-  .login-page{padding:4rem 0;max-width:420px;margin:0 auto}
-  .login-page h1{font-size:1.25rem;font-weight:600;color:#fff;margin-bottom:0.5rem}
-  .login-page .sub{color:#525252;font-size:0.85rem;margin-bottom:2rem}
+  .login-page{padding:5rem 0 3rem;max-width:520px;margin:0 auto;position:relative;}
+  .login-page::before{content:'';position:absolute;inset:-2rem -4rem;background-image:radial-gradient(circle at 20% 10%, rgba(255,183,39,0.06), transparent 45%),radial-gradient(circle at 100% 80%, rgba(95,211,255,0.05), transparent 45%);pointer-events:none;z-index:-1;}
 
-  .login-panel{background:#111;border:1px solid #262626;border-radius:0.75rem;padding:1.5rem;margin-bottom:1.5rem}
-  .login-panel h2{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#737373;margin-bottom:0.75rem;font-weight:500}
-  .login-panel p{font-size:0.8rem;color:#525252;margin-bottom:0.75rem}
-  .login-panel input{width:100%;background:#0a0a0a;border:1px solid #262626;border-radius:0.5rem;padding:0.65rem 1rem;color:#e5e5e5;font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;margin-bottom:0.75rem}
-  .login-panel input[type="email"]{font-family:'Inter',sans-serif}
-  .login-panel input:focus{border-color:#525252}
-  .login-panel button{width:100%;padding:0.65rem;font-size:0.85rem}
-  .login-error{color:#f87171;font-size:0.75rem;margin-top:0.5rem}
-  .or-divider{text-align:center;color:#333;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin:1.5rem 0;position:relative}
-  .or-divider::before,.or-divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:#1c1c1c}
-  .or-divider::before{left:0}
-  .or-divider::after{right:0}
+  .login-kicker{display:inline-flex;align-items:center;gap:0.75rem;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:1.5rem;border:2px solid var(--amber);padding:0.55rem 1rem;animation:rise 0.8s ease both;}
+  .login-kicker::before{content:'';display:inline-block;width:9px;height:9px;background:var(--amber);animation:pulse 1.4s ease-in-out infinite;}
 
-  .toggle-mode{margin-top:1rem;font-size:0.75rem;color:#525252;text-align:center}
-  .toggle-mode a{color:#a3a3a3;margin-left:0.375rem;text-decoration:underline;text-underline-offset:2px}
-  .toggle-mode a:hover{color:#fff}
+  .login-page h1{font-family:var(--serif);font-size:clamp(3rem, 6vw, 5rem);font-weight:400;line-height:0.9;letter-spacing:-0.035em;color:var(--fg);margin-bottom:1rem;animation:rise 0.95s 0.1s ease both;}
+  .login-page h1 em{font-style:italic;color:var(--amber);}
+  .login-page .sub{font-family:var(--sans);color:#b4ae9f;font-size:1.05rem;margin-bottom:3rem;animation:rise 0.95s 0.2s ease both;line-height:1.5;}
 
-  .flash{background:rgba(255,255,255,0.04);border:1px solid #333;border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:1.5rem;display:none}
-  .flash.visible{display:block}
-  .flash-label{font-size:0.7rem;color:#525252;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
-  .flash-key{font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:#e5e5e5;cursor:pointer;word-break:break-all}
-  .flash-key:hover{color:#fff}
-  .flash-sub{font-size:0.7rem;color:#404040;margin-top:0.375rem}
+  .login-panel{border:2px solid var(--fg);background:#0a0a0a;padding:1.75rem 1.85rem;margin-bottom:1.5rem;position:relative;transition:transform .2s ease, box-shadow .2s ease;animation:rise 0.9s 0.3s ease both;}
+  .login-panel:hover{transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
+  .login-panel:nth-of-type(2):hover{box-shadow:6px 6px 0 var(--cyan);}
+  .login-panel::before{content:attr(data-tag);position:absolute;top:-10px;left:1rem;background:var(--bg);padding:0 0.6rem;font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.18em;font-weight:600;text-transform:uppercase;}
+  .login-panel h2{font-family:var(--serif);font-size:1.8rem;font-weight:400;color:var(--fg);margin-bottom:0.35rem;letter-spacing:-0.02em;}
+  .login-panel h2 em{font-style:italic;color:var(--amber);}
+  .login-panel p{font-family:var(--mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:1.25rem;}
+  .login-panel input{width:100%;background:#050505;border:2px solid var(--line-strong);padding:0.95rem 1.1rem;color:var(--fg);font-size:0.9rem;font-family:var(--mono);outline:none;transition:border-color .15s, box-shadow .15s;margin-bottom:1rem;}
+  .login-panel input:focus{border-color:var(--amber);box-shadow:-4px 4px 0 var(--amber);}
+  .login-panel input::placeholder{color:#55524a;}
+  .login-panel button.btn{width:100%;padding:1rem;}
 
-  .copied-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#e5e5e5;color:#0a0a0a;padding:0.5rem 1rem;border-radius:0.375rem;font-size:0.75rem;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
-  .copied-toast.show{opacity:1}
+  .login-error{color:var(--red);font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.5rem;min-height:1em;}
+
+  .or-divider{display:flex;align-items:center;gap:1rem;margin:2rem 0;font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.22em;color:var(--muted);}
+  .or-divider::before,.or-divider::after{content:'';flex:1;height:2px;background:var(--line-strong);}
+
+  .toggle-mode{margin-top:1rem;font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);text-align:center;}
+  .toggle-mode a{color:var(--cyan);margin-left:0.375rem;border-bottom:1px solid var(--cyan);}
+  .toggle-mode a:hover{color:var(--amber);border-bottom-color:var(--amber);}
+
+  .flash{border:2px solid var(--amber);background:#0a0a0a;padding:1.25rem 1.4rem;margin-bottom:1.75rem;display:none;box-shadow:-6px 6px 0 var(--cyan);}
+  .flash.visible{display:block;animation:rise 0.5s ease both;}
+  .flash-label{font-family:var(--mono);font-size:0.65rem;color:var(--amber);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:0.5rem;}
+  .flash-key{font-family:var(--mono);font-size:0.95rem;color:var(--fg);cursor:pointer;word-break:break-all;font-weight:600;}
+  .flash-key:hover{color:var(--amber);}
+  .flash-sub{font-family:var(--mono);font-size:0.68rem;color:var(--muted);margin-top:0.6rem;letter-spacing:0.08em;}
+  .flash-sub code{background:#050505;border:1px solid var(--line-strong);padding:0.1rem 0.4rem;color:var(--cyan);font-family:var(--mono);}
+
+  .copied-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--amber);color:#000;padding:0.75rem 1.25rem;font-family:var(--mono);font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0;transition:opacity .2s;pointer-events:none;border:2px solid var(--fg);box-shadow:-4px 4px 0 var(--fg);}
+  .copied-toast.show{opacity:1;}
+
+  @media(max-width:640px){
+    .login-page{padding:3rem 0 2rem;}
+  }
 </style>
 </head>
 <body>
 ${renderNav("login")}
 <div class="container">
   <div class="login-page">
-    <h1>Welcome</h1>
-    <p class="sub">Sign in with your existing key or create a new account.</p>
+    <div class="login-kicker"><span>// the door</span></div>
+    <h1>welcome <em>back.</em></h1>
+    <p class="sub">sign in with your existing key, or mint a fresh one. takes seconds.</p>
 
     <div id="key-flash" class="flash">
-      <div class="flash-label">your api key. click to copy</div>
+      <div class="flash-label">◆ your api key · click to copy</div>
       <div id="flash-key" class="flash-key"></div>
-      <div class="flash-sub">Save this key. Add it to your MCP client as <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;background:#1c1c1c;padding:0.1rem 0.3rem;border-radius:0.25rem">x-pl-key</code> header.</div>
+      <div class="flash-sub">save this key. add it to your mcp client as the <code>x-pl-key</code> header.</div>
     </div>
 
-    <div class="login-panel">
-      <h2 id="email-panel-title">Sign In</h2>
-      <p id="email-panel-sub">Sign in with your email</p>
-      <input type="email" id="email-input" placeholder="you@example.com">
-      <button class="btn btn-primary" id="email-submit-btn">Sign in</button>
+    <div class="login-panel" data-tag="EMAIL">
+      <h2 id="email-panel-title">sign <em>in.</em></h2>
+      <p id="email-panel-sub">with your email</p>
+      <input type="email" id="email-input" placeholder="you@working.hard">
+      <button class="btn btn-primary" id="email-submit-btn">sign in →</button>
       <div id="email-error" class="login-error"></div>
       <div class="toggle-mode">
-        <span id="toggle-mode-text">Don't have an account?</span>
-        <a href="#" id="toggle-mode-link">Create one</a>
+        <span id="toggle-mode-text">don't have an account?</span>
+        <a href="#" id="toggle-mode-link">create one</a>
       </div>
     </div>
 
     <div class="or-divider">or</div>
 
-    <div class="login-panel">
-      <h2>Sign In With Key</h2>
-      <p>For teams sharing one key</p>
+    <div class="login-panel" data-tag="KEY">
+      <h2>sign in with <em>key.</em></h2>
+      <p>for teams sharing one key</p>
       <input type="text" id="signin-key" placeholder="pl_your_key" autocomplete="off" spellcheck="false">
-      <button class="btn btn-ghost" id="signin-btn" style="width:100%;padding:0.65rem;font-size:0.85rem">Sign in</button>
+      <button class="btn btn-ghost" id="signin-btn">unlock →</button>
       <div id="signin-error" class="login-error"></div>
     </div>
 
     <footer class="page-footer">
-      <span>procure, by procurement labs</span>
-      <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+      <span>© procurement labs</span>
+      <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
     </footer>
   </div>
 </div>
@@ -1452,11 +1503,15 @@ ${renderNav("login")}
   function setMode() {
     mode = 'signup';
     errEl.textContent = '';
-    titleEl.textContent = 'Create Account';
-    subEl.textContent = 'free. 500 requests/month';
-    btnEl.textContent = 'Create account';
-    toggleText.textContent = 'Already have an account?';
-    toggleLink.textContent = 'Sign in with your API key below';
+    while (titleEl.firstChild) titleEl.removeChild(titleEl.firstChild);
+    titleEl.appendChild(document.createTextNode('create '));
+    var em = document.createElement('em');
+    em.textContent = 'account.';
+    titleEl.appendChild(em);
+    subEl.textContent = 'free · 500 requests/month';
+    btnEl.textContent = 'create account →';
+    toggleText.textContent = 'already have an account?';
+    toggleLink.textContent = 'use your api key below';
   }
 
   btnEl.addEventListener('click', doEmailSubmit);
@@ -1576,621 +1631,203 @@ function renderDashboard(): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Procure | Dashboard</title>
+${SHARED_HEAD}
+<title>Dashboard | Procurement Labs</title>
 <style>
-  ${SHARED_STYLES}
-  /* Header */
-  header {
-    margin-bottom: 3rem;
-  }
-  header h1 {
-    font-size: 1.75rem;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    color: #fff;
-    margin-bottom: 0.5rem;
-  }
-  header p {
-    color: #737373;
-    font-size: 0.9rem;
-  }
+${SHARED_STYLES}
+  /* ── dashboard hero ── */
+  .dash-hero{padding:4rem 0 2rem;position:relative;}
+  .dash-hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 90% 0%, rgba(255,183,39,0.06), transparent 45%);pointer-events:none;}
+  .dash-hero .kicker{display:inline-flex;align-items:center;gap:0.75rem;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:1.5rem;border:2px solid var(--amber);padding:0.55rem 1rem;animation:rise 0.8s ease both;}
+  .dash-hero .kicker::before{content:'';display:inline-block;width:9px;height:9px;background:var(--amber);animation:pulse 1.4s ease-in-out infinite;}
+  .dash-hero h1{font-family:var(--serif);font-size:clamp(3rem, 7vw, 6rem);font-weight:400;line-height:0.9;letter-spacing:-0.035em;color:var(--fg);margin-bottom:1rem;animation:rise 0.95s 0.1s ease both;}
+  .dash-hero h1 em{font-style:italic;color:var(--amber);}
+  .dash-hero .lede{font-family:var(--mono);font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;animation:rise 0.95s 0.2s ease both;}
+  .dash-hero .lede span{color:var(--fg);}
 
-  /* Stats bar */
-  .stats {
-    display: flex;
-    gap: 1px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 1rem;
-    overflow: hidden;
-    margin-bottom: 2.5rem;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  }
-  .stat {
-    flex: 1;
-    padding: 1.5rem;
-    background: rgba(10,10,10,0.6);
-    backdrop-filter: blur(10px);
-  }
-  .stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #fff;
-    font-variant-numeric: tabular-nums;
-  }
-  .stat-value.green { color: #fff; }
-  .stat-value.amber { color: #a3a3a3; }
-  .stat-label {
-    font-size: 0.75rem;
-    color: #737373;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 0.25rem;
-  }
+  /* ── tabs ── */
+  .tabs{display:flex;gap:0;margin:2.5rem 0 2rem;border-bottom:2px solid var(--fg);}
+  .tab{padding:1rem 2rem;font-family:var(--mono);font-size:0.72rem;font-weight:600;color:var(--muted);cursor:pointer;border:2px solid transparent;border-bottom:none;text-transform:uppercase;letter-spacing:0.14em;transition:all .15s;margin-bottom:-2px;}
+  .tab:hover{color:var(--fg);}
+  .tab.active{color:#000;background:var(--fg);border-color:var(--fg);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;animation:rise 0.5s ease both;}
 
-  /* Routing Stats */
-  .routing-stats{display:flex;gap:1px;background:#1c1c1c;border-radius:0.75rem;overflow:hidden;border:1px solid #262626}
-  .routing-stat{flex:1;padding:1rem;background:#111;text-align:center}
-  .routing-stat-value{font-size:1.5rem;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
-  .routing-stat-label{font-size:0.65rem;color:#525252;text-transform:uppercase;letter-spacing:0.05em;margin-top:0.25rem}
-  .routing-provider{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #1c1c1c;font-size:0.8rem}
-  .routing-provider:last-child{border-bottom:none}
-  .routing-provider .name{color:#a3a3a3}
-  .routing-provider .count{color:#525252;font-family:'JetBrains Mono',monospace;font-size:0.75rem}
-  .routing-provider .bar{height:4px;background:#333;border-radius:2px;flex:1;margin:0 1rem;position:relative}
-  .routing-provider .bar-fill{position:absolute;left:0;top:0;height:100%;background:#fff;border-radius:2px;transition:width .3s}
+  /* ── stats grid ── */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);border:2px solid var(--fg);background:#0a0a0a;margin-bottom:2.5rem;}
+  .stat{padding:2rem 1.75rem 1.5rem;border-right:2px solid var(--fg);position:relative;transition:background .25s;}
+  .stat:last-child{border-right:none;}
+  .stat:hover{background:var(--fg);}
+  .stat:hover .stat-value{color:#000;}
+  .stat:hover .stat-label{color:#333;}
+  .stat::before{content:attr(data-num);position:absolute;top:0.65rem;right:0.85rem;font-family:var(--mono);font-size:0.6rem;color:#3a362d;letter-spacing:0.15em;}
+  .stat-value{font-family:var(--serif);font-size:clamp(2.4rem,4.5vw,3.6rem);font-weight:400;color:var(--fg);line-height:0.95;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;transition:color .25s;}
+  .stat-value.green{color:var(--amber);}
+  .stat-value.amber{color:var(--cyan);}
+  .stat-label{font-family:var(--mono);font-size:0.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-top:0.75rem;font-weight:500;transition:color .25s;}
 
-  /* Endpoints */
-  .endpoints {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin-bottom: 3rem;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-  }
-  .endpoints h2 {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #737373;
-    margin-bottom: 0.75rem;
-    font-weight: 500;
-  }
-  .endpoint {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.4rem 0;
-    color: #a3a3a3;
-  }
-  .method {
-    font-weight: 500;
-    min-width: 3rem;
-  }
-  .method.get { color: #a3a3a3; }
-  .method.post { color: #a3a3a3; }
-  .endpoint-path { color: #e5e5e5; }
-  .endpoint-desc { color: #525252; margin-left: auto; font-family: 'Inter', sans-serif; font-size: 0.75rem; }
+  /* ── usage panel ── */
+  .usage-panel{border:2px solid var(--fg);background:#0a0a0a;padding:2rem 2.25rem;margin-bottom:2.5rem;position:relative;box-shadow:-6px 6px 0 var(--cyan);}
+  .usage-panel::before{content:'USAGE';position:absolute;top:-10px;left:1rem;background:var(--bg);padding:0 0.6rem;font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.18em;font-weight:600;}
+  .usage-panel h2{font-family:var(--serif);font-size:1.6rem;font-weight:400;color:var(--fg);margin-bottom:1.25rem;letter-spacing:-0.02em;text-transform:none;}
+  .usage-meta{display:flex;gap:2rem;margin-bottom:1rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;flex-wrap:wrap;}
+  .usage-meta span{color:var(--fg);}
+  .quota-bar-outer{width:100%;height:10px;background:#050505;border:2px solid var(--line-strong);overflow:hidden;margin-bottom:1rem;}
+  .quota-bar-inner{height:100%;background:var(--amber);transition:width .3s;}
+  .quota-bar-inner.warn{background:var(--cyan);}
+  .quota-bar-inner.critical{background:var(--red);}
+  .usage-numbers{display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;}
+  .usage-numbers span{font-variant-numeric:tabular-nums;color:var(--fg);}
+  .usage-breakdown{display:flex;flex-wrap:wrap;gap:0.5rem;}
+  .usage-chip{font-family:var(--mono);font-size:0.68rem;padding:0.4rem 0.8rem;background:#050505;border:1px solid var(--line-strong);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+  .usage-chip .chip-count{color:var(--amber);margin-left:0.5rem;font-weight:600;}
+  .usage-key-btn{font-family:var(--mono);font-size:0.68rem;color:var(--fg);cursor:pointer;background:#050505;border:2px solid var(--line-strong);padding:0.45rem 0.85rem;transition:all .15s;text-transform:uppercase;letter-spacing:0.1em;}
+  .usage-key-btn:hover{border-color:var(--amber);color:var(--amber);}
+  .usage-signout{background:transparent;border:2px solid var(--line-strong);padding:0.45rem 0.85rem;color:var(--muted);font-family:var(--mono);font-size:0.66rem;cursor:pointer;text-transform:uppercase;letter-spacing:0.12em;transition:all .15s;}
+  .usage-signout:hover{border-color:var(--red);color:var(--red);}
 
-  /* Categories */
-  .category {
-    margin-bottom: 2rem;
-  }
-  .category-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #1c1c1c;
-  }
-  .category-icon {
-    width: 1.75rem;
-    height: 1.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255,255,255,0.06);
-    border-radius: 0.5rem;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #999;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  .category-header h2 {
-    font-size: 0.8rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #a3a3a3;
-  }
-  .category-count {
-    font-size: 0.7rem;
-    color: #525252;
-    background: #1c1c1c;
-    padding: 0.125rem 0.5rem;
-    border-radius: 1rem;
-    font-variant-numeric: tabular-nums;
-  }
+  /* ── routing stats ── */
+  .routing-stats{display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--line-strong);background:#050505;margin-bottom:1rem;}
+  .routing-stat{padding:1.25rem 1rem;text-align:center;border-right:2px solid var(--line-strong);}
+  .routing-stat:last-child{border-right:none;}
+  .routing-stat-value{font-family:var(--serif);font-size:2rem;color:var(--fg);line-height:1;font-variant-numeric:tabular-nums;}
+  .routing-stat-label{font-family:var(--mono);font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-top:0.5rem;}
+  .routing-provider{display:flex;justify-content:space-between;align-items:center;padding:0.65rem 0;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.78rem;}
+  .routing-provider:last-child{border-bottom:none;}
+  .routing-provider .name{color:var(--fg);}
+  .routing-provider .count{color:var(--amber);font-size:0.72rem;font-weight:600;}
+  .routing-provider .bar{height:6px;background:#050505;border:1px solid var(--line-strong);flex:1;margin:0 1rem;position:relative;}
+  .routing-provider .bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--amber);transition:width .3s;}
 
-  /* Provider cards */
-  .provider {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 0.75rem;
-    transition: all 0.2s ease;
-  }
-  .provider:hover {
-    border-color: rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.02);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    transform: translateY(-1px);
-  }
-  .provider-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-  }
-  .provider-title {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-  }
-  .provider-title h3 {
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #fff;
-  }
-  .provider-id {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    color: #525252;
-  }
-  .provider-desc {
-    font-size: 0.8rem;
-    color: #737373;
-    margin-bottom: 1rem;
-  }
+  /* ── endpoints ── */
+  .endpoints{border:2px solid var(--fg);background:#0a0a0a;padding:1.5rem 1.85rem;margin-bottom:3rem;position:relative;box-shadow:-6px 6px 0 var(--amber);}
+  .endpoints::before{content:'ENDPOINTS';position:absolute;top:-10px;left:1rem;background:var(--bg);padding:0 0.6rem;font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.18em;font-weight:600;}
+  .endpoints h2{display:none;}
+  .endpoint{display:flex;align-items:center;gap:1rem;padding:0.6rem 0;color:var(--fg);font-family:var(--mono);font-size:0.8rem;border-bottom:1px solid var(--line);}
+  .endpoint:last-child{border-bottom:none;}
+  .method{font-weight:700;min-width:3.5rem;font-size:0.68rem;padding:0.2rem 0.5rem;text-align:center;border:2px solid currentColor;}
+  .method.get{color:var(--cyan);}
+  .method.post{color:var(--amber);}
+  .endpoint-path{color:var(--fg);}
+  .endpoint-desc{color:var(--muted);margin-left:auto;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;}
 
-  /* Badges */
-  .badge {
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.2rem 0.6rem;
-    border-radius: 1rem;
-  }
-  .badge.live {
-    background: rgba(255, 255, 255, 0.06);
-    color: #a3a3a3;
-    border: 1px solid #333;
-  }
-  .badge.no-key {
-    background: rgba(255, 255, 255, 0.03);
-    color: #525252;
-    border: 1px solid #262626;
-  }
+  /* ── categories ── */
+  .category{margin-bottom:3rem;}
+  .category-header{display:flex;align-items:baseline;gap:1rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:2px solid var(--fg);}
+  .category-icon{width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;background:var(--amber);color:#000;font-family:var(--mono);font-size:0.8rem;font-weight:700;border:2px solid var(--fg);}
+  .category-header h2{font-family:var(--serif);font-style:italic;font-size:1.75rem;font-weight:400;color:var(--fg);letter-spacing:-0.015em;text-transform:lowercase;flex:1;}
+  .category-count{font-family:var(--mono);font-size:0.68rem;color:var(--amber);border:2px solid var(--amber);padding:0.25rem 0.6rem;text-transform:uppercase;letter-spacing:0.1em;}
 
-  /* Actions */
-  .actions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .action {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.03);
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-  }
-  .action code {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    color: #d4d4d4;
-    font-weight: 400;
-  }
-  .action-desc {
-    font-size: 0.75rem;
-    color: #525252;
-    margin-left: 0.75rem;
-  }
-  .params {
-    margin-top: 0.375rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-  }
-  .param {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    padding: 0.15rem 0.5rem;
-    background: #1c1c1c;
-    border-radius: 0.25rem;
-    color: #737373;
-  }
-  .param.required {
-    color: #a3a3a3;
-    background: #1c1c1c;
-  }
+  /* ── provider cards ── */
+  .provider{border:2px solid var(--line-strong);background:#050505;padding:1.5rem 1.75rem;margin-bottom:1rem;transition:all .2s ease;}
+  .provider:hover{border-color:var(--fg);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--amber);}
+  .provider-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;gap:1rem;}
+  .provider-title{display:flex;align-items:baseline;gap:0.75rem;flex-wrap:wrap;}
+  .provider-title h3{font-family:var(--serif);font-size:1.4rem;font-weight:400;color:var(--fg);letter-spacing:-0.015em;}
+  .provider-id{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+  .provider-desc{font-family:var(--sans);font-size:0.88rem;color:#b4ae9f;margin-bottom:1rem;line-height:1.5;}
 
-  /* Footer */
-  footer {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #1c1c1c;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  footer span {
-    font-size: 0.75rem;
-    color: #404040;
-  }
-  footer a {
-    font-size: 0.75rem;
-    color: #525252;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  footer a:hover { color: #a3a3a3; }
+  /* ── badges ── */
+  .badge{font-family:var(--mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;padding:0.3rem 0.65rem;border:2px solid currentColor;}
+  .badge.live{color:var(--amber);}
+  .badge.live::before{content:'● ';animation:pulse 1.6s ease-in-out infinite;}
+  .badge.no-key{color:var(--muted);}
 
-  /* Usage panel */
-  .usage-panel {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 1rem;
-    padding: 2rem;
-    margin-bottom: 2.5rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  }
-  .usage-panel h2 {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #737373;
-    margin-bottom: 1rem;
-    font-weight: 500;
-  }
-  .usage-meta {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 1rem;
-    font-size: 0.8rem;
-    color: #737373;
-  }
-  .usage-meta span { color: #a3a3a3; }
-  .quota-bar-outer {
-    width: 100%;
-    height: 6px;
-    background: #1c1c1c;
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-  }
-  .quota-bar-inner {
-    height: 100%;
-    background: #fff;
-    border-radius: 3px;
-    transition: width 0.3s;
-  }
-  .quota-bar-inner.warn { background: #a3a3a3; }
-  .quota-bar-inner.critical { background: #737373; }
-  .usage-numbers {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    color: #525252;
-    margin-bottom: 1.25rem;
-  }
-  .usage-numbers span { font-variant-numeric: tabular-nums; }
-  .usage-breakdown {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  .usage-chip {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    padding: 0.25rem 0.75rem;
-    background: #0a0a0a;
-    border-radius: 0.375rem;
-    color: #737373;
-  }
-  .usage-chip .chip-count {
-    color: #d4d4d4;
-    margin-left: 0.375rem;
-  }
-  .usage-login {
-    background: #111;
-    border: 1px solid #262626;
-    border-radius: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 2.5rem;
-    font-size: 0.8rem;
-    color: #525252;
-  }
-  .usage-login code {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: #a3a3a3;
-    background: #1c1c1c;
-    padding: 0.15rem 0.4rem;
-    border-radius: 0.25rem;
-  }
+  /* ── actions ── */
+  .actions-list{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.75rem;}
+  .action{background:#030303;border:1px solid var(--line);padding:0.85rem 1.1rem;}
+  .action code{font-family:var(--mono);font-size:0.8rem;color:var(--cyan);font-weight:600;}
+  .action-desc{font-family:var(--sans);font-size:0.78rem;color:var(--muted);margin-left:0.75rem;}
+  .params{margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.375rem;}
+  .param{font-family:var(--mono);font-size:0.62rem;padding:0.2rem 0.55rem;background:#050505;border:1px solid var(--line);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+  .param.required{color:var(--amber);border-color:var(--amber);}
 
-  /* Tabs */
-  .tabs {
-    display: flex;
-    gap: 0;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid #262626;
-  }
-  .tab {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #525252;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .tab:hover { color: #fff; }
-  .tab.active { color: #fff; border-bottom-color: #fff; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  /* ── admin ── */
+  .admin-login{border:2px solid var(--fg);background:#0a0a0a;padding:1.75rem 1.85rem;max-width:420px;position:relative;box-shadow:-6px 6px 0 var(--cyan);}
+  .admin-login::before{content:'ADMIN';position:absolute;top:-10px;left:1rem;background:var(--bg);padding:0 0.6rem;font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.18em;font-weight:600;}
+  .admin-login h2{font-family:var(--serif);font-size:1.6rem;font-weight:400;color:var(--fg);margin-bottom:1.25rem;}
+  .admin-login input{width:100%;background:#050505;border:2px solid var(--line-strong);padding:0.85rem 1rem;color:var(--fg);font-size:0.85rem;font-family:var(--mono);outline:none;margin-bottom:0.85rem;transition:border-color .15s;}
+  .admin-login input:focus{border-color:var(--amber);}
+  .admin-login button{padding:0.85rem 1.5rem;font-family:var(--mono);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;border:2px solid var(--fg);background:var(--fg);color:#000;cursor:pointer;transition:all .2s;}
+  .admin-login button:hover{background:var(--amber);border-color:var(--amber);}
+  .admin-error{color:var(--red);font-family:var(--mono);font-size:0.7rem;margin-top:0.5rem;text-transform:uppercase;letter-spacing:0.1em;}
 
-  /* Admin */
-  .admin-login {
-    background: #111;
-    border: 1px solid #262626;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    max-width: 380px;
-  }
-  .admin-login h2 {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #e5e5e5;
-    margin-bottom: 0.75rem;
-  }
-  .admin-login input {
-    width: 100%;
-    background: #0a0a0a;
-    border: 1px solid #262626;
-    border-radius: 0.5rem;
-    padding: 0.6rem 1rem;
-    color: #e5e5e5;
-    font-size: 0.85rem;
-    font-family: 'JetBrains Mono', monospace;
-    outline: none;
-    margin-bottom: 0.75rem;
-    transition: border-color 0.15s;
-  }
-  .admin-login input:focus { border-color: #525252; }
-  .admin-login button {
-    background: #e5e5e5;
-    color: #0a0a0a;
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.6rem 1.5rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .admin-login button:hover { background: #fff; }
-  .admin-error {
-    color: #f87171;
-    font-size: 0.75rem;
-    margin-top: 0.5rem;
-  }
+  .accounts-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.78rem;border:2px solid var(--fg);background:#0a0a0a;}
+  .accounts-table th{text-align:left;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--amber);font-weight:600;padding:0.85rem 1rem;border-bottom:2px solid var(--fg);background:#050505;}
+  .accounts-table td{padding:0.85rem 1rem;border-bottom:1px solid var(--line);color:var(--fg);vertical-align:middle;}
+  .accounts-table tr:last-child td{border-bottom:none;}
+  .accounts-table tr:hover td{background:#050505;}
+  .key-cell{cursor:pointer;color:var(--cyan);transition:color .15s;}
+  .key-cell:hover{color:var(--amber);}
+  .key-cell .copy-hint{font-size:0.58rem;color:var(--muted);margin-left:0.5rem;text-transform:uppercase;letter-spacing:0.1em;}
+  .mini-bar{width:80px;height:6px;background:#050505;border:1px solid var(--line-strong);overflow:hidden;display:inline-block;vertical-align:middle;margin-right:0.5rem;}
+  .mini-bar-inner{height:100%;background:var(--amber);}
+  .mini-bar-inner.warn{background:var(--cyan);}
+  .mini-bar-inner.critical{background:var(--red);}
+  .tier-badge{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;padding:0.2rem 0.55rem;border:2px solid var(--line-strong);color:var(--muted);}
 
-  .accounts-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-  }
-  .accounts-table th {
-    text-align: left;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #525252;
-    font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #262626;
-  }
-  .accounts-table td {
-    padding: 0.75rem;
-    border-bottom: 1px solid #1c1c1c;
-    color: #a3a3a3;
-    vertical-align: middle;
-  }
-  .accounts-table tr:hover td { background: #111; }
-  .key-cell {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    cursor: pointer;
-    color: #737373;
-    transition: color 0.15s;
-  }
-  .key-cell:hover { color: #e5e5e5; }
-  .key-cell .copy-hint {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.6rem;
-    color: #404040;
-    margin-left: 0.5rem;
-  }
-  .mini-bar {
-    width: 80px;
-    height: 4px;
-    background: #1c1c1c;
-    border-radius: 2px;
-    overflow: hidden;
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 0.5rem;
-  }
-  .mini-bar-inner {
-    height: 100%;
-    background: #d4d4d4;
-    border-radius: 2px;
-  }
-  .mini-bar-inner.warn { background: #a3a3a3; }
-  .mini-bar-inner.critical { background: #737373; }
-  .tier-badge {
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.15rem 0.5rem;
-    border-radius: 1rem;
-    background: rgba(255,255,255,0.06);
-    color: #a3a3a3;
-    border: 1px solid #333;
-  }
+  /* ── create key form ── */
+  .create-key{border:2px solid var(--fg);background:#0a0a0a;padding:1.5rem 1.85rem;margin-bottom:2rem;position:relative;box-shadow:-6px 6px 0 var(--amber);}
+  .create-key::before{content:'NEW KEY';position:absolute;top:-10px;left:1rem;background:var(--bg);padding:0 0.6rem;font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.18em;font-weight:600;}
+  .create-key h2{font-family:var(--serif);font-size:1.4rem;font-weight:400;color:var(--fg);margin-bottom:1.25rem;}
+  .create-key-form{display:flex;gap:0.85rem;align-items:flex-end;flex-wrap:wrap;}
+  .form-field{display:flex;flex-direction:column;gap:0.35rem;}
+  .form-field label{font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--amber);}
+  .form-field input,.form-field select{background:#050505;border:2px solid var(--line-strong);padding:0.6rem 0.85rem;color:var(--fg);font-size:0.8rem;font-family:var(--mono);outline:none;transition:border-color .15s;}
+  .form-field input:focus,.form-field select:focus{border-color:var(--amber);}
+  .form-field select{cursor:pointer;}
+  .create-btn{border:2px solid var(--fg);background:var(--fg);color:#000;padding:0.7rem 1.5rem;font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:0.12em;height:fit-content;}
+  .create-btn:hover{background:var(--amber);border-color:var(--amber);}
 
-  /* Create key form */
-  .create-key {
-    background: #111;
-    border: 1px solid #262626;
-    border-radius: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-  .create-key h2 {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #737373;
-    margin-bottom: 1rem;
-    font-weight: 500;
-  }
-  .create-key-form {
-    display: flex;
-    gap: 0.75rem;
-    align-items: flex-end;
-    flex-wrap: wrap;
-  }
-  .form-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  .form-field label {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #525252;
-  }
-  .form-field input, .form-field select {
-    background: #0a0a0a;
-    border: 1px solid #262626;
-    border-radius: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    color: #e5e5e5;
-    font-size: 0.8rem;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .form-field input:focus, .form-field select:focus { border-color: #525252; }
-  .form-field select { cursor: pointer; }
-  .create-btn {
-    background: #e5e5e5;
-    color: #0a0a0a;
-    border: none;
-    border-radius: 0.375rem;
-    padding: 0.5rem 1.25rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
-    height: fit-content;
-  }
-  .create-btn:hover { background: #fff; }
+  /* ── flash ── */
+  .flash{border:2px solid var(--amber);background:#0a0a0a;padding:1.25rem 1.4rem;margin-bottom:1.75rem;display:none;box-shadow:-6px 6px 0 var(--cyan);}
+  .flash.visible{display:block;animation:rise 0.5s ease both;}
+  .flash-label{font-family:var(--mono);font-size:0.62rem;color:var(--amber);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:0.5rem;}
+  .flash-key{font-family:var(--mono);font-size:0.95rem;color:var(--fg);cursor:pointer;word-break:break-all;font-weight:600;}
+  .flash-key:hover{color:var(--amber);}
+  .flash-sub{font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-top:0.5rem;letter-spacing:0.08em;}
 
-  /* Flash */
-  .flash {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid #333;
-    border-radius: 0.5rem;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-    display: none;
-  }
-  .flash.visible { display: block; }
-  .flash-label {
-    font-size: 0.7rem;
-    color: #525252;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.375rem;
-  }
-  .flash-key {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.9rem;
-    color: #e5e5e5;
-    cursor: pointer;
-    word-break: break-all;
-  }
-  .flash-key:hover { color: #fff; }
-  .flash-sub {
-    font-size: 0.7rem;
-    color: #404040;
-    margin-top: 0.375rem;
-  }
+  .copied-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--amber);color:#000;padding:0.75rem 1.25rem;font-family:var(--mono);font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0;transition:opacity .2s;pointer-events:none;border:2px solid var(--fg);box-shadow:-4px 4px 0 var(--fg);}
+  .copied-toast.show{opacity:1;}
 
-  .copied-toast {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    background: #e5e5e5;
-    color: #0a0a0a;
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
+  @media(max-width:900px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .stat:nth-child(2){border-right:none;}
+    .stat:nth-child(1),.stat:nth-child(2){border-bottom:2px solid var(--fg);}
+    .routing-stats{grid-template-columns:1fr;}
+    .routing-stat{border-right:none;border-bottom:2px solid var(--line-strong);}
+    .routing-stat:last-child{border-bottom:none;}
   }
-  .copied-toast.show { opacity: 1; }
-
-  @media (max-width: 640px) {
-    .stats { flex-direction: column; }
-    .endpoint-desc { display: none; }
-    .provider-title { flex-direction: column; gap: 0.125rem; }
-    .create-key-form { flex-direction: column; }
-    .accounts-table { font-size: 0.7rem; }
+  @media(max-width:640px){
+    .endpoint-desc{display:none;}
+    .provider-title{flex-direction:column;gap:0.125rem;}
+    .create-key-form{flex-direction:column;align-items:stretch;}
+    .accounts-table{font-size:0.68rem;}
+    .tabs{overflow-x:auto;}
   }
 </style>
 </head>
 <body>
 <script>if(!document.cookie.match(/pl_key=/))window.location.href='/login';</script>
-<nav style="border-bottom:1px solid #1c1c1c;padding:1rem 0"><div style="max-width:960px;margin:0 auto;padding:0 1.5rem;display:flex;justify-content:space-between;align-items:center">
-  <a href="/" style="font-weight:600;color:#fff;font-size:0.95rem;text-decoration:none">procurement labs</a>
-  <div style="display:flex;gap:1.5rem;font-size:0.8rem">
-    <a href="/how-it-works" style="color:#525252;text-decoration:none">How It Works</a>
-    <a href="/dashboard" style="color:#e5e5e5;text-decoration:none">Dashboard</a>
-  </div>
-</div></nav>
+${renderNav("dashboard")}
+<script>
+  (function(){
+    var links = document.querySelectorAll('nav .links a');
+    links.forEach(function(a) {
+      if (a.textContent === 'LOGIN') {
+        a.href = '/dashboard';
+        a.textContent = 'DASHBOARD';
+        a.classList.add('active');
+      }
+    });
+  })();
+</script>
 <div class="container">
-  <header>
-    <h1>Dashboard</h1>
-    <p>${total} providers across ${Object.keys(grouped).length} categories</p>
-  </header>
+  <div class="dash-hero">
+    <div class="kicker">// the console</div>
+    <h1>your <em>gateway.</em></h1>
+    <p class="lede"><span>${total}</span> providers · <span>${Object.keys(grouped).length}</span> categories · wired and live</p>
+  </div>
 
   <div class="tabs">
     <div class="tab active" data-tab="home">Usage</div>
@@ -2200,19 +1837,19 @@ function renderDashboard(): string {
   <!-- Home Tab -->
   <div id="tab-home" class="tab-content active">
     <div class="stats">
-      <div class="stat">
+      <div class="stat" data-num="01 ▸">
         <div class="stat-value">${total}</div>
         <div class="stat-label">Total Providers</div>
       </div>
-      <div class="stat">
+      <div class="stat" data-num="02 ▸">
         <div class="stat-value green">${live}</div>
         <div class="stat-label">Live</div>
       </div>
-      <div class="stat">
+      <div class="stat" data-num="03 ▸">
         <div class="stat-value amber">${total - live}</div>
         <div class="stat-label">Needs API Key</div>
       </div>
-      <div class="stat">
+      <div class="stat" data-num="04 ▸">
         <div class="stat-value">${noKey}</div>
         <div class="stat-label">Free (No Key)</div>
       </div>
@@ -2220,11 +1857,11 @@ function renderDashboard(): string {
 
     <!-- Usage: logged-in state -->
     <div id="usage-logged-in" class="usage-panel" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;gap:1rem;flex-wrap:wrap">
         <h2 id="usage-title" style="margin:0"></h2>
-        <div style="display:flex;align-items:center;gap:1rem">
-          <button id="usage-key-display" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#a3a3a3;cursor:pointer;background:#1c1c1c;border:1px solid #262626;border-radius:0.375rem;padding:0.3rem 0.75rem;transition:border-color .15s" title="Click to copy full key"></button>
-          <button id="usage-signout" style="background:none;border:1px solid #262626;border-radius:0.375rem;padding:0.3rem 0.75rem;color:#525252;font-size:0.7rem;cursor:pointer;transition:color .15s">sign out</button>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <button id="usage-key-display" class="usage-key-btn" title="Click to copy full key"></button>
+          <button id="usage-signout" class="usage-signout">sign out</button>
         </div>
       </div>
       <div class="usage-meta">
@@ -2334,9 +1971,9 @@ function renderDashboard(): string {
     </div>
   </div>
 
-  <footer>
-    <span>procure, by procurement labs</span>
-    <a href="https://github.com/tobasummandal/procurementlabs">github</a>
+  <footer class="page-footer">
+    <span>© procurement labs</span>
+    <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
   </footer>
 </div>
 
