@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "COINGECKO_API_KEY";
 
 export class CoinGeckoProvider implements Provider {
   info: ProviderInfo = {
@@ -71,13 +74,24 @@ export class CoinGeckoProvider implements Provider {
     return true;
   }
 
-  private async cgFetch(url: string): Promise<QueryResult> {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    const apiKey = process.env.COINGECKO_API_KEY;
-    if (apiKey) headers["x-cg-demo-api-key"] = apiKey;
+  private async cgFetch(url: string): Promise<{ res: Response }> {
+    if (keyPool.hasKeys(ENV)) {
+      return withKeyRetry(ENV, (apiKey) =>
+        fetch(url, {
+          headers: {
+            Accept: "application/json",
+            "x-cg-demo-api-key": apiKey,
+          },
+        }),
+      ).then(({ response }) => ({ res: response }));
+    }
 
+    return { res: await fetch(url, { headers: { Accept: "application/json" } }) };
+  }
+
+  private async cgQuery(url: string): Promise<QueryResult> {
     try {
-      const res = await fetch(url, { headers });
+      const { res } = await this.cgFetch(url);
       if (!res.ok) {
         const text = await res.text();
         return {
@@ -107,19 +121,19 @@ export class CoinGeckoProvider implements Provider {
         if (!coins)
           return { success: false, error: "Missing required parameter: coins" };
         const currency = (params.currency as string) || "usd";
-        return this.cgFetch(
+        return this.cgQuery(
           `${base}/simple/price?ids=${encodeURIComponent(coins)}&vs_currencies=${currency}&include_24hr_change=true&include_market_cap=true`,
         );
       }
 
       case "trending":
-        return this.cgFetch(`${base}/search/trending`);
+        return this.cgQuery(`${base}/search/trending`);
 
       case "coin_search": {
         const query = params.query as string;
         if (!query)
           return { success: false, error: "Missing required parameter: query" };
-        const result = await this.cgFetch(
+        const result = await this.cgQuery(
           `${base}/search?query=${encodeURIComponent(query)}`,
         );
         if (!result.success) return result;
@@ -132,7 +146,7 @@ export class CoinGeckoProvider implements Provider {
       case "market_overview": {
         const limit = Math.min((params.limit as number) || 10, 50);
         const currency = (params.currency as string) || "usd";
-        return this.cgFetch(
+        return this.cgQuery(
           `${base}/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=${limit}&page=1&sparkline=false&price_change_percentage=24h`,
         );
       }

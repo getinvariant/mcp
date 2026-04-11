@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "UNSPLASH_ACCESS_KEY";
 
 export class UnsplashProvider implements Provider {
   info: ProviderInfo = {
@@ -71,21 +74,19 @@ export class UnsplashProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.UNSPLASH_ACCESS_KEY;
-  }
-
-  private get accessKey(): string {
-    return process.env.UNSPLASH_ACCESS_KEY || "";
+    return keyPool.hasKeys(ENV);
   }
 
   private async usFetch(url: string): Promise<QueryResult> {
     try {
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Client-ID ${this.accessKey}`,
-          Accept: "application/json",
-        },
-      });
+      const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+        fetch(url, {
+          headers: {
+            Authorization: `Client-ID ${apiKey}`,
+            Accept: "application/json",
+          },
+        }),
+      );
       if (!res.ok) {
         const text = await res.text();
         return {

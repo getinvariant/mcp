@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "ANTHROPIC_API_KEY";
 
 export class AnthropicProvider implements Provider {
   info: ProviderInfo = {
@@ -39,15 +42,14 @@ export class AnthropicProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.ANTHROPIC_API_KEY;
+    return keyPool.hasKeys(ENV);
   }
 
   async query(
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey)
+    if (!keyPool.hasKeys(ENV))
       return { success: false, error: "Anthropic API key not configured" };
 
     if (action !== "chat")
@@ -61,19 +63,21 @@ export class AnthropicProvider implements Provider {
     const max_tokens = (params.max_tokens as number) || 1024;
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens,
-          messages: [{ role: "user", content: message }],
+      const { response: res } = await withKeyRetry(ENV, (apiKey) =>
+        fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens,
+            messages: [{ role: "user", content: message }],
+          }),
         }),
-      });
+      );
 
       if (!res.ok) {
         const text = await res.text();

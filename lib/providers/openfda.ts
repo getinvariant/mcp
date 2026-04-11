@@ -4,6 +4,9 @@ import {
   ProviderInfo,
   QueryResult,
 } from "./types.js";
+import { keyPool, withKeyRetry } from "../key-pool.js";
+
+const ENV = "OPENFDA_API_KEY";
 
 export class OpenFDAProvider implements Provider {
   info: ProviderInfo = {
@@ -71,30 +74,32 @@ export class OpenFDAProvider implements Provider {
   ): Promise<QueryResult> {
     const base = "https://api.fda.gov";
     const limit = (params.limit as number) || 5;
-    const apiKey = process.env.OPENFDA_API_KEY;
-    const apiKeyParam = apiKey ? `&api_key=${apiKey}` : "";
 
-    let url: string;
+    let urlBuilder: (apiKeyParam: string) => string;
+
     switch (action) {
       case "drug_search": {
         const query = params.query as string;
         if (!query)
           return { success: false, error: "Missing required parameter: query" };
-        url = `${base}/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(query)}"&limit=${limit}${apiKeyParam}`;
+        urlBuilder = (akp) =>
+          `${base}/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(query)}"&limit=${limit}${akp}`;
         break;
       }
       case "adverse_events": {
         const drug = params.drug as string;
         if (!drug)
           return { success: false, error: "Missing required parameter: drug" };
-        url = `${base}/drug/event.json?search=patient.drug.openfda.brand_name:"${encodeURIComponent(drug)}"&limit=${limit}${apiKeyParam}`;
+        urlBuilder = (akp) =>
+          `${base}/drug/event.json?search=patient.drug.openfda.brand_name:"${encodeURIComponent(drug)}"&limit=${limit}${akp}`;
         break;
       }
       case "recalls": {
         const query = params.query as string;
         if (!query)
           return { success: false, error: "Missing required parameter: query" };
-        url = `${base}/drug/enforcement.json?search=reason_for_recall:"${encodeURIComponent(query)}"&limit=${limit}${apiKeyParam}`;
+        urlBuilder = (akp) =>
+          `${base}/drug/enforcement.json?search=reason_for_recall:"${encodeURIComponent(query)}"&limit=${limit}${akp}`;
         break;
       }
       default:
@@ -102,7 +107,17 @@ export class OpenFDAProvider implements Provider {
     }
 
     try {
-      const res = await fetch(url);
+      let res: Response;
+
+      if (keyPool.hasKeys(ENV)) {
+        const result = await withKeyRetry(ENV, (apiKey) =>
+          fetch(urlBuilder(`&api_key=${apiKey}`)),
+        );
+        res = result.response;
+      } else {
+        res = await fetch(urlBuilder(""));
+      }
+
       if (!res.ok) {
         const text = await res.text();
         return {
