@@ -2689,6 +2689,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(500, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Failed to create account" }));
     }
+    if (body.email) addToWaitlist(body.email).catch(() => {});
     res.writeHead(201, { "Content-Type": "application/json" });
     return res.end(
       JSON.stringify({
@@ -2716,6 +2717,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(500, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Failed to create account" }));
     }
+    addToWaitlist(email).catch(() => {});
     res.writeHead(201, {
       "Content-Type": "application/json",
       "Set-Cookie": `pl_key=${plKey}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
