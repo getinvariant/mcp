@@ -1,6 +1,6 @@
 # invariant
 
-**The agentic API provisioning layer.** Your AI agent gets weather, stocks, health data, maps, and frontier LLMs from a single endpoint. procure creates the accounts, manages the keys, enforces the quotas, and falls back when something breaks. You never touch a developer portal.
+**The agentic API provisioning layer.** Your AI agent gets weather, stocks, health data, maps, and frontier LLMs from a single endpoint. invariant creates the accounts, manages the keys, enforces the quotas, and falls back when something breaks. You never touch a developer portal.
 
 > One key in. Every API out.
 
@@ -13,7 +13,7 @@ A useful AI agent needs to call ten different services. An LLM, a weather API, a
 - Ten different auth schemes, rate limits, and error shapes
 - Ten ways for a single call to fail, and no fallback when one does
 
-procure collapses all of it into one managed layer. You connect once over MCP or REST, and the provisioning, routing, quota accounting, and failover happen above your agent.
+invariant collapses all of it into one managed layer. You connect once over MCP or REST, and the provisioning, routing, quota accounting, and failover happen above your agent.
 
 ## Provider catalog
 
@@ -30,7 +30,7 @@ procure collapses all of it into one managed layer. You connect once over MCP or
 | HuggingFace             | AI              | generous      | Free signup      |
 | **Geoapify**            | Maps            | 3,000 req/day | Free, no card    |
 
-On the hosted instance procure handles every "Free signup" row for you. You never see those portals. Self-hosted instances can bring their own keys via environment variables.
+On the hosted instance invariant handles every "Free signup" row for you. You never see those portals. Self-hosted instances can bring their own keys via environment variables.
 
 ## How it works
 
@@ -44,7 +44,7 @@ On the hosted instance procure handles every "Free signup" row for you. You neve
                     │ single key: x-pl-key
                     ▼
          ┌─────────────────────────────────┐
-         │            procure              │
+         │            invariant              │
          │  ┌───────────────────────────┐  │
          │  │  auth + quota             │  │
          │  │  (Supabase + Upstash)     │  │
@@ -64,7 +64,7 @@ On the hosted instance procure handles every "Free signup" row for you. You neve
 
 ## Access modes
 
-procure exposes the same engine through two interfaces.
+invariant exposes the same engine through two interfaces.
 
 **1. MCP (recommended for AI clients).** JSON-RPC over HTTP at `POST /api/mcp`. Works with Claude Desktop, Cursor, Claude Code, Windsurf, Cline, Continue.dev, Codex CLI, Goose, and the OpenAI Responses API.
 
@@ -74,7 +74,7 @@ procure exposes the same engine through two interfaces.
 | ---------------- | ------ | -------------------------------------------------------- |
 | `/api/providers` | GET    | List every provider and its status                       |
 | `/api/query`     | POST   | Execute an action on a provider                          |
-| `/api/recommend` | POST   | Ask procure to pick the best provider for a goal         |
+| `/api/recommend` | POST   | Ask invariant to pick the best provider for a goal         |
 | `/api/usage`     | GET    | Your current quota, tier, and per-provider breakdown     |
 | `/api/mcp`       | POST   | MCP JSON-RPC endpoint (same tools, agent-friendly shape) |
 
@@ -82,9 +82,9 @@ Every endpoint requires an `x-pl-key: pl_...` header.
 
 ## Getting started
 
-### 1. Get your procure key
+### 1. Get your invariant key
 
-Sign up at the hosted instance. You get one `pl_...` key. That is the only credential you ever see. Behind it, procure is already holding every upstream account for you.
+Sign up at the hosted instance. You get one `pl_...` key. That is the only credential you ever see. Behind it, invariant is already holding every upstream account for you.
 
 ### 2. Connect your AI client
 
@@ -98,7 +98,7 @@ Header: x-pl-key: pl_your_key_here
 #### Claude Code (CLI)
 
 ```bash
-claude mcp add procure --transport http https://pclabs.dev/api/mcp --header "x-pl-key: pl_your_key_here"
+claude mcp add invariant --transport http https://pclabs.dev/api/mcp --header "x-pl-key: pl_your_key_here"
 ```
 
 #### Claude Desktop
@@ -108,7 +108,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or 
 ```json
 {
   "mcpServers": {
-    "procure": {
+    "invariant": {
       "type": "http",
       "url": "https://pclabs.dev/api/mcp",
       "headers": {
@@ -132,7 +132,7 @@ Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project):
 ```json
 {
   "mcpServers": {
-    "procure": {
+    "invariant": {
       "url": "https://pclabs.dev/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
@@ -151,7 +151,7 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
 ```json
 {
   "mcpServers": {
-    "procure": {
+    "invariant": {
       "url": "https://pclabs.dev/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
@@ -179,7 +179,7 @@ Edit `~/.continue/config.json`:
 {
   "mcpServers": [
     {
-      "name": "procure",
+      "name": "invariant",
       "transport": {
         "type": "http",
         "url": "https://pclabs.dev/api/mcp",
@@ -197,11 +197,11 @@ Edit `~/.continue/config.json`:
 Edit `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.procure]
+[mcp_servers.invariant]
 type = "http"
 url = "https://pclabs.dev/api/mcp"
 
-[mcp_servers.procure.headers]
+[mcp_servers.invariant.headers]
 x-pl-key = "pl_your_key_here"
 ```
 
@@ -227,7 +227,7 @@ Edit `~/.config/goose/config.yaml`:
 
 ```yaml
 extensions:
-  procure:
+  invariant:
     type: mcp
     enabled: true
     transport: http
@@ -242,7 +242,7 @@ The MCP endpoint exposes four tools.
 
 ### `recommend`
 
-Describe what you need. procure returns ranked providers with scores, reasoning, pricing, and availability. This is the agentic entry point. Agents should start here, not with `query`.
+Describe what you need. invariant returns ranked providers with scores, reasoning, pricing, and availability. This is the agentic entry point. Agents should start here, not with `query`.
 
 ```json
 {
@@ -278,7 +278,7 @@ Execute a specific action against a specific provider. The low-level primitive t
 
 ## Self-hosting
 
-You can run your own procure instance if you want to bring your own upstream credentials or host on your own infrastructure.
+You can run your own invariant instance if you want to bring your own upstream credentials or host on your own infrastructure.
 
 ### Prerequisites
 
@@ -288,7 +288,7 @@ You can run your own procure instance if you want to bring your own upstream cre
 
 ### Deploy to Railway
 
-procure runs as a single Node HTTP server defined in [dev-server.ts](dev-server.ts), which mounts the route handlers in [api/](api/) plus the admin, signup, and waitlist routes. Railway auto-detects the `start` script, so no `railway.toml` or `Procfile` is required.
+invariant runs as a single Node HTTP server defined in [dev-server.ts](dev-server.ts), which mounts the route handlers in [api/](api/) plus the admin, signup, and waitlist routes. Railway auto-detects the `start` script, so no `railway.toml` or `Procfile` is required.
 
 ```bash
 npm install
@@ -344,7 +344,7 @@ To run the stdio MCP fallback instead (see below), use `npm run dev`.
 
 ### Fallback: local stdio MCP
 
-For MCP clients that cannot speak HTTP, the repo also ships a thin stdio proxy in [src/](src/) that forwards to a remote procure backend:
+For MCP clients that cannot speak HTTP, the repo also ships a thin stdio proxy in [src/](src/) that forwards to a remote invariant backend:
 
 ```bash
 npm install
@@ -354,7 +354,7 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "procure": {
+    "invariant": {
       "command": "node",
       "args": ["/absolute/path/to/invariant/dist/index.js"],
       "env": {
