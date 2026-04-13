@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Procurement Labs — Comprehensive API Test Suite
+ * Invariant — Comprehensive API Test Suite
  *
  * Usage:
  *   Local:  PL_API_KEY=pl_your_test_key PL_BACKEND_URL=http://localhost:3000 npx tsx test.ts
@@ -112,7 +112,7 @@ function needs(id: string): string | undefined {
 // ─────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log(`\n${BOLD}Procurement Labs — API Test Suite${RESET}`);
+  console.log(`\n${BOLD}Invariant — API Test Suite${RESET}`);
   console.log(`${DIM}Backend : ${BASE_URL}${RESET}`);
   console.log(`${DIM}PL Key  : ${PL_KEY.slice(0, 16)}...${RESET}`);
 
@@ -418,7 +418,7 @@ async function main() {
     "chat: simple prompt",
     () =>
       q("claude", "chat", {
-        message: "Reply with exactly three words: procurement labs works",
+        message: "Reply with exactly three words: invariant works",
         max_tokens: 20,
       }),
     ({ status, body }) => ({
@@ -435,7 +435,7 @@ async function main() {
     "chat: simple prompt",
     () =>
       q("gemini", "chat", {
-        message: "Reply with exactly three words: procurement labs works",
+        message: "Reply with exactly three words: invariant works",
       }),
     ({ status, body }) => ({
       ok: status === 200 && typeof body.data?.response === "string",

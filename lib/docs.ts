@@ -1,7 +1,7 @@
 export function buildApiDocs(section?: string): string {
-  const overview = `# Procurement Labs — Overview
+  const overview = `# Invariant — Overview
 
-Procurement Labs is a unified API gateway that gives you access to 15+ external APIs through **one key** and **one endpoint**. Connect via MCP (Model Context Protocol) for tool-based access from any LLM, or call the REST API directly from your code.
+Invariant is a unified API gateway that gives you access to 15+ external APIs through **one key** and **one endpoint**. Connect via MCP (Model Context Protocol) for tool-based access from any LLM, or call the REST API directly from your code.
 
 **What you get with a single \`pl_\` key:**
 - 15+ providers across health, finance, AI, maps, education, and creative
@@ -28,9 +28,9 @@ Set the \`PL_API_KEY\` environment variable:
 \`\`\`json
 {
   "mcpServers": {
-    "procurement-labs": {
+    "invariant": {
       "command": "npx",
-      "args": ["-y", "procurement-labs-mcp"],
+      "args": ["-y", "invariant-mcp"],
       "env": {
         "PL_API_KEY": "pl_your_key_here"
       }

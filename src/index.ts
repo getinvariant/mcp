@@ -15,7 +15,7 @@ async function main() {
   }
 
   const server = new McpServer({
-    name: "procurement-labs",
+    name: "invariant",
     version: "0.1.0",
   });
 

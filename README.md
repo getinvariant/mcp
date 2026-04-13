@@ -1,10 +1,10 @@
-# procurerement labs
+# invariant
 
 **The agentic API provisioning layer.** Your AI agent gets weather, stocks, health data, maps, and frontier LLMs from a single endpoint. procure creates the accounts, manages the keys, enforces the quotas, and falls back when something breaks. You never touch a developer portal.
 
 > One key in. Every API out.
 
-## Why procurement labs exists
+## Why invariant exists
 
 A useful AI agent needs to call ten different services. An LLM, a weather API, a stock ticker, a geocoder, a health database, a charity lookup. Building that today means:
 
@@ -356,7 +356,7 @@ npm run build
   "mcpServers": {
     "procure": {
       "command": "node",
-      "args": ["/absolute/path/to/procurementlabs/dist/index.js"],
+      "args": ["/absolute/path/to/invariant/dist/index.js"],
       "env": {
         "PL_API_KEY": "pl_your_key_here",
         "PL_BACKEND_URL": "https://pclabs.dev/api/mcp"

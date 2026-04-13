@@ -37,7 +37,7 @@ const mcpSessions = new Map<
 async function createMcpSession(
   accountId: string,
 ): Promise<{ transport: StreamableHTTPServerTransport; server: McpServer }> {
-  const server = new McpServer({ name: "procurement-labs", version: "0.1.0" });
+  const server = new McpServer({ name: "invariant", version: "0.1.0" });
 
   server.tool(
     "list_providers",
@@ -260,7 +260,7 @@ function renderAuthorizeForm(opts: {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Procurement Labs | Connect</title>
+<title>Invariant | Connect</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Inter',-apple-system,sans-serif;background:#0a0a0a;color:#e5e5e5;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem}
@@ -280,7 +280,7 @@ function renderAuthorizeForm(opts: {
 </head>
 <body>
 <div class="card">
-  <h1>Procurement Labs</h1>
+  <h1>Invariant</h1>
   <p class="sub">Enter your API key to connect</p>
   ${error ? `<div class="error">${escapeHtml(error)}</div>` : ""}
   <form method="POST" action="/authorize">
@@ -375,14 +375,14 @@ interface AccountWithUsage {
 
 const SHARED_HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Procurement Labs — one key unlocks every API your agent needs.">
+<meta name="description" content="Invariant - one key unlocks every API your agent needs.">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Procurement Labs">
-<meta property="og:title" content="Procurement Labs">
+<meta property="og:site_name" content="Invariant">
+<meta property="og:title" content="Invariant">
 <meta property="og:description" content="One key unlocks every API your agent needs.">
 <meta property="og:url" content="https://pclabs.dev">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Procurement Labs">
+<meta name="twitter:title" content="Invariant">
 <meta name="twitter:description" content="One key unlocks every API your agent needs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -453,7 +453,7 @@ const SHARED_STYLES = `
 
 function renderNav(active?: string): string {
   return `<nav><div class="container">
-    <a href="/" class="logo">PROCUREMENT LABS</a>
+    <a href="/" class="logo">INVARIANT</a>
     <div class="links">
       <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
       <a href="/login"${active === "login" ? ' class="active"' : ""}>LOGIN</a>
@@ -522,7 +522,7 @@ function renderHomepage(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>Procurement Labs</title>
+<title>Invariant</title>
 <style>
 ${SHARED_STYLES}
 
@@ -884,8 +884,8 @@ ${renderNav()}
         <div class="ascii-box">
  ┌──────────────────────────────────────────────┐
  │                                              │
- │   ╱╲      procurement       ╱╲              │
- │  ╱  ╲       labs           ╱  ╲             │
+ │   ╱╲      invariant         ╱╲              │
+ │  ╱  ╲                     ╱  ╲             │
  │ ╱    ╲    ──────────      ╱    ╲            │
  │╱ ▓▓▓▓ ╲   api gateway    ╱ ▓▓▓▓ ╲           │
  │  ▓▓▓▓  ╲   for agents   ╱  ▓▓▓▓             │
@@ -978,7 +978,7 @@ ${renderNav()}
       <div class="demo-head">
         <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
         <span>~/claude-code</span>
-        <span class="meta">procurement labs // mcp // v0.1</span>
+        <span class="meta">invariant // mcp // v0.1</span>
       </div>
       <div class="demo-body" id="demo-body"></div>
     </div>
@@ -992,7 +992,7 @@ ${renderNav()}
       <p>three lines in your terminal. every api we've already signed up for, handed to your agent. you never see a key again.</p>
     </div>
     <div class="terminal">
-      <div><span class="prompt">$</span> <span class="cmd">claude mcp add procurement-labs \\</span></div>
+      <div><span class="prompt">$</span> <span class="cmd">claude mcp add invariant \\</span></div>
       <div><span class="cmd">    --transport http https://pclabs.dev/api/mcp \\</span></div>
       <div><span class="cmd">    --header "x-pl-key: pl_your_key"</span></div>
       <div class="out">done. restart your session to use ${total} providers.</div>
@@ -1020,7 +1020,7 @@ ${renderNav()}
         </ul>
       </div>
       <div class="collab-col after">
-        <h3>tomorrow // with procurement labs teams</h3>
+        <h3>tomorrow // with invariant teams</h3>
         <ul>
           <li>one workspace holds every credential. engineers never see raw keys</li>
           <li>each seat gets its own pl_key. admins control provider access</li>
@@ -1071,8 +1071,8 @@ ${renderNav()}
     <p class="collab-pricing">◆ paid tier · generous free trial during beta · pricing at launch ◆</p>
 
     <footer class="collab-footer">
-      <span>© procurement labs</span>
-      <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
+      <span>© invariant</span>
+      <a href="https://github.com/tobasummandal/invariant">github →</a>
     </footer>
   </div>
 </section>
@@ -1323,7 +1323,7 @@ ${renderNav()}
     var seq = [
       {cls:'d-in',   text:'$ claude "build a market pulse dashboard with btc price, nyc weather, and any recent fda drug recalls"', wait: 1400},
       {cls:'d-dim',  text:'', wait: 200},
-      {cls:'d-sys',  text:'→ routing through procurement labs (mcp)...', wait: 550},
+      {cls:'d-sys',  text:'→ routing through invariant (mcp)...', wait: 550},
       {cls:'d-box',  text:'  ┌─ pl gateway ──────────────────────┐', wait: 280},
       {cls:'d-box',  text:'  │  fetching coingecko      → 200 ok │', wait: 380},
       {cls:'d-box',  text:'  │  fetching openweather    → 200 ok │', wait: 340},
@@ -1425,7 +1425,7 @@ function renderHowItWorks(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>How It Works | Procurement Labs</title>
+<title>How It Works | Invariant</title>
 <style>
 ${SHARED_STYLES}
   .page-hero{padding:5rem 0 3rem;position:relative;}
@@ -1491,20 +1491,20 @@ ${renderNav("how")}
       <div class="step-body">
         <h3>wire it to <em>your agent.</em></h3>
         <p>works with any mcp-compatible client. one command for <strong>claude code</strong>:</p>
-        <pre>claude mcp add procurement-labs \\
+        <pre>claude mcp add invariant \\
   --transport http https://pclabs.dev/api/mcp \\
   --header "x-pl-key: pl_your_key"</pre>
         <p>for <strong>codex</strong>, edit <code>~/.codex/config.toml</code>:</p>
-        <pre>[mcp_servers.procurement-labs]
+        <pre>[mcp_servers.invariant]
 type = "http"
 url = "https://pclabs.dev/api/mcp"
 
-[mcp_servers.procurement-labs.headers]
+[mcp_servers.invariant.headers]
 x-pl-key = "pl_your_key"</pre>
         <p>for <strong>cursor</strong>, add to <code>~/.cursor/mcp.json</code>:</p>
         <pre>{
   "mcpServers": {
-    "procurement-labs": {
+    "invariant": {
       "url": "https://pclabs.dev/api/mcp",
       "headers": { "x-pl-key": "pl_your_key" }
     }
@@ -1563,8 +1563,8 @@ agent calls recommend{
   </div>
 
   <footer class="page-footer">
-    <span>© procurement labs</span>
-    <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
+    <span>© invariant</span>
+    <a href="https://github.com/tobasummandal/invariant">github →</a>
   </footer>
 </div>
 <script>
@@ -1582,7 +1582,7 @@ function renderLogin(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>Sign In | Procurement Labs</title>
+<title>Sign In | Invariant</title>
 <style>
 ${SHARED_STYLES}
   .login-page{padding:5rem 0 3rem;max-width:520px;margin:0 auto;position:relative;}
@@ -1669,8 +1669,8 @@ ${renderNav("login")}
     </div>
 
     <footer class="page-footer">
-      <span>© procurement labs</span>
-      <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
+      <span>© invariant</span>
+      <a href="https://github.com/tobasummandal/invariant">github →</a>
     </footer>
   </div>
 </div>
@@ -1832,7 +1832,7 @@ function renderDashboard(): string {
 <html lang="en">
 <head>
 ${SHARED_HEAD}
-<title>Dashboard | Procurement Labs</title>
+<title>Dashboard | Invariant</title>
 <style>
 ${SHARED_STYLES}
   /* ── dashboard hero ── */
@@ -2172,8 +2172,8 @@ ${renderNav("dashboard")}
   </div>
 
   <footer class="page-footer">
-    <span>© procurement labs</span>
-    <a href="https://github.com/tobasummandal/procurementlabs">github →</a>
+    <span>© invariant</span>
+    <a href="https://github.com/tobasummandal/invariant">github →</a>
   </footer>
 </div>
 
