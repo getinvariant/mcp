@@ -1,10 +1,10 @@
-# gitleaks config for Procurement Labs
+# gitleaks config for Invariant
 # Run locally: `gitleaks protect --staged --config .gitleaks.toml`
 # Run in CI:   `gitleaks detect --config .gitleaks.toml`
 #
 # Install: `brew install gitleaks` (macOS) or see https://github.com/gitleaks/gitleaks
 
-title = "procurementlabs gitleaks config"
+title = "invariant gitleaks config"
 
 # Inherit gitleaks' built-in rules (covers AWS, GCP, Stripe, GitHub tokens, etc.)
 [extend]
@@ -14,10 +14,10 @@ useDefault = true
 
 [[rules]]
 id = "pl-api-key"
-description = "Procurement Labs API key (pl_ prefix)"
+description = "Invariant API key (pl_ prefix)"
 regex = '''pl_[a-zA-Z0-9]{16,}'''
 keywords = ["pl_"]
-tags = ["procurement-labs", "key"]
+tags = ["invariant", "key"]
 
 [[rules]]
 id = "supabase-service-key"

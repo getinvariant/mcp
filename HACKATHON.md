@@ -1,4 +1,4 @@
-# Hackathon Quickstart — procure
+# Hackathon Quickstart — invariant
 
 **Goal:** in under 5 minutes, your AI agent will be able to call 5+ live APIs (weather, crypto, stocks, FDA drug data, mental health resources) with zero signups, zero `.env` files, and zero API keys to manage.
 
@@ -8,7 +8,7 @@ This is the only credential you need: a **`pl_` key** from us.
 
 ## 0. What is this?
 
-`procure` is a single MCP gateway that fronts a bunch of APIs. Instead of signing up for OpenWeather + CoinGecko + Finnhub + … you sign up _once_ with us. Your agent talks to one URL with one header. We hold the upstream keys.
+`invariant` is a single MCP gateway that fronts a bunch of APIs. Instead of signing up for OpenWeather + CoinGecko + Finnhub + … you sign up _once_ with us. Your agent talks to one URL with one header. We hold the upstream keys.
 
 **One key in. Every API out.**
 
@@ -31,7 +31,7 @@ Pick the one you use. Replace `pl_your_key` with the key from step 1.
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add procure \
+claude mcp add invariant \
   --transport http https://pclabs.dev/api/mcp \
   --header "x-pl-key: pl_your_key"
 ```
@@ -45,7 +45,7 @@ Open `~/.cursor/mcp.json` (create it if missing) and add:
 ```json
 {
   "mcpServers": {
-    "procure": {
+    "invariant": {
       "url": "https://pclabs.dev/api/mcp",
       "headers": { "x-pl-key": "pl_your_key" }
     }
@@ -53,7 +53,7 @@ Open `~/.cursor/mcp.json` (create it if missing) and add:
 }
 ```
 
-Then **Cursor → Settings → Tools & Integrations → MCP** and toggle `procure` on.
+Then **Cursor → Settings → Tools & Integrations → MCP** and toggle `invariant` on.
 
 ### Windsurf
 
@@ -66,7 +66,7 @@ Open `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or 
 ```json
 {
   "mcpServers": {
-    "procure": {
+    "invariant": {
       "type": "http",
       "url": "https://pclabs.dev/api/mcp",
       "headers": { "x-pl-key": "pl_your_key" }
@@ -84,13 +84,13 @@ Restart Claude Desktop.
 ### Codex CLI
 
 ```bash
-codex mcp add procure --url https://pclabs.dev/api/mcp
+codex mcp add invariant --url https://pclabs.dev/api/mcp
 ```
 
 Then open `~/.codex/config.toml` and add the header (Codex doesn't accept headers via CLI yet):
 
 ```toml
-[mcp_servers.procure.headers]
+[mcp_servers.invariant.headers]
 x-pl-key = "pl_your_key"
 ```
 
@@ -100,11 +100,11 @@ x-pl-key = "pl_your_key"
 
 Ask your agent:
 
-> _"List all the providers procure has."_
+> _"List all the providers invariant has."_
 
 It should call the `list_providers` tool and print 5+ providers with `Status: Ready`. If you see `Not configured`, that one's offline — pick a different one.
 
-If your agent says "I don't see procure" or "no MCP tools available," you forgot to restart the client after editing the config.
+If your agent says "I don't see invariant" or "no MCP tools available," you forgot to restart the client after editing the config.
 
 ---
 
@@ -148,7 +148,7 @@ You typed the key wrong, or the header name is wrong. It must be exactly `x-pl-k
 **"Quota exceeded" / 429**
 You hit the per-minute cap (10 req/min on free tier). Wait 60 seconds. If you keep hitting it, batch your calls or ask the agent to slow down.
 
-**Agent says it has no tools / can't see procure**
+**Agent says it has no tools / can't see invariant**
 Restart the AI client _fully_. Most clients only load MCP servers at startup — editing the config while the app is running does nothing.
 
 **A specific provider returns "Not configured"**

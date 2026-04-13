@@ -50,7 +50,7 @@ export class OpenStreetMapProvider implements Provider {
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
     const headers = {
-      "User-Agent": "ProcurementLabsMCP/0.1.0 (hackathon)",
+      "User-Agent": "InvariantMCP/0.1.0 (hackathon)",
       Accept: "application/json",
     };
 

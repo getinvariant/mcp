@@ -1,9 +1,9 @@
 {
-  "name": "procurement-labs-mcp",
+  "name": "invariant-mcp",
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "procurement-labs-mcp": "dist/index.js"
+    "invariant-mcp": "dist/index.js"
   },
   "main": "dist/index.js",
   "scripts": {

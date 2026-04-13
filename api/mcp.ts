@@ -51,7 +51,7 @@ async function handleMessage(
       return ok({
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "procurement-labs", version: "0.1.0" },
+        serverInfo: { name: "invariant", version: "0.1.0" },
       });
 
     case "ping":
