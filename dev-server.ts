@@ -1484,7 +1484,7 @@ ${renderNav("how")}
       <div class="step-num">01</div>
       <div class="step-body">
         <h3>create <em>your key.</em></h3>
-        <p>drop your email on the <a href="/login">sign up page</a>. you get a unique api key instantly. no credit card. no approval. the free tier is 500 requests per month, forever.</p>
+        <p>drop your email on the <a href="/login?mode=signup">sign up page</a>. you get a unique api key instantly. no credit card. no approval. the free tier is 500 requests per month, forever.</p>
       </div>
     </div>
 
@@ -1561,7 +1561,7 @@ agent calls recommend{
       <h2>ready to <em>ship?</em></h2>
       <p>500 requests/month · zero credit card</p>
     </div>
-    <a href="/login" class="btn btn-primary">claim your key →</a>
+    <a href="/login?mode=signup" class="btn btn-primary">claim your key →</a>
   </div>
 
   <footer class="page-footer">
@@ -1639,8 +1639,8 @@ ${renderNav("login")}
 <div class="container">
   <div class="login-page">
     <div class="login-kicker"><span>// the door</span></div>
-    <h1>welcome <em>back.</em></h1>
-    <p class="sub">sign in with your existing key, or mint a fresh one. takes seconds.</p>
+    <h1 id="page-heading">welcome <em>back.</em></h1>
+    <p class="sub" id="page-sub">sign in with your existing key, or mint a fresh one. takes seconds.</p>
 
     <div id="key-flash" class="flash">
       <div class="flash-label">◆ your api key · click to copy</div>
@@ -1689,8 +1689,10 @@ ${renderNav("login")}
     document.cookie = name + '=' + encodeURIComponent(val) + '; path=/; max-age=' + (365*86400) + '; samesite=lax';
   }
 
-  // Unified email panel — toggles between sign-in and create
+  // Unified email panel — toggles between sign-in and sign-up
   var mode = 'signin';
+  var headingEl = document.getElementById('page-heading');
+  var pageSubEl = document.getElementById('page-sub');
   var titleEl = document.getElementById('email-panel-title');
   var subEl = document.getElementById('email-panel-sub');
   var btnEl = document.getElementById('email-submit-btn');
@@ -1699,19 +1701,51 @@ ${renderNav("login")}
   var emailInput = document.getElementById('email-input');
   var errEl = document.getElementById('email-error');
 
-  function setMode() {
-    mode = 'signup';
-    errEl.textContent = '';
-    while (titleEl.firstChild) titleEl.removeChild(titleEl.firstChild);
-    titleEl.appendChild(document.createTextNode('create '));
+  function renderHeading(headText, italText) {
+    while (headingEl.firstChild) headingEl.removeChild(headingEl.firstChild);
+    headingEl.appendChild(document.createTextNode(headText + ' '));
     var em = document.createElement('em');
-    em.textContent = 'account.';
-    titleEl.appendChild(em);
-    subEl.textContent = 'free · 500 requests/month';
-    btnEl.textContent = 'create account →';
-    toggleText.textContent = 'already have an account?';
-    toggleLink.textContent = 'use your api key below';
+    em.textContent = italText;
+    headingEl.appendChild(em);
   }
+  function renderTitle(headText, italText) {
+    while (titleEl.firstChild) titleEl.removeChild(titleEl.firstChild);
+    titleEl.appendChild(document.createTextNode(headText + ' '));
+    var em = document.createElement('em');
+    em.textContent = italText;
+    titleEl.appendChild(em);
+  }
+
+  function applyMode(next) {
+    mode = next;
+    errEl.textContent = '';
+    if (mode === 'signup') {
+      renderHeading('create your', 'key.');
+      pageSubEl.textContent = 'one email. one key. 500 requests/month, forever.';
+      renderTitle('create', 'account.');
+      subEl.textContent = 'free · 500 requests/month';
+      btnEl.textContent = 'create account →';
+      toggleText.textContent = 'already have an account?';
+      toggleLink.textContent = 'sign in';
+    } else {
+      renderHeading('welcome', 'back.');
+      pageSubEl.textContent = 'sign in with your email, or with your api key.';
+      renderTitle('sign', 'in.');
+      subEl.textContent = 'with your email';
+      btnEl.textContent = 'sign in →';
+      toggleText.textContent = "don't have an account?";
+      toggleLink.textContent = 'create one';
+    }
+  }
+
+  // Initial mode from ?mode=signup query param
+  var initialMode = new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'signin';
+  applyMode(initialMode);
+
+  toggleLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    applyMode(mode === 'signin' ? 'signup' : 'signin');
+  });
 
   btnEl.addEventListener('click', doEmailSubmit);
   emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSubmit(); });
@@ -1723,27 +1757,35 @@ ${renderNav("login")}
     var originalText = btnEl.textContent;
     btnEl.disabled = true; btnEl.textContent = '...';
     try {
-      {
-        var res = await fetch('/api/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email }),
-        });
-        var data = await res.json();
-        if (!res.ok) { errEl.textContent = data.error || 'Signup failed'; return; }
-        // Show key
-        var flash = document.getElementById('key-flash');
-        var flashKey = document.getElementById('flash-key');
-        flashKey.textContent = data.key;
-        flashKey.onclick = function() {
-          navigator.clipboard.writeText(data.key);
-          var t = document.getElementById('copied-toast');
-          t.classList.add('show');
-          setTimeout(function() { t.classList.remove('show'); }, 1200);
-        };
-        flash.classList.add('visible');
-        setTimeout(function() { window.location.href = '/dashboard'; }, 3000);
+      var endpoint = mode === 'signup' ? '/api/signup' : '/api/signin-email';
+      var res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      var data = await res.json();
+      if (!res.ok) {
+        var fallback = mode === 'signup' ? 'Signup failed' : 'Sign in failed';
+        errEl.textContent = data.error || fallback;
+        return;
       }
+      if (mode === 'signin') {
+        // Cookie already set by server; jump to dashboard.
+        window.location.href = '/dashboard';
+        return;
+      }
+      // signup — flash the new key, then redirect
+      var flash = document.getElementById('key-flash');
+      var flashKey = document.getElementById('flash-key');
+      flashKey.textContent = data.key;
+      flashKey.onclick = function() {
+        navigator.clipboard.writeText(data.key);
+        var t = document.getElementById('copied-toast');
+        t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 1200);
+      };
+      flash.classList.add('visible');
+      setTimeout(function() { window.location.href = '/dashboard'; }, 3000);
     } catch (e) { errEl.textContent = 'Connection error'; }
     finally { btnEl.disabled = false; btnEl.textContent = originalText; }
   }
@@ -2757,14 +2799,31 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify(stats));
   }
 
-  // /api/signin-email disabled: exposed API keys without ownership verification.
-  // Users sign in with their API key directly via the key-based sign-in flow.
-  if (path === "/api/signin-email") {
-    res.writeHead(410, { "Content-Type": "application/json" });
+  // Email sign-in: look up existing account by email, return its pl_key + cookie.
+  // NOTE: no ownership verification — anyone who knows an email gets the key.
+  // Acceptable for current alpha; revisit (magic-link / OTP) before public launch.
+  if (path === "/api/signin-email" && req.method === "POST") {
+    const email = (body.email || "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Valid email is required" }));
+    }
+    const account = await getAccountByEmail(email);
+    if (!account) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      return res.end(
+        JSON.stringify({ error: "No account found for that email" }),
+      );
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Set-Cookie": `pl_key=${account.pl_key}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+    });
     return res.end(
       JSON.stringify({
-        error:
-          "Email sign-in has been disabled. Please sign in with your API key.",
+        key: account.pl_key,
+        tier: account.tier,
+        quota: account.monthly_quota,
       }),
     );
   }
