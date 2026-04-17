@@ -870,7 +870,6 @@ ${renderNav()}
   <div class="hero-wrap">
     <div class="hero-grid">
       <div class="hero-left">
-        <div class="kicker"><span class="pulse-dot"></span>alpha · waitlist open <span class="mono" style="color:var(--cyan);">// v0.1</span></div>
         <h1 class="hero-display">
           stop <span class="strike">integrating</span><span class="block">apis.</span>
           <span class="block">start <span class="ital">shipping.</span></span>
@@ -1081,8 +1080,6 @@ ${renderNav()}
         <div class="msg" id="teams-msg"></div>
       </div>
     </div>
-
-    <p class="collab-pricing">◆ paid tier · generous free trial during beta · pricing at launch ◆</p>
 
     <footer class="collab-footer">
       <span>© invariant</span>
