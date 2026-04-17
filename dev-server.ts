@@ -906,6 +906,23 @@ ${renderNav()}
 </div>
 
 <div class="container">
+  <div class="demo-wrap reveal">
+    <div class="demo-wrap-head">
+      <div class="left">this is what it <em>looks like.</em></div>
+      <div class="right">live replay · on loop</div>
+    </div>
+    <div class="demo-term">
+      <div class="demo-head">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <span>~/claude-code</span>
+        <span class="meta">invariant // mcp // v0.1</span>
+      </div>
+      <div class="demo-body" id="demo-body"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
   <div class="stats-strip reveal">
     <div class="s" data-num="01 ▸">
       <div class="sv" data-target="${total}">0</div>
@@ -967,23 +984,6 @@ ${renderNav()}
       <div class="ps-head-right"><strong>${total} providers</strong> across ${Object.keys(grouped).length} categories. every one of these is callable from your agent with a single key — zero vendor accounts needed.</div>
     </div>
     ${providerGrid}
-  </div>
-</div>
-
-<div class="container">
-  <div class="demo-wrap reveal">
-    <div class="demo-wrap-head">
-      <div class="left">this is what it <em>looks like.</em></div>
-      <div class="right">live replay · on loop</div>
-    </div>
-    <div class="demo-term">
-      <div class="demo-head">
-        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-        <span>~/claude-code</span>
-        <span class="meta">invariant // mcp // v0.1</span>
-      </div>
-      <div class="demo-body" id="demo-body"></div>
-    </div>
   </div>
 </div>
 
