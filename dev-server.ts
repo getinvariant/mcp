@@ -425,8 +425,13 @@ const SHARED_STYLES = `
   /* ── nav ── */
   nav{border-bottom:2px solid var(--fg);padding:1rem 0;position:sticky;top:0;z-index:50;background:rgba(6,6,6,0.94);backdrop-filter:blur(10px);}
   nav .container{display:flex;justify-content:space-between;align-items:center;gap:2rem;}
+  nav .nav-left{display:flex;align-items:center;gap:1.25rem;}
   nav .logo{font-family:var(--mono);font-weight:700;color:var(--fg);font-size:1.1rem;letter-spacing:-0.04em;text-transform:uppercase;display:flex;align-items:center;gap:0.6rem;}
   nav .logo::before{content:'';display:inline-block;width:14px;height:14px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
+  nav .nav-social{display:flex;align-items:center;padding-left:0.75rem;border-left:1.5px solid var(--line-strong);}
+  nav .nav-social a{display:flex;align-items:center;color:var(--muted);transition:color 0.2s;}
+  nav .nav-social a:hover{color:var(--amber);}
+  nav .nav-social svg{width:16px;height:16px;fill:currentColor;}
   nav .links{display:flex;gap:2.25rem;font-size:0.8rem;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;}
   nav .links a{color:var(--muted);position:relative;padding:0.25rem 0;}
   nav .links a::after{content:'';position:absolute;left:0;bottom:-4px;width:0;height:2px;background:var(--amber);transition:width .25s ease;}
@@ -455,7 +460,14 @@ const SHARED_STYLES = `
 
 function renderNav(active?: string): string {
   return `<nav><div class="container">
-    <a href="/" class="logo">INVARIANT</a>
+    <div class="nav-left">
+      <a href="/" class="logo">INVARIANT</a>
+      <div class="nav-social">
+        <a href="https://www.linkedin.com/company/getinvariant" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+      </div>
+    </div>
     <div class="links">
       <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
       <a href="/login"${active === "login" ? ' class="active"' : ""}>LOGIN</a>
