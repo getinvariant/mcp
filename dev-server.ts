@@ -530,8 +530,8 @@ ${SHARED_STYLES}
 
   /* ── ticker marquee ── */
   .ticker{border-bottom:2px solid var(--fg);background:#0a0a0a;overflow:hidden;padding:0.65rem 0;white-space:nowrap;font-family:var(--mono);font-size:0.75rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);}
-  .ticker-track{display:inline-flex;animation:marquee 38s linear infinite;will-change:transform;}
-  .ticker span{display:inline-block;padding:0 2.25rem;}
+  .ticker-track{display:flex;width:max-content;animation:marquee 38s linear infinite;will-change:transform;}
+  .ticker span{display:inline-block;padding:0 2.25rem;flex-shrink:0;}
   .ticker span::before{content:'◆';color:var(--amber);margin-right:2.25rem;}
 
   /* ── HERO ── */
