@@ -1083,7 +1083,7 @@ ${renderNav()}
 
     <footer class="collab-footer">
       <span>© invariant</span>
-      <a href="https://github.com/tobasummandal/invariant">github →</a>
+      <a href="https://github.com/getinvariant/mcp">github →</a>
     </footer>
   </div>
 </section>
@@ -1575,7 +1575,7 @@ agent calls recommend{
 
   <footer class="page-footer">
     <span>© invariant</span>
-    <a href="https://github.com/tobasummandal/invariant">github →</a>
+    <a href="https://github.com/getinvariant/mcp">github →</a>
   </footer>
 </div>
 <script>
@@ -1681,7 +1681,7 @@ ${renderNav("login")}
 
     <footer class="page-footer">
       <span>© invariant</span>
-      <a href="https://github.com/tobasummandal/invariant">github →</a>
+      <a href="https://github.com/getinvariant/mcp">github →</a>
     </footer>
   </div>
 </div>
@@ -2226,7 +2226,7 @@ ${renderNav("dashboard")}
 
   <footer class="page-footer">
     <span>© invariant</span>
-    <a href="https://github.com/tobasummandal/invariant">github →</a>
+    <a href="https://github.com/getinvariant/mcp">github →</a>
   </footer>
 </div>
 

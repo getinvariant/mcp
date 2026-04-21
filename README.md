@@ -1,4 +1,4 @@
-# invariant
+# Invariant
 
 **The agentic API provisioning layer.** Your AI agent gets weather, stocks, health data, maps, and frontier LLMs from a single endpoint. invariant creates the accounts, manages the keys, enforces the quotas, and falls back when something breaks. You never touch a developer portal.
 
