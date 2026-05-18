@@ -1183,7 +1183,7 @@ ${renderNav()}
           <span class="block">start <span class="ital">shipping.</span></span>
         </h1>
         <p class="hero-sub">
-          the <strong>mcp gateway your agent needs</strong>. one key unlocks every provider we've already signed up for. no raw tokens, no rate limiters, no vendor dashboards. ever.
+          the <strong>agentic api layer that learns how you build</strong>. one key, every provider. invariant watches how your agent calls apis and routes smarter over time. no tokens to manage, no dashboards to babysit.
         </p>
         <div class="hero-cta-block">
           <a href="/login?mode=signup" class="hero-cta-btn">Get your free key →</a>
