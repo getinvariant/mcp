@@ -1144,7 +1144,7 @@ ${renderNav()}
           the <strong>mcp gateway your agent needs</strong>. one key unlocks every provider we've already signed up for. no raw tokens, no rate limiters, no vendor dashboards. ever.
         </p>
         <div class="hero-cta-block">
-          <a href="/login" class="hero-cta-btn">Get your free key →</a>
+          <a href="/login?mode=signup" class="hero-cta-btn">Get your free key →</a>
           <div class="hero-cta-sub">Free forever · No credit card · Instant access</div>
         </div>
         <div class="hero-meta">
@@ -1945,8 +1945,9 @@ ${renderNav("login")}
 <div class="copied-toast" id="copied-toast">Copied</div>
 <script>
 (function() {
-  // If already signed in, go to install
-  if (document.cookie.match(/pl_key=/)) {
+  // If already signed in and not coming from a "get free key" intent, go to install
+  var isModeSignup = new URLSearchParams(window.location.search).get('mode') === 'signup';
+  if (document.cookie.match(/pl_key=/) && !isModeSignup) {
     window.location.href = '/install';
     return;
   }
