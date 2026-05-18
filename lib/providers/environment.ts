@@ -60,15 +60,22 @@ export class EnvironmentProvider implements Provider {
 
     switch (action) {
       case "current_weather": {
-        const city = params.city as string;
-        if (!city)
-          return { success: false, error: "Missing required parameter: city" };
+        const city = params.city as string | undefined;
+        const lat = params.lat as number | undefined;
+        const lon = params.lon as number | undefined;
+        if (!city && (lat == null || lon == null)) {
+          return {
+            success: false,
+            error: "Provide either { city } or { lat, lon }",
+          };
+        }
         const units = (params.units as string) || "metric";
+        const locParam = city
+          ? `q=${encodeURIComponent(city)}`
+          : `lat=${lat}&lon=${lon}`;
         try {
           const { response: res } = await withKeyRetry(ENV, (apiKey) =>
-            fetch(
-              `${base}/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=${units}`,
-            ),
+            fetch(`${base}/weather?${locParam}&appid=${apiKey}&units=${units}`),
           );
           if (!res.ok) {
             const text = await res.text();

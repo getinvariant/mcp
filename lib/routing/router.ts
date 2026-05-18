@@ -2,7 +2,10 @@ import { supabase } from "../db.js";
 
 export const PROVIDERS_BY_TASK: Record<string, string[]> = {
   "finance:price": ["coingecko", "finnhub"],
-  "places:geocode": ["geoapify", "mapbox"],
+  "finance:price:crypto": ["coingecko", "binance"],
+  "finance:price:stock": ["finnhub", "alpha_vantage"],
+  "places:geocode": ["geoapify", "mapbox", "openstreetmap"],
+  "env:weather": ["environment", "open_meteo"],
 };
 
 type StatsRow = {

@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Ferry Building, San Francisco, CA",
+    "lat": 37.7955882,
+    "lon": -122.394368,
+    "provider": "geoapify"
+  },
+  {
+    "name": "Mission Dolores, San Francisco, CA",
+    "lat": 37.764353,
+    "lon": -122.4269535,
+    "provider": "geoapify"
+  },
+  {
+    "name": "Lake Merritt, Oakland, CA",
+    "lat": 37.804621,
+    "lon": -122.2562502,
+    "provider": "geoapify"
+  },
+  {
+    "name": "Telegraph Ave, Berkeley, CA",
+    "lat": 37.868257,
+    "lon": -122.259176,
+    "provider": "geoapify"
+  },
+  {
+    "name": "Pier 39, San Francisco, CA",
+    "lat": 37.8099479,
+    "lon": -122.41041,
+    "provider": "geoapify"
+  },
+  {
+    "name": "Jack London Square, Oakland, CA",
+    "lat": 37.7957886,
+    "lon": -122.2746851,
+    "provider": "geoapify"
+  },
+  {
+    "name": "UC Berkeley, Berkeley, CA",
+    "lat": 37.8754996,
+    "lon": -122.2390685,
+    "provider": "geoapify"
+  },
+  {
+    "name": "Golden Gate Park, San Francisco, CA",
+    "lat": 37.7693681,
+    "lon": -122.4821837,
+    "provider": "geoapify"
+  }
+]
