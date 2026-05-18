@@ -506,13 +506,29 @@ ${SHARED_STYLES}
   @media(max-width:580px){.install-cards{grid-template-columns:1fr;}}
 
   .ic{border:2px solid var(--line-strong);padding:2rem 1.75rem;cursor:pointer;position:relative;overflow:hidden;transition:border-color .18s,transform .18s,box-shadow .18s;background:var(--bg);}
-  .ic:hover{border-color:var(--fg);transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
+  .ic:hover:not(.ic-pending){border-color:var(--fg);transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
+  .ic.ic-pending{border-color:var(--amber);cursor:default;opacity:0.8;}
   .ic-logo{font-size:1.6rem;margin-bottom:1rem;}
   .ic-name{font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;color:var(--fg);}
   .ic-desc{font-size:0.78rem;color:var(--muted);line-height:1.5;margin-bottom:1.5rem;}
   .ic-btn{display:inline-flex;align-items:center;gap:0.5rem;font-size:0.78rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#000;background:var(--fg);padding:0.6rem 1.1rem;border:2px solid var(--fg);transition:background .15s,color .15s;}
-  .ic:hover .ic-btn{background:var(--amber);border-color:var(--amber);}
-  .ic-arrow{font-size:1rem;}
+  .ic:hover:not(.ic-pending) .ic-btn{background:var(--amber);border-color:var(--amber);}
+
+  /* post-click confirm strip */
+  .ic-confirm{display:none;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:1rem;}
+  .ic-confirm-q{font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem;}
+  .ic-confirm-btns{display:flex;gap:0.6rem;}
+  .ic-yes,.ic-no{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.4rem 0.85rem;cursor:pointer;font-family:var(--mono);border:1px solid var(--line);background:none;transition:all .15s;}
+  .ic-yes{color:var(--amber);border-color:var(--amber);}
+  .ic-yes:hover{background:var(--amber);color:#000;}
+  .ic-no{color:var(--muted);}
+  .ic-no:hover{color:var(--fg);border-color:var(--fg);}
+
+  /* success banner */
+  .ic-success{display:none;margin-top:1.25rem;border-top:1px solid var(--amber);padding-top:1rem;}
+  .ic-success-msg{font-size:0.8rem;color:var(--amber);margin-bottom:0.5rem;}
+  .ic-verify{font-size:0.75rem;color:var(--muted);}
+  .ic-verify code{color:var(--fg);font-family:var(--mono);}
 
   .fallback{border:1px solid var(--line);padding:1.5rem;margin-top:2rem;}
   .fallback-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;}
@@ -524,10 +540,6 @@ ${SHARED_STYLES}
   pre{background:#0e0e0e;border:1px solid var(--line);padding:1rem;font-family:var(--mono);font-size:0.8rem;color:var(--fg);overflow-x:auto;white-space:pre;}
   .copy-btn{margin-top:0.75rem;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;color:var(--muted);background:none;border:1px solid var(--line);padding:0.4rem 0.9rem;font-family:var(--mono);transition:color .15s,border-color .15s;}
   .copy-btn:hover{color:var(--fg);border-color:var(--fg);}
-
-  .verify{margin-top:3rem;border-top:1px solid var(--line);padding-top:2rem;}
-  .verify-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;}
-  .verify-cmd{background:#0e0e0e;border:1px solid var(--line);padding:0.75rem 1rem;font-family:var(--mono);font-size:0.82rem;color:var(--amber);}
 </style>
 </head>
 <body>
@@ -536,25 +548,47 @@ ${renderNav("install")}
 <div class="install-wrap">
   <p class="install-eyebrow">One-click setup</p>
   <h1 class="install-h1">Add Invariant<br>to your agent</h1>
-  <p class="install-sub">Click your agent below. A browser prompt will ask for your API key once, then you are done. No terminal, no config files.</p>
+  <p class="install-sub">Click your agent below. It will open the app and ask for your API key once. No terminal, no config files.</p>
 
   <div class="install-cards">
-    <div class="ic" id="cursor-card" onclick="installCursor()">
+    <div class="ic" id="cursor-card" onclick="install('cursor')">
       <div class="ic-logo">⌨</div>
       <div class="ic-name">Cursor</div>
-      <div class="ic-desc">Adds Invariant to Cursor's MCP server list via OAuth. Works on Cursor 0.43+.</div>
-      <span class="ic-btn">Add to Cursor <span class="ic-arrow">→</span></span>
+      <div class="ic-desc">Adds Invariant via OAuth. Works on Cursor 0.43+.</div>
+      <span class="ic-btn" id="cursor-btn-label">Add to Cursor →</span>
+      <div class="ic-confirm" id="cursor-confirm">
+        <div class="ic-confirm-q">Did Cursor open and add the server?</div>
+        <div class="ic-confirm-btns">
+          <button class="ic-yes" onclick="confirmYes('cursor',event)">Yes, it worked</button>
+          <button class="ic-no" onclick="confirmNo('cursor',event)">No, show manual setup</button>
+        </div>
+      </div>
+      <div class="ic-success" id="cursor-success">
+        <div class="ic-success-msg">Invariant added to Cursor.</div>
+        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
+      </div>
     </div>
-    <div class="ic" id="claude-card" onclick="installClaude()">
+    <div class="ic" id="claude-card" onclick="install('claude')">
       <div class="ic-logo">◆</div>
       <div class="ic-name">Claude Desktop</div>
-      <div class="ic-desc">Adds Invariant to Claude Desktop's MCP server list via OAuth. Works on Claude Desktop 0.7+.</div>
-      <span class="ic-btn">Add to Claude <span class="ic-arrow">→</span></span>
+      <div class="ic-desc">Adds Invariant via OAuth. Works on Claude Desktop 0.7+.</div>
+      <span class="ic-btn" id="claude-btn-label">Add to Claude →</span>
+      <div class="ic-confirm" id="claude-confirm">
+        <div class="ic-confirm-q">Did Claude Desktop open and add the server?</div>
+        <div class="ic-confirm-btns">
+          <button class="ic-yes" onclick="confirmYes('claude',event)">Yes, it worked</button>
+          <button class="ic-no" onclick="confirmNo('claude',event)">No, show manual setup</button>
+        </div>
+      </div>
+      <div class="ic-success" id="claude-success">
+        <div class="ic-success-msg">Invariant added to Claude Desktop.</div>
+        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
+      </div>
     </div>
   </div>
 
-  <div class="fallback">
-    <div class="fallback-label">Manual config (if deep link does not fire)</div>
+  <div class="fallback" id="fallback-section" style="display:none">
+    <div class="fallback-label">Manual config</div>
     <div class="fallback-tabs">
       <div class="ftab active" onclick="showTab('cursor-cfg',this)">Cursor</div>
       <div class="ftab" onclick="showTab('claude-cfg',this)">Claude Desktop</div>
@@ -563,38 +597,64 @@ ${renderNav("install")}
     <div class="fallback-panel active" id="cursor-cfg">
       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Add to <code style="color:var(--fg)">~/.cursor/mcp.json</code></div>
       <pre id="cursor-json">${escapeHtml(manualJson)}</pre>
-      <button class="copy-btn" onclick="copy('cursor-json',this)">Copy</button>
+      <button class="copy-btn" onclick="copyEl('cursor-json',this)">Copy</button>
     </div>
     <div class="fallback-panel" id="claude-cfg">
       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Add to <code style="color:var(--fg)">~/Library/Application Support/Claude/claude_desktop_config.json</code></div>
       <pre id="claude-json">${escapeHtml(manualJson)}</pre>
-      <button class="copy-btn" onclick="copy('claude-json',this)">Copy</button>
+      <button class="copy-btn" onclick="copyEl('claude-json',this)">Copy</button>
     </div>
     <div class="fallback-panel" id="cli-cfg">
       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Run once in terminal</div>
       <pre id="cli-cmd">claude mcp add --transport http invariant ${escapeHtml(mcpUrl)}</pre>
-      <button class="copy-btn" onclick="copy('cli-cmd',this)">Copy</button>
+      <button class="copy-btn" onclick="copyEl('cli-cmd',this)">Copy</button>
     </div>
-  </div>
-
-  <div class="verify">
-    <div class="verify-label">Verify it works — ask your agent:</div>
-    <div class="verify-cmd">list the available API providers</div>
   </div>
 </div>
 
 <script>
   const CURSOR_CONFIG = ${JSON.stringify(cursorConfig)};
   const CLAUDE_CONFIG = ${JSON.stringify(claudeConfig)};
+  const DEEP_LINKS = {
+    cursor: () => { const e = btoa(CURSOR_CONFIG); window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + e; },
+    claude: () => { const e = btoa(CLAUDE_CONFIG); window.location.href = 'claude://add-mcp-server?name=invariant&config=' + e; },
+  };
 
-  function installCursor() {
-    const encoded = btoa(CURSOR_CONFIG);
-    window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
+  function install(app) {
+    const card = document.getElementById(app + '-card');
+    if (card.classList.contains('ic-pending')) return;
+    card.classList.add('ic-pending');
+    document.getElementById(app + '-btn-label').textContent = 'Opening ' + (app === 'cursor' ? 'Cursor' : 'Claude') + '...';
+    DEEP_LINKS[app]();
+    // After 2.5s show "did it work?" — enough time for the app to handle the link
+    setTimeout(() => {
+      document.getElementById(app + '-confirm').style.display = 'block';
+    }, 2500);
   }
 
-  function installClaude() {
-    const encoded = btoa(CLAUDE_CONFIG);
-    window.location.href = 'claude://add-mcp-server?name=invariant&config=' + encoded;
+  function confirmYes(app, e) {
+    e.stopPropagation();
+    document.getElementById(app + '-confirm').style.display = 'none';
+    document.getElementById(app + '-success').style.display = 'block';
+    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? '✓ Added to Cursor' : '✓ Added to Claude';
+  }
+
+  function confirmNo(app, e) {
+    e.stopPropagation();
+    document.getElementById(app + '-confirm').style.display = 'none';
+    document.getElementById(app + '-card').classList.remove('ic-pending');
+    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? 'Add to Cursor →' : 'Add to Claude →';
+    const fb = document.getElementById('fallback-section');
+    fb.style.display = 'block';
+    // pre-select the right tab
+    const tabMap = { cursor: 0, claude: 1 };
+    const tabs = document.querySelectorAll('.ftab');
+    const panels = document.querySelectorAll('.fallback-panel');
+    tabs.forEach(t => t.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    tabs[tabMap[app]].classList.add('active');
+    panels[tabMap[app]].classList.add('active');
+    fb.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function showTab(panelId, tabEl) {
@@ -604,9 +664,8 @@ ${renderNav("install")}
     tabEl.classList.add('active');
   }
 
-  function copy(id, btn) {
-    const text = document.getElementById(id).textContent;
-    navigator.clipboard.writeText(text).then(() => {
+  function copyEl(id, btn) {
+    navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
       const orig = btn.textContent;
       btn.textContent = 'Copied';
       setTimeout(() => { btn.textContent = orig; }, 1800);
