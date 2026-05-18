@@ -491,14 +491,8 @@ function renderNav(active?: string): string {
   </div></nav>`;
 }
 
-function renderInstallPage(baseUrl: string, key: string): string {
+function renderInstallPage(baseUrl: string, _key: string): string {
   const mcpUrl = `${baseUrl}/api/mcp`;
-  const mcpUrlWithToken = `${mcpUrl}?token=${encodeURIComponent(key)}`;
-  const claudeConfig = JSON.stringify(
-    { mcpServers: { invariant: { url: mcpUrlWithToken } } },
-    null,
-    2,
-  );
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -540,20 +534,6 @@ ${SHARED_STYLES}
   .ic-verify{font-size:0.75rem;color:var(--muted);}
   .ic-verify code{color:var(--fg);font-family:var(--mono);}
 
-  /* Claude modal */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem;}
-  .modal-overlay.open{display:flex;}
-  .modal{background:var(--bg);border:2px solid var(--fg);padding:2rem 2rem 1.75rem;max-width:520px;width:100%;position:relative;box-shadow:-8px 8px 0 var(--amber);}
-  .modal-close{position:absolute;top:0.75rem;right:1rem;font-size:1.2rem;cursor:pointer;color:var(--muted);background:none;border:none;font-family:var(--mono);line-height:1;}
-  .modal-close:hover{color:var(--fg);}
-  .modal-title{font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1.25rem;color:var(--fg);}
-  .modal-step{display:flex;gap:0.75rem;align-items:flex-start;margin-bottom:0.9rem;font-size:0.82rem;color:var(--fg);line-height:1.5;}
-  .mstep-n{flex-shrink:0;width:1.3rem;height:1.3rem;background:var(--amber);color:#000;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
-  .modal-step code{color:var(--amber);font-family:var(--mono);word-break:break-all;}
-  pre{background:#0e0e0e;border:1px solid var(--line);padding:0.85rem 1rem;font-family:var(--mono);font-size:0.78rem;color:var(--fg);overflow-x:auto;white-space:pre;margin:0.5rem 0;}
-  .copy-btn{margin-top:0.5rem;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;color:var(--muted);background:none;border:1px solid var(--line);padding:0.35rem 0.8rem;font-family:var(--mono);transition:color .15s,border-color .15s;}
-  .copy-btn:hover{color:var(--fg);border-color:var(--fg);}
-
   /* verify section */
   .verify-box{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-top:2rem;}
   .verify-box-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
@@ -591,11 +571,18 @@ ${renderNav("install")}
     <div class="ic" id="claude-card" onclick="installClaude()">
       <div class="ic-logo">◆</div>
       <div class="ic-name">Claude Desktop</div>
-      <div class="ic-desc">Copies config to clipboard and opens instructions to paste into Claude Desktop settings.</div>
+      <div class="ic-desc">Opens Claude Desktop and connects via OAuth. No key entry needed.</div>
       <span class="ic-btn" id="claude-btn-label">Add to Claude →</span>
+      <div class="ic-confirm" id="claude-confirm">
+        <div class="ic-confirm-q">Check Claude Desktop <strong>Settings &rsaquo; Developer &rsaquo; MCP Servers</strong>. Is <strong>invariant</strong> listed as connected?</div>
+        <div class="ic-confirm-btns">
+          <button class="ic-yes" onclick="confirmYes('claude',event)">Yes, connected</button>
+          <button class="ic-no" onclick="confirmNo('claude',event)">No, it failed</button>
+        </div>
+      </div>
       <div class="ic-success" id="claude-success">
-        <div class="ic-success-msg">Config copied. Follow the steps in the panel above.</div>
-        <div class="ic-verify">After restarting Claude Desktop, ask: <code>list the available API providers</code></div>
+        <div class="ic-success-msg">Invariant added to Claude Desktop.</div>
+        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
       </div>
     </div>
   </div>
@@ -608,23 +595,9 @@ ${renderNav("install")}
   </div>
 </div>
 
-<!-- Claude Desktop modal -->
-<div class="modal-overlay" id="claude-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeClaudeModal()">✕</button>
-    <div class="modal-title">Add to Claude Desktop</div>
-    <div class="modal-step"><span class="mstep-n">1</span><span>Open this file in a text editor:<br><code>~/Library/Application Support/Claude/claude_desktop_config.json</code></span></div>
-    <div class="modal-step"><span class="mstep-n">2</span><span>Add the <code>mcpServers</code> block below (merge with existing content if you already have servers):</span></div>
-    <pre id="claude-config-pre"></pre>
-    <button class="copy-btn" id="claude-copy-btn" onclick="copyClaude(this)">Copy config</button>
-    <div class="modal-step" style="margin-top:1rem"><span class="mstep-n">3</span><span>Save the file and <strong>fully restart</strong> Claude Desktop (Quit from the menu bar, not just close the window).</span></div>
-    <div class="modal-step"><span class="mstep-n">4</span><span>Ask your agent: <code>list the available API providers</code></span></div>
-  </div>
-</div>
 
 <script>
-  const MCP_URL_TOKEN = ${JSON.stringify(mcpUrlWithToken)};
-  const CLAUDE_CONFIG = ${JSON.stringify(claudeConfig)};
+  const MCP_URL = ${JSON.stringify(mcpUrl)};
 
   function installCursor() {
     const card = document.getElementById('cursor-card');
@@ -632,7 +605,7 @@ ${renderNav("install")}
     card.classList.add('ic-pending');
     document.getElementById('cursor-btn-label').textContent = 'Opening Cursor...';
 
-    const config = JSON.stringify({ url: MCP_URL_TOKEN });
+    const config = JSON.stringify({ url: MCP_URL });
     const encoded = btoa(config);
     window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
 
@@ -642,23 +615,20 @@ ${renderNav("install")}
   }
 
   function installClaude() {
-    document.getElementById('claude-config-pre').textContent = CLAUDE_CONFIG;
-    document.getElementById('claude-modal').classList.add('open');
-    document.getElementById('claude-card').classList.add('ic-pending');
-    document.getElementById('claude-btn-label').textContent = 'See instructions →';
-    document.getElementById('claude-success').style.display = 'block';
-  }
+    const card = document.getElementById('claude-card');
+    if (card.classList.contains('ic-pending')) return;
+    card.classList.add('ic-pending');
+    document.getElementById('claude-btn-label').textContent = 'Opening Claude...';
 
-  function closeClaudeModal() {
-    document.getElementById('claude-modal').classList.remove('open');
-  }
+    // Claude Desktop discovers /.well-known/oauth-authorization-server,
+    // opens /authorize in the browser — auto-approved if session cookie present.
+    const config = JSON.stringify({ url: MCP_URL });
+    const encoded = btoa(config);
+    window.location.href = 'claude://add-mcp-server?name=invariant&config=' + encoded;
 
-  function copyClaude(btn) {
-    const text = document.getElementById('claude-config-pre').textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Copy config'; }, 2000);
-    });
+    setTimeout(() => {
+      document.getElementById('claude-confirm').style.display = 'block';
+    }, 5000);
   }
 
   function confirmYes(app, e) {
@@ -673,15 +643,7 @@ ${renderNav("install")}
     document.getElementById(app + '-confirm').style.display = 'none';
     document.getElementById(app + '-card').classList.remove('ic-pending');
     document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? 'Add to Cursor →' : 'Add to Claude →';
-    if (app === 'claude') {
-      document.getElementById('claude-modal').classList.add('open');
-    }
   }
-
-  // Close modal on overlay click
-  document.getElementById('claude-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeClaudeModal();
-  });
 </script>
 </body>
 </html>`;
@@ -2709,6 +2671,31 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "unsupported_response_type" }));
       }
+
+      // If the user already has a valid session cookie, auto-approve without
+      // showing the form — Claude Desktop OAuth completes transparently.
+      const cookieKey = getCookieValue(req.headers.cookie, "pl_key");
+      if (cookieKey) {
+        const sessionAccount = await getAccount(cookieKey);
+        if (sessionAccount) {
+          const redirectUri = get("redirect_uri");
+          const state = get("state");
+          const codeChallenge = get("code_challenge");
+          const autoCode = crypto.randomBytes(20).toString("hex");
+          pendingCodes.set(autoCode, {
+            apiKey: cookieKey,
+            redirectUri,
+            codeChallenge,
+            expiresAt: Date.now() + 5 * 60_000,
+          });
+          const cb = new URL(redirectUri);
+          if (state) cb.searchParams.set("state", state);
+          cb.searchParams.set("code", autoCode);
+          res.writeHead(302, { Location: cb.toString() });
+          return res.end();
+        }
+      }
+
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(
         renderAuthorizeForm({
