@@ -444,11 +444,15 @@ const SHARED_STYLES = `
   nav .nav-social a{display:flex;align-items:center;color:var(--muted);transition:color 0.2s;}
   nav .nav-social a:hover{color:var(--amber);}
   nav .nav-social svg{width:16px;height:16px;fill:currentColor;}
+  nav .nav-right{display:flex;align-items:center;gap:2rem;}
   nav .links{display:flex;gap:2.25rem;font-size:0.8rem;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;}
   nav .links a{color:var(--muted);position:relative;padding:0.25rem 0;}
   nav .links a::after{content:'';position:absolute;left:0;bottom:-4px;width:0;height:2px;background:var(--amber);transition:width .25s ease;}
   nav .links a:hover, nav .links a.active{color:var(--fg);}
   nav .links a:hover::after, nav .links a.active::after{width:100%;}
+  nav .nav-cta{font-family:var(--mono);font-size:0.8rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:0.6rem 1.35rem;border:2px solid var(--fg);color:#000;background:var(--fg);transition:all .18s ease;white-space:nowrap;}
+  nav .nav-cta:hover,nav .nav-cta.nav-cta-active{background:var(--amber);border-color:var(--amber);color:#000;transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--fg);}
+  @media(max-width:640px){nav .links{display:none;}nav .nav-cta{font-size:0.72rem;padding:0.5rem 1rem;}}
 
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
   @keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
@@ -483,10 +487,11 @@ function renderNav(active?: string): string {
         </a>
       </div>
     </div>
-    <div class="links">
-      <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
-      <a href="/install"${active === "install" ? ' class="active"' : ""} style="color:var(--amber)">INSTALL</a>
-      <a href="/login"${active === "login" ? ' class="active"' : ""}>LOGIN</a>
+    <div class="nav-right">
+      <div class="links">
+        <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
+      </div>
+      <a href="/login" class="nav-cta${active === "login" || active === "install" ? " nav-cta-active" : ""}">Sign Up / Log In →</a>
     </div>
   </div></nav>`;
 }
@@ -507,17 +512,17 @@ ${SHARED_STYLES}
   .install-h1{font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.6rem);line-height:1.1;color:var(--fg);margin-bottom:1.5rem;}
   .install-sub{font-size:0.9rem;color:var(--muted);line-height:1.6;margin-bottom:3rem;max-width:480px;}
 
-  .install-cards{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;}
-  @media(max-width:580px){.install-cards{grid-template-columns:1fr;}}
+  .install-cards{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;}
+  @media(max-width:600px){.install-cards{grid-template-columns:1fr;}}
 
-  .ic{border:2px solid var(--line-strong);padding:2rem 1.75rem;cursor:pointer;position:relative;transition:border-color .18s,transform .18s,box-shadow .18s;background:var(--bg);}
-  .ic:hover:not(.ic-pending){border-color:var(--fg);transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
+  .ic{border:2px solid var(--line-strong);padding:3rem 2.5rem 2.5rem;cursor:pointer;position:relative;transition:border-color .18s,transform .18s,box-shadow .18s;background:var(--bg);}
+  .ic:hover:not(.ic-pending){border-color:var(--fg);transform:translate(-4px,-4px);box-shadow:8px 8px 0 var(--amber);}
   .ic.ic-pending{border-color:var(--amber);cursor:default;}
-  .ic-logo{font-size:1.6rem;margin-bottom:1rem;}
-  .ic-name{font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;color:var(--fg);}
-  .ic-desc{font-size:0.78rem;color:var(--muted);line-height:1.5;margin-bottom:1.5rem;}
-  .ic-btn{display:inline-flex;align-items:center;gap:0.5rem;font-size:0.78rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#000;background:var(--fg);padding:0.6rem 1.1rem;border:2px solid var(--fg);transition:background .15s,color .15s;pointer-events:none;}
-  .ic:hover:not(.ic-locked):not(.ic-pending) .ic-btn{background:var(--amber);border-color:var(--amber);}
+  .ic-logo{font-size:2.8rem;margin-bottom:1.25rem;line-height:1;}
+  .ic-name{font-family:var(--serif);font-size:1.8rem;font-weight:400;letter-spacing:-0.02em;margin-bottom:0.6rem;color:var(--fg);}
+  .ic-desc{font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:2rem;}
+  .ic-btn{display:inline-flex;align-items:center;gap:0.6rem;font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#000;background:var(--fg);padding:0.9rem 1.75rem;border:2px solid var(--fg);transition:background .15s,color .15s;pointer-events:none;width:100%;justify-content:center;}
+  .ic:hover:not(.ic-pending) .ic-btn{background:var(--amber);border-color:var(--amber);}
 
   /* post-click confirm */
   .ic-confirm{display:none;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:1rem;}
@@ -772,18 +777,10 @@ ${SHARED_STYLES}
   .status-card .v.live::before{content:'● ';animation:pulse 1.4s ease-in-out infinite;}
 
   /* ── WAITLIST ── */
-  .waitlist-hero{max-width:620px;margin-top:3rem;animation:rise 0.95s 0.55s ease both;}
-  .waitlist-hero .wl-label{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:0.95rem;display:flex;align-items:center;gap:0.75rem;}
-  .waitlist-hero .wl-label::before{content:'';width:42px;height:2px;background:var(--amber);}
-  .waitlist-hero form{display:flex;gap:0;border:2px solid var(--fg);background:#0a0a0a;transition:box-shadow 0.2s, transform 0.2s;}
-  .waitlist-hero form:focus-within{box-shadow:-8px 8px 0 var(--amber);transform:translate(-2px,-2px);}
-  .waitlist-hero input[type="email"]{flex:1;padding:1.1rem 1.25rem;background:transparent;border:none;border-right:2px solid var(--fg);color:var(--fg);font-size:0.95rem;outline:none;font-family:var(--mono);}
-  .waitlist-hero input[type="email"]::placeholder{color:#55524a;}
-  .waitlist-hero .btn-wait{padding:1.1rem 1.9rem;background:var(--fg);color:#000;border:none;font-size:0.8rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.14em;font-family:var(--mono);transition:background 0.2s;}
-  .waitlist-hero .btn-wait:hover{background:var(--amber);}
-  .waitlist-hero .msg{font-size:0.75rem;margin-top:1rem;min-height:1.2em;font-weight:500;text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono);}
-  .waitlist-hero .msg.ok{color:var(--amber);}
-  .waitlist-hero .msg.err{color:var(--red);}
+  .hero-cta-block{margin-top:3rem;animation:rise 0.95s 0.55s ease both;}
+  .hero-cta-btn{display:inline-flex;align-items:center;font-family:var(--mono);font-size:1.05rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:1.2rem 2.75rem;background:var(--amber);color:#000;border:2px solid var(--amber);transition:all .2s ease;text-decoration:none;position:relative;}
+  .hero-cta-btn:hover{background:var(--fg);border-color:var(--fg);color:#000;transform:translate(-4px,-4px);box-shadow:8px 8px 0 var(--amber);}
+  .hero-cta-sub{font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-top:1rem;letter-spacing:0.12em;text-transform:uppercase;}
 
   /* ── STATS STRIP ── */
   .stats-strip{border-top:2px solid var(--fg);border-bottom:2px solid var(--fg);margin:5rem 0 6rem;background:#0a0a0a;display:grid;grid-template-columns:repeat(4,1fr);position:relative;}
@@ -1030,13 +1027,13 @@ ${renderNav()}
     <span>zero .env files on your machine</span>
     <span>zero provider accounts</span>
     <span>built for agents, not humans</span>
-    <span>alpha drops soon</span>
+    <span>live now · free tier available</span>
     <span>one key · every api</span>
     <span>the api layer, subtracted</span>
     <span>zero .env files on your machine</span>
     <span>zero provider accounts</span>
     <span>built for agents, not humans</span>
-    <span>alpha drops soon</span>
+    <span>live now · free tier available</span>
   </div>
 </div>
 
@@ -1051,13 +1048,9 @@ ${renderNav()}
         <p class="hero-sub">
           the <strong>mcp gateway your agent needs</strong>. one key unlocks every provider we've already signed up for. no raw tokens, no rate limiters, no vendor dashboards. ever.
         </p>
-        <div class="waitlist-hero">
-          <div class="wl-label">get the key before anyone else</div>
-          <form id="waitlist-form">
-            <input type="email" name="email" placeholder="you@working.hard" required>
-            <button type="submit" class="btn-wait">claim →</button>
-          </form>
-          <div class="msg" id="waitlist-msg"></div>
+        <div class="hero-cta-block">
+          <a href="/login" class="hero-cta-btn">Get your free key →</a>
+          <div class="hero-cta-sub">Free forever · No credit card · Instant access</div>
         </div>
         <div class="hero-meta">
           <span>no auth hell</span>
@@ -1176,7 +1169,8 @@ ${renderNav()}
   <div class="install-wrap reveal">
     <div class="install-left">
       <h3>install, <em>then forget.</em></h3>
-      <p>three lines in your terminal. every api we've already signed up for, handed to your agent. you never see a key again.</p>
+      <p>one click. works in Cursor and Claude Desktop. no terminal, no config files, no api keys to copy.</p>
+      <a href="/login" class="btn btn-primary" style="display:inline-flex;margin-top:1.5rem;font-size:0.85rem;padding:1rem 2rem;">Connect your agent →</a>
     </div>
     <div class="terminal">
       <div><span class="prompt">$</span> <span class="cmd">claude mcp add invariant \\</span></div>
@@ -1276,10 +1270,12 @@ ${renderNav()}
 </div>
 
 <script>
-  // cookie check
+  // cookie check — logged-in users go to install
   if (document.cookie.match(/pl_key=/)) {
-    var links = document.querySelectorAll('nav .links a');
-    links.forEach(function(a) { if (a.textContent === 'LOGIN') { a.href = '/dashboard'; a.textContent = 'DASHBOARD'; } });
+    var navCta = document.querySelector('nav .nav-cta');
+    if (navCta) { navCta.href = '/install'; navCta.textContent = 'Open Install →'; }
+    var heroCta = document.querySelector('.hero-cta-btn');
+    if (heroCta) { heroCta.href = '/install'; heroCta.textContent = 'Open Install →'; }
   }
 
   // ── scroll reveal observer ──
@@ -1862,9 +1858,9 @@ ${renderNav("login")}
 <div class="copied-toast" id="copied-toast">Copied</div>
 <script>
 (function() {
-  // If already signed in, go to dashboard
+  // If already signed in, go to install
   if (document.cookie.match(/pl_key=/)) {
-    window.location.href = '/dashboard';
+    window.location.href = '/install';
     return;
   }
 
