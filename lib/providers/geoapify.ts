@@ -92,7 +92,7 @@ export class GeoapifyProvider implements Provider {
     try {
       switch (action) {
         case "geocode": {
-          const query = params.query as string;
+          const query = (params.query as string) || (params.text as string);
           if (!query)
             return {
               success: false,

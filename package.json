@@ -11,7 +11,8 @@
     "start": "node dist/dev-server.js",
     "dev": "npx tsx src/index.ts",
     "test": "npx tsx test.ts",
-    "test:prod": "PL_BACKEND_URL=$PL_BACKEND_URL npx tsx test.ts"
+    "test:prod": "PL_BACKEND_URL=$PL_BACKEND_URL npx tsx test.ts",
+    "viz": "npx tsx viz.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
