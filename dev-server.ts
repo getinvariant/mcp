@@ -712,14 +712,14 @@ ${renderNav("install")}
       <div class="ic-desc">One command. Installs the MCP and opens your live routing dashboard automatically.</div>
       <div class="manual-steps" style="display:block;border-top:none;padding-top:0;margin-top:1.5rem;">
         <div class="mstep"><span class="mstep-n">1</span><span>Open your terminal and run:</span></div>
-        <div class="config-snippet" onclick="event.stopPropagation()">
+        <div class="config-snippet" onclick="event.stopPropagation()" style="margin-bottom:1.5rem;">
           <div class="config-snippet-header">
             <span>terminal</span>
             <button class="config-snippet-copy" onclick="copySnippet('claude-snippet',event)">Copy</button>
           </div>
           <pre id="claude-snippet">curl -fsSL "${baseUrl}/api/setup?key=<span class='hl'>${sessionKey}</span>" | sh</pre>
         </div>
-        <div class="mstep"><span class="mstep-n">2</span><span>Your live routing dashboard opens in a browser tab automatically. Start a new Claude conversation.</span></div>
+        <div class="mstep" style="margin-bottom:1.25rem;"><span class="mstep-n">2</span><span>Your live routing dashboard opens in a browser tab automatically. Start a new Claude conversation.</span></div>
         <div class="mstep"><span class="mstep-n">3</span><span>Ask Claude to build something (e.g. <code>build a map app that geocodes addresses</code>). Watch the dashboard update in real time as calls route through.</span></div>
       </div>
     </div>
