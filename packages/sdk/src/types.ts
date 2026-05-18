@@ -1,10 +1,24 @@
-export type Source = "geoapify" | "mapbox" | "nominatim";
-export type TaskType = "places:geocode";
+export type Source =
+  | "geoapify"
+  | "mapbox"
+  | "nominatim"
+  | "openweather"
+  | "openmeteo"
+  | "coingecko"
+  | "binance"
+  | "finnhub"
+  | "alphavantage";
+
+export type TaskType =
+  | "places:geocode"
+  | "env:weather"
+  | "finance:price:crypto"
+  | "finance:price:stock";
 
 export type RouteFetchRequest = {
   source: Source;
   task_type: TaskType;
-  params: { text: string; [k: string]: any };
+  params: Record<string, any>;
 };
 
 export type RouteFetchResponse = {

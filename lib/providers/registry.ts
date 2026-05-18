@@ -13,6 +13,9 @@ import { CharityProvider } from "./charity.js";
 import { GeoapifyProvider } from "./geoapify.js";
 import { MapboxProvider } from "./mapbox.js";
 import { OpenStreetMapProvider } from "./openstreetmap.js";
+import { AlphaVantageProvider } from "./alpha-vantage.js";
+import { BinanceProvider } from "./binance.js";
+import { OpenMeteoProvider } from "./open-meteo.js";
 import { OpenLibraryProvider } from "./open-library.js";
 import { KhanAcademyProvider } from "./khan-academy.js";
 import { UnsplashProvider } from "./unsplash.js";
@@ -34,11 +37,14 @@ function ensureInitialized() {
     // Finance
     new CoinGeckoProvider(),
     new FinnhubProvider(),
+    new BinanceProvider(),
+    new AlphaVantageProvider(),
     new WorldBankProvider(),
     // Social Impact
     new CharityProvider(),
     // Environment
     new EnvironmentProvider(),
+    new OpenMeteoProvider(),
     // Maps
     new GeoapifyProvider(),
     new MapboxProvider(),

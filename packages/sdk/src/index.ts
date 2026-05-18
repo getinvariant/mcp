@@ -8,6 +8,12 @@ const INTERCEPT_HOSTS = new Set([
   "api.geoapify.com",
   "api.mapbox.com",
   "nominatim.openstreetmap.org",
+  "api.openweathermap.org",
+  "api.open-meteo.com",
+  "api.coingecko.com",
+  "api.binance.com",
+  "finnhub.io",
+  "www.alphavantage.co",
 ]);
 
 let originalFetch: typeof fetch | null = null;
