@@ -284,6 +284,18 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function getCookieValue(
+  cookieHeader: string | undefined,
+  name: string,
+): string | undefined {
+  if (!cookieHeader) return undefined;
+  for (const part of cookieHeader.split(";")) {
+    const [k, ...v] = part.trim().split("=");
+    if (k.trim() === name) return decodeURIComponent(v.join("="));
+  }
+  return undefined;
+}
+
 function verifyPKCE(verifier: string, challenge: string): boolean {
   const hash = crypto.createHash("sha256").update(verifier).digest("base64url");
   return hash === challenge;
@@ -498,11 +510,15 @@ const SHARED_STYLES = `
   nav .nav-social a{display:flex;align-items:center;color:var(--muted);transition:color 0.2s;}
   nav .nav-social a:hover{color:var(--amber);}
   nav .nav-social svg{width:16px;height:16px;fill:currentColor;}
+  nav .nav-right{display:flex;align-items:center;gap:2rem;}
   nav .links{display:flex;gap:2.25rem;font-size:0.8rem;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;}
   nav .links a{color:var(--muted);position:relative;padding:0.25rem 0;}
   nav .links a::after{content:'';position:absolute;left:0;bottom:-4px;width:0;height:2px;background:var(--amber);transition:width .25s ease;}
   nav .links a:hover, nav .links a.active{color:var(--fg);}
   nav .links a:hover::after, nav .links a.active::after{width:100%;}
+  nav .nav-cta{font-family:var(--mono);font-size:0.8rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:0.6rem 1.35rem;border:2px solid var(--fg);color:#000;background:var(--fg);transition:all .18s ease;white-space:nowrap;}
+  nav .nav-cta:hover,nav .nav-cta.nav-cta-active{background:var(--amber);border-color:var(--amber);color:#000;transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--fg);}
+  @media(max-width:640px){nav .links{display:none;}nav .nav-cta{font-size:0.72rem;padding:0.5rem 1rem;}}
 
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
   @keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
@@ -537,11 +553,171 @@ function renderNav(active?: string): string {
         </a>
       </div>
     </div>
-    <div class="links">
-      <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
-      <a href="/login"${active === "login" ? ' class="active"' : ""}>LOGIN</a>
+    <div class="nav-right">
+      <div class="links">
+        <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
+      </div>
+      <a href="/login" class="nav-cta${active === "login" || active === "install" ? " nav-cta-active" : ""}">Sign Up / Log In →</a>
     </div>
   </div></nav>`;
+}
+
+function renderInstallPage(baseUrl: string, _key: string): string {
+  const mcpUrl = `${baseUrl}/api/mcp`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Invariant | Install</title>
+<style>
+${SHARED_STYLES}
+
+  .install-wrap{max-width:600px;margin:0 auto;padding:5rem 1.5rem 8rem;}
+  .install-eyebrow{font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;}
+  .install-h1{font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.6rem);line-height:1.1;color:var(--fg);margin-bottom:1.5rem;}
+  .install-sub{font-size:0.9rem;color:var(--muted);line-height:1.6;margin-bottom:3rem;max-width:480px;}
+
+  .install-cards{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;}
+  @media(max-width:600px){.install-cards{grid-template-columns:1fr;}}
+
+  .ic{border:2px solid var(--line-strong);padding:3rem 2.5rem 2.5rem;cursor:pointer;position:relative;transition:border-color .18s,transform .18s,box-shadow .18s;background:var(--bg);}
+  .ic:hover:not(.ic-pending){border-color:var(--fg);transform:translate(-4px,-4px);box-shadow:8px 8px 0 var(--amber);}
+  .ic.ic-pending{border-color:var(--amber);cursor:default;}
+  .ic-logo{font-size:2.8rem;margin-bottom:1.25rem;line-height:1;}
+  .ic-name{font-family:var(--serif);font-size:1.8rem;font-weight:400;letter-spacing:-0.02em;margin-bottom:0.6rem;color:var(--fg);}
+  .ic-desc{font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:2rem;}
+  .ic-btn{display:inline-flex;align-items:center;gap:0.6rem;font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#000;background:var(--fg);padding:0.9rem 1.75rem;border:2px solid var(--fg);transition:background .15s,color .15s;pointer-events:none;width:100%;justify-content:center;}
+  .ic:hover:not(.ic-pending) .ic-btn{background:var(--amber);border-color:var(--amber);}
+
+  /* post-click confirm */
+  .ic-confirm{display:none;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:1rem;}
+  .ic-confirm-q{font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem;line-height:1.5;}
+  .ic-confirm-btns{display:flex;gap:0.6rem;flex-wrap:wrap;}
+  .ic-yes,.ic-no{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.4rem 0.85rem;cursor:pointer;font-family:var(--mono);border:1px solid var(--line);background:none;transition:all .15s;}
+  .ic-yes{color:var(--amber);border-color:var(--amber);}
+  .ic-yes:hover{background:var(--amber);color:#000;}
+  .ic-no{color:var(--muted);}
+  .ic-no:hover{color:var(--fg);border-color:var(--fg);}
+
+  .ic-success{display:none;margin-top:1.25rem;border-top:1px solid var(--amber);padding-top:1rem;}
+  .ic-success-msg{font-size:0.8rem;color:var(--amber);margin-bottom:0.4rem;}
+  .ic-verify{font-size:0.75rem;color:var(--muted);}
+  .ic-verify code{color:var(--fg);font-family:var(--mono);}
+
+  /* verify section */
+  .verify-box{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-top:2rem;}
+  .verify-box-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+  .vstep{display:flex;gap:0.85rem;align-items:flex-start;margin-bottom:0.7rem;font-size:0.82rem;color:var(--fg);line-height:1.5;}
+  .vstep-n{flex-shrink:0;width:1.4rem;height:1.4rem;background:var(--amber);color:#000;font-size:0.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .vstep code{color:var(--amber);font-family:var(--mono);}
+</style>
+</head>
+<body>
+${renderNav("install")}
+
+<div class="install-wrap">
+  <p class="install-eyebrow">One-click setup</p>
+  <h1 class="install-h1">Add Invariant<br>to your agent</h1>
+  <p class="install-sub">Click your agent below. No terminal, no OAuth prompt, no key to copy.</p>
+
+  <div class="install-cards">
+    <div class="ic" id="cursor-card" onclick="installCursor()">
+      <div class="ic-logo">⌨</div>
+      <div class="ic-name">Cursor</div>
+      <div class="ic-desc">Opens Cursor and registers the server with your key. No auth prompt.</div>
+      <span class="ic-btn" id="cursor-btn-label">Add to Cursor →</span>
+      <div class="ic-confirm" id="cursor-confirm">
+        <div class="ic-confirm-q">Check Cursor <strong>Settings &rsaquo; MCP</strong>. Is <strong>invariant</strong> listed as connected?</div>
+        <div class="ic-confirm-btns">
+          <button class="ic-yes" onclick="confirmYes('cursor',event)">Yes, connected</button>
+          <button class="ic-no" onclick="confirmNo('cursor',event)">No, it failed</button>
+        </div>
+      </div>
+      <div class="ic-success" id="cursor-success">
+        <div class="ic-success-msg">Invariant added to Cursor.</div>
+        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
+      </div>
+    </div>
+    <div class="ic" id="claude-card" onclick="installClaude()">
+      <div class="ic-logo">◆</div>
+      <div class="ic-name">Claude Desktop</div>
+      <div class="ic-desc">Opens Claude Desktop and connects via OAuth. No key entry needed.</div>
+      <span class="ic-btn" id="claude-btn-label">Add to Claude →</span>
+      <div class="ic-confirm" id="claude-confirm">
+        <div class="ic-confirm-q">Check Claude Desktop <strong>Settings &rsaquo; Developer &rsaquo; MCP Servers</strong>. Is <strong>invariant</strong> listed as connected?</div>
+        <div class="ic-confirm-btns">
+          <button class="ic-yes" onclick="confirmYes('claude',event)">Yes, connected</button>
+          <button class="ic-no" onclick="confirmNo('claude',event)">No, it failed</button>
+        </div>
+      </div>
+      <div class="ic-success" id="claude-success">
+        <div class="ic-success-msg">Invariant added to Claude Desktop.</div>
+        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="verify-box">
+    <div class="verify-box-label">How to confirm it worked</div>
+    <div class="vstep"><span class="vstep-n">1</span><span>Open your agent and start a new conversation.</span></div>
+    <div class="vstep"><span class="vstep-n">2</span><span>Ask: <code>list the available API providers</code></span></div>
+    <div class="vstep"><span class="vstep-n">3</span><span>You should see a list including OpenAI, Anthropic, Finnhub, etc. If it says it doesn't have that tool, restart the app and try again.</span></div>
+  </div>
+</div>
+
+
+<script>
+  const MCP_URL = ${JSON.stringify(mcpUrl)};
+
+  function installCursor() {
+    const card = document.getElementById('cursor-card');
+    if (card.classList.contains('ic-pending')) return;
+    card.classList.add('ic-pending');
+    document.getElementById('cursor-btn-label').textContent = 'Opening Cursor...';
+
+    const config = JSON.stringify({ url: MCP_URL });
+    const encoded = btoa(config);
+    window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
+
+    setTimeout(() => {
+      document.getElementById('cursor-confirm').style.display = 'block';
+    }, 5000);
+  }
+
+  function installClaude() {
+    const card = document.getElementById('claude-card');
+    if (card.classList.contains('ic-pending')) return;
+    card.classList.add('ic-pending');
+    document.getElementById('claude-btn-label').textContent = 'Opening Claude...';
+
+    // Claude Desktop discovers /.well-known/oauth-authorization-server,
+    // opens /authorize in the browser — auto-approved if session cookie present.
+    const config = JSON.stringify({ url: MCP_URL });
+    const encoded = btoa(config);
+    window.location.href = 'claude://add-mcp-server?name=invariant&config=' + encoded;
+
+    setTimeout(() => {
+      document.getElementById('claude-confirm').style.display = 'block';
+    }, 5000);
+  }
+
+  function confirmYes(app, e) {
+    e.stopPropagation();
+    document.getElementById(app + '-confirm').style.display = 'none';
+    document.getElementById(app + '-success').style.display = 'block';
+    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? '✓ Added to Cursor' : '✓ Added to Claude';
+  }
+
+  function confirmNo(app, e) {
+    e.stopPropagation();
+    document.getElementById(app + '-confirm').style.display = 'none';
+    document.getElementById(app + '-card').classList.remove('ic-pending');
+    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? 'Add to Cursor →' : 'Add to Claude →';
+  }
+</script>
+</body>
+</html>`;
 }
 
 function renderHomepage(): string {
@@ -667,18 +843,10 @@ ${SHARED_STYLES}
   .status-card .v.live::before{content:'● ';animation:pulse 1.4s ease-in-out infinite;}
 
   /* ── WAITLIST ── */
-  .waitlist-hero{max-width:620px;margin-top:3rem;animation:rise 0.95s 0.55s ease both;}
-  .waitlist-hero .wl-label{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:0.95rem;display:flex;align-items:center;gap:0.75rem;}
-  .waitlist-hero .wl-label::before{content:'';width:42px;height:2px;background:var(--amber);}
-  .waitlist-hero form{display:flex;gap:0;border:2px solid var(--fg);background:#0a0a0a;transition:box-shadow 0.2s, transform 0.2s;}
-  .waitlist-hero form:focus-within{box-shadow:-8px 8px 0 var(--amber);transform:translate(-2px,-2px);}
-  .waitlist-hero input[type="email"]{flex:1;padding:1.1rem 1.25rem;background:transparent;border:none;border-right:2px solid var(--fg);color:var(--fg);font-size:0.95rem;outline:none;font-family:var(--mono);}
-  .waitlist-hero input[type="email"]::placeholder{color:#55524a;}
-  .waitlist-hero .btn-wait{padding:1.1rem 1.9rem;background:var(--fg);color:#000;border:none;font-size:0.8rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.14em;font-family:var(--mono);transition:background 0.2s;}
-  .waitlist-hero .btn-wait:hover{background:var(--amber);}
-  .waitlist-hero .msg{font-size:0.75rem;margin-top:1rem;min-height:1.2em;font-weight:500;text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono);}
-  .waitlist-hero .msg.ok{color:var(--amber);}
-  .waitlist-hero .msg.err{color:var(--red);}
+  .hero-cta-block{margin-top:3rem;animation:rise 0.95s 0.55s ease both;}
+  .hero-cta-btn{display:inline-flex;align-items:center;font-family:var(--mono);font-size:1.05rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:1.2rem 2.75rem;background:var(--amber);color:#000;border:2px solid var(--amber);transition:all .2s ease;text-decoration:none;position:relative;}
+  .hero-cta-btn:hover{background:var(--fg);border-color:var(--fg);color:#000;transform:translate(-4px,-4px);box-shadow:8px 8px 0 var(--amber);}
+  .hero-cta-sub{font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-top:1rem;letter-spacing:0.12em;text-transform:uppercase;}
 
   /* ── STATS STRIP ── */
   .stats-strip{border-top:2px solid var(--fg);border-bottom:2px solid var(--fg);margin:5rem 0 6rem;background:#0a0a0a;display:grid;grid-template-columns:repeat(4,1fr);position:relative;}
@@ -925,13 +1093,13 @@ ${renderNav()}
     <span>zero .env files on your machine</span>
     <span>zero provider accounts</span>
     <span>built for agents, not humans</span>
-    <span>alpha drops soon</span>
+    <span>live now · free tier available</span>
     <span>one key · every api</span>
     <span>the api layer, subtracted</span>
     <span>zero .env files on your machine</span>
     <span>zero provider accounts</span>
     <span>built for agents, not humans</span>
-    <span>alpha drops soon</span>
+    <span>live now · free tier available</span>
   </div>
 </div>
 
@@ -946,13 +1114,9 @@ ${renderNav()}
         <p class="hero-sub">
           the <strong>mcp gateway your agent needs</strong>. one key unlocks every provider we've already signed up for. no raw tokens, no rate limiters, no vendor dashboards. ever.
         </p>
-        <div class="waitlist-hero">
-          <div class="wl-label">get the key before anyone else</div>
-          <form id="waitlist-form">
-            <input type="email" name="email" placeholder="you@working.hard" required>
-            <button type="submit" class="btn-wait">claim →</button>
-          </form>
-          <div class="msg" id="waitlist-msg"></div>
+        <div class="hero-cta-block">
+          <a href="/login" class="hero-cta-btn">Get your free key →</a>
+          <div class="hero-cta-sub">Free forever · No credit card · Instant access</div>
         </div>
         <div class="hero-meta">
           <span>no auth hell</span>
@@ -1071,7 +1235,8 @@ ${renderNav()}
   <div class="install-wrap reveal">
     <div class="install-left">
       <h3>install, <em>then forget.</em></h3>
-      <p>three lines in your terminal. every api we've already signed up for, handed to your agent. you never see a key again.</p>
+      <p>one click. works in Cursor and Claude Desktop. no terminal, no config files, no api keys to copy.</p>
+      <a href="/login" class="btn btn-primary" style="display:inline-flex;margin-top:1.5rem;font-size:0.85rem;padding:1rem 2rem;">Connect your agent →</a>
     </div>
     <div class="terminal">
       <div><span class="prompt">$</span> <span class="cmd">claude mcp add invariant \\</span></div>
@@ -1171,12 +1336,6 @@ ${renderNav()}
 </div>
 
 <script>
-  // cookie check
-  if (document.cookie.match(/pl_key=/)) {
-    var links = document.querySelectorAll('nav .links a');
-    links.forEach(function(a) { if (a.textContent === 'LOGIN') { a.href = '/dashboard'; a.textContent = 'DASHBOARD'; } });
-  }
-
   // ── scroll reveal observer ──
   function animateCountUp(el){
     if (el.dataset.counted === '1') return;
@@ -1757,9 +1916,9 @@ ${renderNav("login")}
 <div class="copied-toast" id="copied-toast">Copied</div>
 <script>
 (function() {
-  // If already signed in, go to dashboard
+  // If already signed in, go to install
   if (document.cookie.match(/pl_key=/)) {
-    window.location.href = '/dashboard';
+    window.location.href = '/install';
     return;
   }
 
@@ -1843,13 +2002,20 @@ ${renderNav("login")}
       });
       var data = await res.json();
       if (!res.ok) {
+        // No account found — auto-switch to signup instead of showing an error
+        if (mode === 'signin' && res.status === 404) {
+          applyMode('signup');
+          errEl.textContent = 'No account for that email — fill in below to create one';
+          return;
+        }
         var fallback = mode === 'signup' ? 'Signup failed' : 'Sign in failed';
         errEl.textContent = data.error || fallback;
         return;
       }
+      var next = new URLSearchParams(window.location.search).get('next');
+      var dest = (next && next.startsWith('/')) ? next : '/install';
       if (mode === 'signin') {
-        // Cookie already set by server; jump to dashboard.
-        window.location.href = '/dashboard';
+        window.location.href = dest;
         return;
       }
       // signup — flash the new key, then redirect
@@ -1863,7 +2029,7 @@ ${renderNav("login")}
         setTimeout(function() { t.classList.remove('show'); }, 1200);
       };
       flash.classList.add('visible');
-      setTimeout(function() { window.location.href = '/dashboard'; }, 3000);
+      setTimeout(function() { window.location.href = dest; }, 3000);
     } catch (e) { errEl.textContent = 'Connection error'; }
     finally { btnEl.disabled = false; btnEl.textContent = originalText; }
   }
@@ -1881,7 +2047,8 @@ ${renderNav("login")}
       var res = await fetch('/api/usage', { headers: { 'x-pl-key': key } });
       if (!res.ok) { errEl.textContent = 'Invalid key'; return; }
       setCookie('pl_key', key);
-      window.location.href = '/dashboard';
+      var nextDest = new URLSearchParams(window.location.search).get('next');
+      window.location.href = (nextDest && nextDest.startsWith('/')) ? nextDest : '/install';
     } catch (e) { errEl.textContent = 'Connection error'; }
   }
 })();
@@ -2563,6 +2730,31 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "unsupported_response_type" }));
       }
+
+      // If the user already has a valid session cookie, auto-approve without
+      // showing the form — Claude Desktop OAuth completes transparently.
+      const cookieKey = getCookieValue(req.headers.cookie, "pl_key");
+      if (cookieKey) {
+        const sessionAccount = await getAccount(cookieKey);
+        if (sessionAccount) {
+          const redirectUri = get("redirect_uri");
+          const state = get("state");
+          const codeChallenge = get("code_challenge");
+          const autoCode = crypto.randomBytes(20).toString("hex");
+          pendingCodes.set(autoCode, {
+            apiKey: cookieKey,
+            redirectUri,
+            codeChallenge,
+            expiresAt: Date.now() + 5 * 60_000,
+          });
+          const cb = new URL(redirectUri);
+          if (state) cb.searchParams.set("state", state);
+          cb.searchParams.set("code", autoCode);
+          res.writeHead(302, { Location: cb.toString() });
+          return res.end();
+        }
+      }
+
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(
         renderAuthorizeForm({
@@ -2666,6 +2858,12 @@ const server = http.createServer(async (req, res) => {
     (req.headers as any)["x-pl-key"] = authHeader.slice(7);
   }
 
+  // Lift ?token= query param → x-pl-key (used by Claude Desktop which ignores headers)
+  const tokenParam = querystring.parse(qs || "").token as string | undefined;
+  if (tokenParam && !req.headers["x-pl-key"]) {
+    (req.headers as any)["x-pl-key"] = tokenParam;
+  }
+
   const fakeReq: any = {
     method: req.method,
     headers: req.headers,
@@ -2685,6 +2883,16 @@ const server = http.createServer(async (req, res) => {
   if (path === "/how-it-works") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderHowItWorks());
+  }
+
+  if (path === "/install") {
+    const sessionKey = getCookieValue(req.headers.cookie, "pl_key");
+    if (!sessionKey) {
+      res.writeHead(302, { Location: "/login?next=/install" });
+      return res.end();
+    }
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderInstallPage(getBaseUrl(req), sessionKey));
   }
 
   if (path === "/login") {
@@ -2724,28 +2932,42 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ error: "Invalid API key" }));
     }
 
-    // Check for existing session
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    // SSE reconnection: GET on an existing session means the client is trying
+    // to re-open its event stream. The SDK returns 409 if a stream is already
+    // open, which causes Cursor to exhaust retries and disconnect. Close the
+    // stale session so the client's next POST re-initializes cleanly.
+    if (req.method === "GET" && sessionId && mcpSessions.has(sessionId)) {
+      const stale = mcpSessions.get(sessionId)!;
+      try {
+        await stale.transport.close();
+      } catch {}
+      mcpSessions.delete(sessionId);
+      res.writeHead(404, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "session_expired" }));
+    }
+
+    // All other requests on an existing session
     if (sessionId && mcpSessions.has(sessionId)) {
       return mcpSessions
         .get(sessionId)!
         .transport.handleRequest(req, res, body);
     }
 
-    // New session (must be initialize request or POST without session)
+    // New session (must be initialize request)
     if (req.method === "POST") {
       const session = await createMcpSession(account.id);
       await session.transport.handleRequest(req, res, body);
-      // Store session after initialize sets the session ID
       if (session.transport.sessionId) {
         mcpSessions.set(session.transport.sessionId, session);
       }
       return;
     }
 
-    // GET for SSE stream on existing session
+    // GET with unknown session
     if (req.method === "GET" && sessionId) {
-      res.writeHead(400, { "Content-Type": "application/json" });
+      res.writeHead(404, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Session not found" }));
     }
 
