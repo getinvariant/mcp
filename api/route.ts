@@ -8,6 +8,7 @@ import {
 
 const ACTION_BY_PROVIDER: Record<string, Record<string, string>> = {
   "finance:price": { coingecko: "coin_price", finnhub: "stock_quote" },
+  "places:geocode": { geoapify: "geocode", mapbox: "geocode" },
 };
 
 const COINGECKO_SLUG: Record<string, string> = {
@@ -125,7 +126,7 @@ export async function handleRoute(
   const perProvider = ACTION_BY_PROVIDER[taskType];
   if (!perProvider) throw new Error(`no actions defined for ${taskType}`);
 
-  const { chosen } = await selectProvider(accountId, taskType);
+  const { chosen } = await selectProvider(accountId, taskType, "global");
   const action = perProvider[chosen];
   const provider = getProvider(chosen);
   if (!provider || !action) {
@@ -159,6 +160,7 @@ export async function handleRoute(
     provider: chosen,
     success,
     latencyMs,
+    context: "global",
   });
 
   return {

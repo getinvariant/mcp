@@ -55,3 +55,12 @@ create table if not exists routing_events (
 
 create index if not exists idx_routing_events_account_task_call
   on routing_events (account_id, task_type, call_index);
+
+ALTER TABLE routing_stats ADD COLUMN IF NOT EXISTS context TEXT NOT NULL DEFAULT 'global';
+ALTER TABLE routing_events ADD COLUMN IF NOT EXISTS context TEXT NOT NULL DEFAULT 'global';
+
+ALTER TABLE routing_stats DROP CONSTRAINT IF EXISTS routing_stats_pkey;
+ALTER TABLE routing_stats ADD PRIMARY KEY (account_id, task_type, provider, context);
+
+CREATE INDEX IF NOT EXISTS idx_routing_events_account_task_ctx
+  ON routing_events(account_id, task_type, context, call_index);

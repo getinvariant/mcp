@@ -9,9 +9,11 @@ import queryHandler from "./api/query.js";
 import usageHandler from "./api/usage.js";
 import recommendHandler from "./api/recommend.js";
 import routeHandler, { handleRoute } from "./api/route.js";
+import routeFetchHandler from "./api/route-fetch.js";
 import routingStatusHandler, {
   handleRoutingStatus,
 } from "./api/routing-status.js";
+import { renderRoute } from "./lib/routing/render.js";
 import { getAllProviders } from "./lib/providers/registry.js";
 import { recommend, compareProviders } from "./lib/reasoning/engine.js";
 
@@ -195,7 +197,7 @@ async function createMcpSession(
       try {
         const out = await handleRoute(accountId, task_type, params);
         return {
-          content: [{ type: "text", text: JSON.stringify(out, null, 2) }],
+          content: [{ type: "text", text: renderRoute(out, String(params.symbol ?? "")) }],
         };
       } catch (e: any) {
         return {
@@ -2706,6 +2708,7 @@ const server = http.createServer(async (req, res) => {
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
   if (path === "/api/recommend") return recommendHandler(fakeReq, fakeRes);
   if (path === "/api/route") return routeHandler(fakeReq, fakeRes);
+  if (path === "/api/route-fetch") return routeFetchHandler(fakeReq, fakeRes);
   if (path === "/api/routing-status")
     return routingStatusHandler(fakeReq, fakeRes);
   if (path === "/api/mcp") {

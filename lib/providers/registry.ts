@@ -11,6 +11,7 @@ import { FinnhubProvider } from "./finnhub.js";
 import { WorldBankProvider } from "./world-bank.js";
 import { CharityProvider } from "./charity.js";
 import { GeoapifyProvider } from "./geoapify.js";
+import { MapboxProvider } from "./mapbox.js";
 import { OpenLibraryProvider } from "./open-library.js";
 import { KhanAcademyProvider } from "./khan-academy.js";
 import { UnsplashProvider } from "./unsplash.js";
@@ -39,6 +40,7 @@ function ensureInitialized() {
     new EnvironmentProvider(),
     // Maps
     new GeoapifyProvider(),
+    new MapboxProvider(),
     // Education
     new OpenLibraryProvider(),
     new KhanAcademyProvider(),

@@ -1,3 +1,6 @@
+import { getDolphinFrame } from "./dolphin.js";
+import type { RouteResponse } from "../../api/route.js";
+
 type Event = {
   call_index: number;
   provider: string;
@@ -38,6 +41,9 @@ export function renderStatus(args: {
   const tag = account_id.slice(0, 8);
 
   const lines: string[] = [];
+  const lastCallIndex = events[events.length - 1]?.call_index ?? 0;
+  lines.push(getDolphinFrame(lastCallIndex));
+  lines.push(``);
   lines.push(`Invariant — Routing Intelligence  (account: ${tag})`);
   lines.push(``);
   lines.push(`Task: ${task_type}    Calls routed: ${events.length}`);
@@ -68,6 +74,45 @@ export function renderStatus(args: {
       );
     }
   }
+
+  return lines.join("\n");
+}
+
+function formatPrice(price: number): string {
+  if (price >= 1) {
+    return price.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+  return price.toFixed(6);
+}
+
+export function renderRoute(out: RouteResponse, symbol: string): string {
+  const lines: string[] = [];
+  lines.push(getDolphinFrame(out.call_index));
+  lines.push(``);
+
+  if (out.success) {
+    const price = formatPrice(out.result.price);
+    const currency = String(out.result.currency).toLowerCase();
+    lines.push(
+      `routed → ${out.provider} · ${symbol} $${price} · ${out.latency_ms}ms`,
+    );
+  } else {
+    const err = out.result?.error ?? "unknown error";
+    lines.push(`routed → ${out.provider} · FAILED · ${err}`);
+  }
+
+  lines.push(``);
+
+  for (const name of Object.keys(out.rates)) {
+    const pct = (out.rates[name] * 100).toFixed(0).padStart(3) + "%";
+    lines.push(`  ${name.padEnd(10)} ${pct}`);
+  }
+
+  lines.push(``);
+  lines.push(`call #${out.call_index}`);
 
   return lines.join("\n");
 }

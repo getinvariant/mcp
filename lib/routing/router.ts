@@ -2,6 +2,7 @@ import { supabase } from "../db.js";
 
 export const PROVIDERS_BY_TASK: Record<string, string[]> = {
   "finance:price": ["coingecko", "finnhub"],
+  "places:geocode": ["geoapify", "mapbox"],
 };
 
 type StatsRow = {
@@ -10,11 +11,12 @@ type StatsRow = {
   sum_latency_ms: number;
 };
 
-const cache: Map<string, Map<string, Map<string, StatsRow>>> = new Map();
-const callIndex: Map<string, Map<string, number>> = new Map();
+const cache: Map<string, Map<string, Map<string, Map<string, StatsRow>>>> =
+  new Map();
+const callIndex: Map<string, Map<string, Map<string, number>>> = new Map();
 const loaded = new Set<string>();
 
-function getTaskCache(accountId: string, taskType: string) {
+function getTaskCache(accountId: string, taskType: string, context: string) {
   let acc = cache.get(accountId);
   if (!acc) {
     acc = new Map();
@@ -25,7 +27,12 @@ function getTaskCache(accountId: string, taskType: string) {
     tc = new Map();
     acc.set(taskType, tc);
   }
-  return tc;
+  let ctx = tc.get(context);
+  if (!ctx) {
+    ctx = new Map();
+    tc.set(context, ctx);
+  }
+  return ctx;
 }
 
 function rate(s: StatsRow | undefined): number {
@@ -33,16 +40,21 @@ function rate(s: StatsRow | undefined): number {
   return s.success_count / s.total_calls;
 }
 
-async function ensureLoaded(accountId: string, taskType: string) {
-  const k = `${accountId}::${taskType}`;
+async function ensureLoaded(
+  accountId: string,
+  taskType: string,
+  context: string,
+) {
+  const k = `${accountId}::${taskType}::${context}`;
   if (loaded.has(k)) return;
 
-  const tc = getTaskCache(accountId, taskType);
+  const tc = getTaskCache(accountId, taskType, context);
   const { data } = await supabase
     .from("routing_stats")
     .select("*")
     .eq("account_id", accountId)
-    .eq("task_type", taskType);
+    .eq("task_type", taskType)
+    .eq("context", context);
   for (const r of data ?? []) {
     tc.set(r.provider, {
       total_calls: r.total_calls,
@@ -56,6 +68,7 @@ async function ensureLoaded(accountId: string, taskType: string) {
     .select("call_index")
     .eq("account_id", accountId)
     .eq("task_type", taskType)
+    .eq("context", context)
     .order("call_index", { ascending: false })
     .limit(1);
   let accCi = callIndex.get(accountId);
@@ -63,17 +76,26 @@ async function ensureLoaded(accountId: string, taskType: string) {
     accCi = new Map();
     callIndex.set(accountId, accCi);
   }
-  accCi.set(taskType, maxCall?.[0]?.call_index ?? 0);
+  let taskCi = accCi.get(taskType);
+  if (!taskCi) {
+    taskCi = new Map();
+    accCi.set(taskType, taskCi);
+  }
+  taskCi.set(context, maxCall?.[0]?.call_index ?? 0);
 
   loaded.add(k);
 }
 
-export async function selectProvider(accountId: string, taskType: string) {
-  await ensureLoaded(accountId, taskType);
+export async function selectProvider(
+  accountId: string,
+  taskType: string,
+  context: string = "global",
+) {
+  await ensureLoaded(accountId, taskType, context);
   const candidates = PROVIDERS_BY_TASK[taskType];
   if (!candidates) throw new Error(`unknown task_type: ${taskType}`);
 
-  const tc = getTaskCache(accountId, taskType);
+  const tc = getTaskCache(accountId, taskType, context);
   const rates: Record<string, number> = {};
   let chosen = candidates[0];
   let best = -1;
@@ -85,7 +107,7 @@ export async function selectProvider(accountId: string, taskType: string) {
     }
   }
   console.log(
-    `[router] acct=${accountId.slice(0, 8)} task=${taskType} chose=${chosen} rates=${JSON.stringify(rates)}`,
+    `[router] acct=${accountId.slice(0, 8)} task=${taskType} ctx=${context} chose=${chosen} rates=${JSON.stringify(rates)}`,
   );
   return { chosen, rates };
 }
@@ -96,11 +118,19 @@ export async function recordOutcome(args: {
   provider: string;
   success: boolean;
   latencyMs: number;
+  context?: string;
 }) {
-  const { accountId, taskType, provider, success, latencyMs } = args;
-  await ensureLoaded(accountId, taskType);
+  const {
+    accountId,
+    taskType,
+    provider,
+    success,
+    latencyMs,
+    context = "global",
+  } = args;
+  await ensureLoaded(accountId, taskType, context);
 
-  const tc = getTaskCache(accountId, taskType);
+  const tc = getTaskCache(accountId, taskType, context);
   const cur = tc.get(provider) ?? {
     total_calls: 0,
     success_count: 0,
@@ -120,14 +150,20 @@ export async function recordOutcome(args: {
     accCi = new Map();
     callIndex.set(accountId, accCi);
   }
-  const ci = (accCi.get(taskType) ?? 0) + 1;
-  accCi.set(taskType, ci);
+  let taskCi = accCi.get(taskType);
+  if (!taskCi) {
+    taskCi = new Map();
+    accCi.set(taskType, taskCi);
+  }
+  const ci = (taskCi.get(context) ?? 0) + 1;
+  taskCi.set(context, ci);
 
   await supabase.from("routing_stats").upsert(
     {
       account_id: accountId,
       task_type: taskType,
       provider,
+      context,
       total_calls: cur.total_calls,
       success_count: cur.success_count,
       sum_latency_ms: cur.sum_latency_ms,
@@ -135,7 +171,7 @@ export async function recordOutcome(args: {
       last_success: success,
       last_updated_at: new Date().toISOString(),
     },
-    { onConflict: "account_id,task_type,provider" },
+    { onConflict: "account_id,task_type,provider,context" },
   );
 
   await supabase.from("routing_events").insert({
@@ -146,18 +182,36 @@ export async function recordOutcome(args: {
     success,
     latency_ms: latencyMs,
     rates_after,
+    context,
   });
 
   return { rates_after, call_index: ci };
 }
 
 export async function getStatus(accountId: string, taskType: string) {
-  await ensureLoaded(accountId, taskType);
-  const tc = getTaskCache(accountId, taskType);
   const candidates = PROVIDERS_BY_TASK[taskType] ?? [];
 
+  const { data: rows } = await supabase
+    .from("routing_stats")
+    .select("*")
+    .eq("account_id", accountId)
+    .eq("task_type", taskType);
+
+  const agg = new Map<string, StatsRow>();
+  for (const r of rows ?? []) {
+    const cur = agg.get(r.provider) ?? {
+      total_calls: 0,
+      success_count: 0,
+      sum_latency_ms: 0,
+    };
+    cur.total_calls += r.total_calls;
+    cur.success_count += r.success_count;
+    cur.sum_latency_ms += Number(r.sum_latency_ms ?? 0);
+    agg.set(r.provider, cur);
+  }
+
   const providers = candidates.map((p) => {
-    const s = tc.get(p);
+    const s = agg.get(p);
     const total = s?.total_calls ?? 0;
     const ok = s?.success_count ?? 0;
     const avg = total > 0 ? Math.round((s!.sum_latency_ms ?? 0) / total) : 0;
