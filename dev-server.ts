@@ -41,7 +41,7 @@ const PORT = Number(process.env.PORT) || 3000;
 // ─── Streamable HTTP MCP ────────────────────────────────────────────────────
 const mcpSessions = new Map<
   string,
-  { transport: StreamableHTTPServerTransport; server: McpServer }
+  { transport: StreamableHTTPServerTransport; server: McpServer; sseOpen: boolean }
 >();
 
 async function createMcpSession(
@@ -3666,25 +3666,25 @@ const server = http.createServer(async (req, res) => {
 
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-    // SSE reconnection: GET on an existing session means the client is trying
-    // to re-open its event stream. The SDK returns 409 if a stream is already
-    // open, which causes Cursor to exhaust retries and disconnect. Close the
-    // stale session so the client's next POST re-initializes cleanly.
-    if (req.method === "GET" && sessionId && mcpSessions.has(sessionId)) {
-      const stale = mcpSessions.get(sessionId)!;
-      try {
-        await stale.transport.close();
-      } catch {}
-      mcpSessions.delete(sessionId);
-      res.writeHead(404, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "session_expired" }));
-    }
-
-    // All other requests on an existing session
+    // Existing session
     if (sessionId && mcpSessions.has(sessionId)) {
-      return mcpSessions
-        .get(sessionId)!
-        .transport.handleRequest(req, res, body);
+      const session = mcpSessions.get(sessionId)!;
+
+      if (req.method === "GET") {
+        if (session.sseOpen) {
+          // Second GET = client reconnecting SSE on live session.
+          // SDK would return 409; instead close cleanly so client re-initializes.
+          try { await session.transport.close(); } catch {}
+          mcpSessions.delete(sessionId);
+          res.writeHead(404, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "session_expired" }));
+        }
+        // First GET = open the SSE stream
+        session.sseOpen = true;
+        return session.transport.handleRequest(req, res, body);
+      }
+
+      return session.transport.handleRequest(req, res, body);
     }
 
     // New session (must be initialize request)
@@ -3692,7 +3692,7 @@ const server = http.createServer(async (req, res) => {
       const session = await createMcpSession(account.id);
       await session.transport.handleRequest(req, res, body);
       if (session.transport.sessionId) {
-        mcpSessions.set(session.transport.sessionId, session);
+        mcpSessions.set(session.transport.sessionId, { ...session, sseOpen: false });
       }
       return;
     }
