@@ -19,9 +19,14 @@ function detectKey(): string | undefined {
       const cfg = JSON.parse(readFileSync(src, 'utf8'));
       const servers = cfg?.mcpServers ?? {};
       for (const s of Object.values(servers) as any[]) {
-        const url: string = s?.url ?? '';
-        const token = new URL(url).searchParams.get('token');
-        if (token) return token;
+        // Check headers first (preferred — set by Cursor deep link)
+        const headerKey = s?.headers?.['x-pl-key'];
+        if (headerKey) return headerKey;
+        // Fall back to ?token= in URL
+        try {
+          const token = new URL(s?.url ?? '').searchParams.get('token');
+          if (token) return token;
+        } catch {}
       }
     } catch {}
   }

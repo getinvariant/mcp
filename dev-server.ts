@@ -568,7 +568,6 @@ function renderNav(active?: string): string {
 
 function renderInstallPage(baseUrl: string, sessionKey: string): string {
   const mcpUrl = `${baseUrl}/api/mcp`;
-  const mcpUrlWithToken = `${mcpUrl}?token=${encodeURIComponent(sessionKey)}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -617,6 +616,14 @@ ${SHARED_STYLES}
   .key-copy:hover{background:var(--amber);}
   .key-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
 
+  /* config snippet */
+  .config-snippet{margin-top:1.5rem;border:1px solid var(--line-strong);background:#0a0a0a;}
+  .config-snippet-header{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+  .config-snippet-copy{font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:none;border:1px solid var(--line);color:var(--fg);padding:0.25rem 0.6rem;cursor:pointer;transition:all .15s;}
+  .config-snippet-copy:hover{background:var(--amber);color:#000;border-color:var(--amber);}
+  .config-snippet pre{padding:0.85rem;font-size:0.72rem;line-height:1.6;color:var(--fg);overflow-x:auto;margin:0;}
+  .config-snippet .hl{color:var(--amber);}
+
   /* verify section */
   .verify-box{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-top:2rem;}
   .verify-box-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
@@ -643,34 +650,53 @@ ${renderNav("install")}
     <div class="ic" id="cursor-card" onclick="installCursor()">
       <div class="ic-logo">⌨</div>
       <div class="ic-name">Cursor</div>
-      <div class="ic-desc">Opens Cursor and registers the server with your key. No auth prompt.</div>
+      <div class="ic-desc">One click — opens Cursor and writes your key directly to the MCP config.</div>
       <span class="ic-btn" id="cursor-btn-label">Add to Cursor →</span>
       <div class="ic-confirm" id="cursor-confirm">
-        <div class="ic-confirm-q">Check Cursor <strong>Settings &rsaquo; MCP</strong>. Is <strong>invariant</strong> listed as connected?</div>
+        <div class="ic-confirm-q">Check Cursor <strong>Settings &rsaquo; MCP</strong>. Is <strong>invariant</strong> listed?</div>
         <div class="ic-confirm-btns">
           <button class="ic-yes" onclick="confirmYes('cursor',event)">Yes, connected</button>
-          <button class="ic-no" onclick="confirmNo('cursor',event)">No, it failed</button>
+          <button class="ic-no" onclick="confirmNo('cursor',event)">No, show manual setup</button>
         </div>
       </div>
       <div class="ic-success" id="cursor-success">
         <div class="ic-success-msg">Invariant added to Cursor.</div>
         <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
       </div>
+      <div id="cursor-manual" style="display:none">
+        <div class="config-snippet">
+          <div class="config-snippet-header">
+            <span>~/.cursor/mcp.json — add inside mcpServers</span>
+            <button class="config-snippet-copy" onclick="copySnippet('cursor-snippet',event)">Copy</button>
+          </div>
+          <pre id="cursor-snippet">"invariant": {
+  "url": "${mcpUrl}",
+  "headers": {
+    "x-pl-key": "<span class='hl'>${sessionKey}</span>"
+  }
+}</pre>
+        </div>
+      </div>
     </div>
     <div class="ic" id="claude-card" onclick="installClaude()">
       <div class="ic-logo">◆</div>
       <div class="ic-name">Claude Desktop</div>
-      <div class="ic-desc">Opens Claude Desktop and connects via OAuth. No key entry needed.</div>
-      <span class="ic-btn" id="claude-btn-label">Add to Claude →</span>
-      <div class="ic-confirm" id="claude-confirm">
-        <div class="ic-confirm-q">Check Claude Desktop <strong>Settings &rsaquo; Developer &rsaquo; MCP Servers</strong>. Is <strong>invariant</strong> listed as connected?</div>
-        <div class="ic-confirm-btns">
-          <button class="ic-yes" onclick="confirmYes('claude',event)">Yes, connected</button>
-          <button class="ic-no" onclick="confirmNo('claude',event)">No, it failed</button>
+      <div class="ic-desc">One click to try auto-install, or paste the config below into claude_desktop_config.json.</div>
+      <span class="ic-btn" id="claude-btn-label">Try Auto-install →</span>
+      <div class="config-snippet" style="margin-top:1.5rem" onclick="event.stopPropagation()">
+        <div class="config-snippet-header">
+          <span>claude_desktop_config.json — add inside mcpServers</span>
+          <button class="config-snippet-copy" onclick="copySnippet('claude-snippet',event)">Copy</button>
         </div>
+        <pre id="claude-snippet">"invariant": {
+  "url": "${mcpUrl}",
+  "headers": {
+    "x-pl-key": "<span class='hl'>${sessionKey}</span>"
+  }
+}</pre>
       </div>
-      <div class="ic-success" id="claude-success">
-        <div class="ic-success-msg">Invariant added to Claude Desktop.</div>
+      <div class="ic-success" id="claude-success" style="margin-top:1rem">
+        <div class="ic-success-msg">Restart Claude Desktop after pasting.</div>
         <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
       </div>
     </div>
@@ -687,12 +713,22 @@ ${renderNav("install")}
 
 <script>
   const MCP_URL = ${JSON.stringify(mcpUrl)};
-  const MCP_URL_TOKEN = ${JSON.stringify(mcpUrlWithToken)};
+  const PL_KEY = ${JSON.stringify(sessionKey)};
 
   function copyKey() {
-    var key = document.getElementById('key-display').textContent;
-    navigator.clipboard.writeText(key).then(function() {
+    navigator.clipboard.writeText(PL_KEY).then(function() {
       var btn = document.querySelector('.key-copy');
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+    });
+  }
+
+  function copySnippet(id, e) {
+    e.stopPropagation();
+    var pre = document.getElementById(id);
+    // strip HTML tags to get plain text
+    navigator.clipboard.writeText(pre.innerText).then(function() {
+      var btn = e.target;
       btn.textContent = 'Copied!';
       setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
     });
@@ -704,8 +740,8 @@ ${renderNav("install")}
     card.classList.add('ic-pending');
     document.getElementById('cursor-btn-label').textContent = 'Opening Cursor...';
 
-    // Embed token in URL so it's saved to ~/.cursor/mcp.json — readable by viz.ts
-    const config = JSON.stringify({ url: MCP_URL_TOKEN });
+    // Use headers so the key is written to ~/.cursor/mcp.json and auth works immediately
+    const config = JSON.stringify({ url: MCP_URL, headers: { 'x-pl-key': PL_KEY } });
     const encoded = btoa(config);
     window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
 
@@ -720,9 +756,7 @@ ${renderNav("install")}
     card.classList.add('ic-pending');
     document.getElementById('claude-btn-label').textContent = 'Opening Claude...';
 
-    // Claude Desktop discovers /.well-known/oauth-authorization-server,
-    // opens /authorize in the browser — auto-approved if session cookie present.
-    const config = JSON.stringify({ url: MCP_URL });
+    const config = JSON.stringify({ url: MCP_URL, headers: { 'x-pl-key': PL_KEY } });
     const encoded = btoa(config);
     window.location.href = 'claude://add-mcp-server?name=invariant&config=' + encoded;
 
@@ -742,7 +776,10 @@ ${renderNav("install")}
     e.stopPropagation();
     document.getElementById(app + '-confirm').style.display = 'none';
     document.getElementById(app + '-card').classList.remove('ic-pending');
-    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? 'Add to Cursor →' : 'Add to Claude →';
+    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? 'Add to Cursor →' : 'Try Auto-install →';
+    if (app === 'cursor') {
+      document.getElementById('cursor-manual').style.display = 'block';
+    }
   }
 </script>
 </body>
