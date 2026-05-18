@@ -3,10 +3,7 @@ import "dotenv/config";
 import http from "node:http";
 import querystring from "node:querystring";
 import crypto from "node:crypto";
-import { execFile } from "node:child_process";
 
-// ── Viz auto-open ────────────────────────────────────────────────────────────
-let vizHasOpened = false;
 
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
@@ -577,13 +574,13 @@ ${SHARED_HEAD}
 <style>
 ${SHARED_STYLES}
 
-  .install-wrap{max-width:600px;margin:0 auto;padding:5rem 1.5rem 8rem;}
+  .install-wrap{width:100%;max-width:1440px;margin:0 auto;padding:5rem 3rem 8rem;}
   .install-eyebrow{font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;}
   .install-h1{font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.6rem);line-height:1.1;color:var(--fg);margin-bottom:1.5rem;}
-  .install-sub{font-size:0.9rem;color:var(--muted);line-height:1.6;margin-bottom:3rem;max-width:480px;}
+  .install-sub{font-size:0.9rem;color:var(--muted);line-height:1.6;margin-bottom:3rem;max-width:600px;}
 
-  .install-cards{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;}
-  @media(max-width:600px){.install-cards{grid-template-columns:1fr;}}
+  .install-cards{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-bottom:2.5rem;}
+  @media(max-width:700px){.install-cards{grid-template-columns:1fr;}}
 
   .ic{border:2px solid var(--line-strong);padding:3rem 2.5rem 2.5rem;cursor:pointer;position:relative;transition:border-color .18s,transform .18s,box-shadow .18s;background:var(--bg);}
   .ic:hover:not(.ic-pending){border-color:var(--fg);transform:translate(-4px,-4px);box-shadow:8px 8px 0 var(--amber);}
@@ -699,18 +696,19 @@ ${renderNav("install")}
 
     <div class="ic" id="claude-card">
       <div class="ic-logo">◆</div>
-      <div class="ic-name">Claude</div>
-      <div class="ic-desc">One command in your terminal. Works with Claude Code and Claude Desktop.</div>
+      <div class="ic-name">Claude Code / CLI</div>
+      <div class="ic-desc">One command. Installs the MCP and opens your live routing dashboard automatically.</div>
       <div class="manual-steps" style="display:block;border-top:none;padding-top:0;margin-top:1.5rem;">
-        <div class="mstep"><span class="mstep-n">1</span><span>Open your terminal and run this command:</span></div>
+        <div class="mstep"><span class="mstep-n">1</span><span>Open your terminal and run:</span></div>
         <div class="config-snippet" onclick="event.stopPropagation()">
           <div class="config-snippet-header">
             <span>terminal</span>
             <button class="config-snippet-copy" onclick="copySnippet('claude-snippet',event)">Copy</button>
           </div>
-          <pre id="claude-snippet">claude mcp add invariant --transport http ${mcpUrl} --header "Authorization: Bearer <span class='hl'>${sessionKey}</span>"</pre>
+          <pre id="claude-snippet">curl -fsSL "${baseUrl}/api/setup?key=<span class='hl'>${sessionKey}</span>" | sh</pre>
         </div>
-        <div class="mstep"><span class="mstep-n">2</span><span>Restart Claude. Open a new chat and ask: <code>list the available API providers</code></span></div>
+        <div class="mstep"><span class="mstep-n">2</span><span>Your live routing dashboard opens in a browser tab automatically. Start a new Claude conversation.</span></div>
+        <div class="mstep"><span class="mstep-n">3</span><span>Ask Claude to build something (e.g. <code>build a map app that geocodes addresses</code>). Watch the dashboard update in real time as calls route through.</span></div>
       </div>
     </div>
   </div>
@@ -2748,7 +2746,7 @@ ${renderNav("dashboard")}
 }
 
 // ── Viz page ──────────────────────────────────────────────────────────────────
-function renderVizPage(): string {
+function renderVizPage(plKey = ""): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3023,6 +3021,7 @@ ${SHARED_STYLES}
   // string values are escaped via escHtml() before use in table cells, and the
   // SVG is built from numeric coordinates only.
 
+  var VIZ_KEY = ${JSON.stringify(plKey)};
   var TASK_TYPES = ['finance:price', 'places:geocode'];
   var PROVIDER_COLORS = ['#ffb727', '#5fd3ff', '#b36fff', '#ff6b6b', '#7fff7f'];
   var MAX_FEED_ROWS = 80;
@@ -3058,7 +3057,9 @@ ${SHARED_STYLES}
     try {
       var results = await Promise.all(
         TASK_TYPES.map(function(t) {
-          return fetch('/api/routing-status?task_type=' + encodeURIComponent(t))
+          return fetch('/api/routing-status?task_type=' + encodeURIComponent(t), {
+            headers: VIZ_KEY ? { 'x-pl-key': VIZ_KEY } : {}
+          })
             .then(function(r){ return r.ok ? r.json() : null; })
             .catch(function(){ return null; });
         })
@@ -3585,13 +3586,23 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (path === "/viz") {
+    const params = querystring.parse(qs || "");
+    const keyParam = Array.isArray(params.key) ? params.key[0] : (params.key as string | undefined);
+    if (keyParam) {
+      // Key passed via URL (from setup script). Set cookie and redirect to /viz.
+      res.writeHead(302, {
+        Location: "/viz",
+        "Set-Cookie": `pl_key=${keyParam}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+      });
+      return res.end();
+    }
     const vizKey = getCookieValue(req.headers.cookie, "pl_key");
     if (!vizKey) {
       res.writeHead(302, { Location: "/login?next=/viz" });
       return res.end();
     }
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.end(renderVizPage());
+    return res.end(renderVizPage(vizKey));
   }
 
   if (path === "/api/health") {
@@ -3601,25 +3612,41 @@ const server = http.createServer(async (req, res) => {
     );
   }
 
+  if (path === "/api/setup") {
+    const setupParams = querystring.parse(qs || "");
+    const setupKey = Array.isArray(setupParams.key) ? setupParams.key[0] : (setupParams.key as string | undefined);
+    if (!setupKey) {
+      res.writeHead(400, { "Content-Type": "text/plain" });
+      return res.end("Missing ?key= parameter");
+    }
+    const base = getBaseUrl(req);
+    const mcpEndpoint = `${base}/mcp`;
+    const vizUrl = `${base}/viz?key=${encodeURIComponent(setupKey)}`;
+    const script = [
+      "#!/bin/sh",
+      `claude mcp add invariant --transport http "${mcpEndpoint}" --header "Authorization: Bearer ${setupKey}"`,
+      `if [ $? -eq 0 ]; then`,
+      `  echo ""`,
+      `  echo "Invariant installed. Opening live routing dashboard..."`,
+      `  if [ "$(uname)" = "Darwin" ]; then`,
+      `    open "${vizUrl}"`,
+      `  else`,
+      `    xdg-open "${vizUrl}" 2>/dev/null || true`,
+      `  fi`,
+      `  echo "Start a new Claude conversation - routing intelligence is now active."`,
+      `else`,
+      `  echo "Install failed. Run: claude mcp add invariant --transport http \\"${mcpEndpoint}\\" --header \\"Authorization: Bearer ${setupKey}\\""`,
+      `fi`,
+    ].join("\n");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    return res.end(script);
+  }
+
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
   if (path === "/api/recommend") return recommendHandler(fakeReq, fakeRes);
-  if (path === "/api/route") {
-    if (!vizHasOpened) {
-      vizHasOpened = true;
-      const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
-      execFile(openCmd, [`http://localhost:${PORT}/viz`]);
-    }
-    return routeHandler(fakeReq, fakeRes);
-  }
-  if (path === "/api/route-fetch") {
-    if (!vizHasOpened) {
-      vizHasOpened = true;
-      const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
-      execFile(openCmd, [`http://localhost:${PORT}/viz`]);
-    }
-    return routeFetchHandler(fakeReq, fakeRes);
-  }
+  if (path === "/api/route") return routeHandler(fakeReq, fakeRes);
+  if (path === "/api/route-fetch") return routeFetchHandler(fakeReq, fakeRes);
   if (path === "/api/routing-status")
     return routingStatusHandler(fakeReq, fakeRes);
   if (path === "/api/mcp") {
