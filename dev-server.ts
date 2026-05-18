@@ -218,6 +218,18 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function getCookieValue(
+  cookieHeader: string | undefined,
+  name: string,
+): string | undefined {
+  if (!cookieHeader) return undefined;
+  for (const part of cookieHeader.split(";")) {
+    const [k, ...v] = part.trim().split("=");
+    if (k.trim() === name) return decodeURIComponent(v.join("="));
+  }
+  return undefined;
+}
+
 function verifyPKCE(verifier: string, challenge: string): boolean {
   const hash = crypto.createHash("sha256").update(verifier).digest("base64url");
   return hash === challenge;
@@ -479,8 +491,14 @@ function renderNav(active?: string): string {
   </div></nav>`;
 }
 
-function renderInstallPage(baseUrl: string): string {
+function renderInstallPage(baseUrl: string, key: string): string {
   const mcpUrl = `${baseUrl}/api/mcp`;
+  const mcpUrlWithToken = `${mcpUrl}?token=${encodeURIComponent(key)}`;
+  const claudeConfig = JSON.stringify(
+    { mcpServers: { invariant: { url: mcpUrlWithToken } } },
+    null,
+    2,
+  );
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -493,21 +511,13 @@ ${SHARED_STYLES}
   .install-wrap{max-width:600px;margin:0 auto;padding:5rem 1.5rem 8rem;}
   .install-eyebrow{font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;}
   .install-h1{font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.6rem);line-height:1.1;color:var(--fg);margin-bottom:1.5rem;}
-  .install-sub{font-size:0.9rem;color:var(--muted);line-height:1.6;margin-bottom:2rem;max-width:480px;}
-
-  /* key input */
-  .key-row{display:flex;gap:0;margin-bottom:2.5rem;}
-  .key-input{flex:1;background:#0e0e0e;border:2px solid var(--line-strong);padding:0.75rem 1rem;color:var(--fg);font-family:var(--mono);font-size:0.88rem;outline:none;transition:border-color .15s;}
-  .key-input:focus{border-color:var(--amber);}
-  .key-input::placeholder{color:#404040;}
-  .key-hint{font-size:0.75rem;color:var(--muted);margin-bottom:2rem;margin-top:-1.8rem;}
+  .install-sub{font-size:0.9rem;color:var(--muted);line-height:1.6;margin-bottom:3rem;max-width:480px;}
 
   .install-cards{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;}
   @media(max-width:580px){.install-cards{grid-template-columns:1fr;}}
 
   .ic{border:2px solid var(--line-strong);padding:2rem 1.75rem;cursor:pointer;position:relative;transition:border-color .18s,transform .18s,box-shadow .18s;background:var(--bg);}
-  .ic:hover:not(.ic-locked){border-color:var(--fg);transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
-  .ic.ic-locked{opacity:0.4;cursor:not-allowed;}
+  .ic:hover:not(.ic-pending){border-color:var(--fg);transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
   .ic.ic-pending{border-color:var(--amber);cursor:default;}
   .ic-logo{font-size:1.6rem;margin-bottom:1rem;}
   .ic-name{font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;color:var(--fg);}
@@ -558,15 +568,10 @@ ${renderNav("install")}
 <div class="install-wrap">
   <p class="install-eyebrow">One-click setup</p>
   <h1 class="install-h1">Add Invariant<br>to your agent</h1>
-  <p class="install-sub">Enter your API key below, then click your agent. No terminal, no OAuth prompt.</p>
-
-  <div class="key-row">
-    <input class="key-input" id="api-key-input" type="text" placeholder="pl_your_key_here" autocomplete="off" spellcheck="false" oninput="onKeyInput(this.value)">
-  </div>
-  <p class="key-hint">Don't have a key? Contact your Invariant admin.</p>
+  <p class="install-sub">Click your agent below. No terminal, no OAuth prompt, no key to copy.</p>
 
   <div class="install-cards">
-    <div class="ic ic-locked" id="cursor-card" onclick="installCursor()">
+    <div class="ic" id="cursor-card" onclick="installCursor()">
       <div class="ic-logo">⌨</div>
       <div class="ic-name">Cursor</div>
       <div class="ic-desc">Opens Cursor and registers the server with your key. No auth prompt.</div>
@@ -583,7 +588,7 @@ ${renderNav("install")}
         <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
       </div>
     </div>
-    <div class="ic ic-locked" id="claude-card" onclick="installClaude()">
+    <div class="ic" id="claude-card" onclick="installClaude()">
       <div class="ic-logo">◆</div>
       <div class="ic-name">Claude Desktop</div>
       <div class="ic-desc">Copies config to clipboard and opens instructions to paste into Claude Desktop settings.</div>
@@ -618,32 +623,16 @@ ${renderNav("install")}
 </div>
 
 <script>
-  const MCP_URL = ${JSON.stringify(mcpUrl)};
-  let currentKey = '';
-
-  // Pre-fill from ?key= param
-  const urlKey = new URLSearchParams(location.search).get('key');
-  if (urlKey) {
-    document.getElementById('api-key-input').value = urlKey;
-    onKeyInput(urlKey);
-  }
-
-  function onKeyInput(val) {
-    currentKey = val.trim();
-    const ready = currentKey.startsWith('pl_') && currentKey.length > 6;
-    ['cursor-card', 'claude-card'].forEach(id => {
-      document.getElementById(id).classList.toggle('ic-locked', !ready);
-    });
-  }
+  const MCP_URL_TOKEN = ${JSON.stringify(mcpUrlWithToken)};
+  const CLAUDE_CONFIG = ${JSON.stringify(claudeConfig)};
 
   function installCursor() {
-    if (!currentKey) return;
     const card = document.getElementById('cursor-card');
     if (card.classList.contains('ic-pending')) return;
     card.classList.add('ic-pending');
     document.getElementById('cursor-btn-label').textContent = 'Opening Cursor...';
 
-    const config = JSON.stringify({ url: MCP_URL, headers: { 'x-pl-key': currentKey } });
+    const config = JSON.stringify({ url: MCP_URL_TOKEN });
     const encoded = btoa(config);
     window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
 
@@ -653,12 +642,8 @@ ${renderNav("install")}
   }
 
   function installClaude() {
-    if (!currentKey) return;
-    const cfg = JSON.stringify({ mcpServers: { invariant: { url: MCP_URL, headers: { 'x-pl-key': currentKey } } } }, null, 2);
-    document.getElementById('claude-config-pre').textContent = cfg;
+    document.getElementById('claude-config-pre').textContent = CLAUDE_CONFIG;
     document.getElementById('claude-modal').classList.add('open');
-
-    // Mark the card as done
     document.getElementById('claude-card').classList.add('ic-pending');
     document.getElementById('claude-btn-label').textContent = 'See instructions →';
     document.getElementById('claude-success').style.display = 'block';
@@ -2006,8 +1991,9 @@ ${renderNav("login")}
         return;
       }
       if (mode === 'signin') {
-        // Cookie already set by server; jump to dashboard.
-        window.location.href = '/dashboard';
+        // Cookie already set by server; jump to next param or dashboard.
+        var next = new URLSearchParams(window.location.search).get('next');
+        window.location.href = (next && next.startsWith('/')) ? next : '/dashboard';
         return;
       }
       // signup — flash the new key, then redirect
@@ -2021,7 +2007,8 @@ ${renderNav("login")}
         setTimeout(function() { t.classList.remove('show'); }, 1200);
       };
       flash.classList.add('visible');
-      setTimeout(function() { window.location.href = '/dashboard'; }, 3000);
+      var next2 = new URLSearchParams(window.location.search).get('next');
+      setTimeout(function() { window.location.href = (next2 && next2.startsWith('/')) ? next2 : '/dashboard'; }, 3000);
     } catch (e) { errEl.textContent = 'Connection error'; }
     finally { btnEl.disabled = false; btnEl.textContent = originalText; }
   }
@@ -2039,7 +2026,8 @@ ${renderNav("login")}
       var res = await fetch('/api/usage', { headers: { 'x-pl-key': key } });
       if (!res.ok) { errEl.textContent = 'Invalid key'; return; }
       setCookie('pl_key', key);
-      window.location.href = '/dashboard';
+      var nextDest = new URLSearchParams(window.location.search).get('next');
+      window.location.href = (nextDest && nextDest.startsWith('/')) ? nextDest : '/dashboard';
     } catch (e) { errEl.textContent = 'Connection error'; }
   }
 })();
@@ -2824,6 +2812,12 @@ const server = http.createServer(async (req, res) => {
     (req.headers as any)["x-pl-key"] = authHeader.slice(7);
   }
 
+  // Lift ?token= query param → x-pl-key (used by Claude Desktop which ignores headers)
+  const tokenParam = querystring.parse(qs || "").token as string | undefined;
+  if (tokenParam && !req.headers["x-pl-key"]) {
+    (req.headers as any)["x-pl-key"] = tokenParam;
+  }
+
   const fakeReq: any = {
     method: req.method,
     headers: req.headers,
@@ -2846,8 +2840,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (path === "/install") {
+    const sessionKey = getCookieValue(req.headers.cookie, "pl_key");
+    if (!sessionKey) {
+      res.writeHead(302, { Location: "/login?next=/install" });
+      return res.end();
+    }
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.end(renderInstallPage(getBaseUrl(req)));
+    return res.end(renderInstallPage(getBaseUrl(req), sessionKey));
   }
 
   if (path === "/login") {
