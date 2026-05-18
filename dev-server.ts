@@ -1157,6 +1157,22 @@ ${SHARED_STYLES}
 <body>
 ${renderNav()}
 
+<div class="ticker">
+  <div class="ticker-track">
+    <span>one key · every api</span>
+    <span>the api layer, subtracted</span>
+    <span>zero .env files on your machine</span>
+    <span>zero provider accounts</span>
+    <span>built for agents, not humans</span>
+    <span>alpha drops soon</span>
+    <span>one key · every api</span>
+    <span>the api layer, subtracted</span>
+    <span>zero .env files on your machine</span>
+    <span>zero provider accounts</span>
+    <span>built for agents, not humans</span>
+    <span>alpha drops soon</span>
+  </div>
+</div>
 
 <div class="container">
   <div class="hero-wrap">
