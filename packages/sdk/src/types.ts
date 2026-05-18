@@ -1,4 +1,4 @@
-export type Source = "geoapify" | "mapbox";
+export type Source = "geoapify" | "mapbox" | "nominatim";
 export type TaskType = "places:geocode";
 
 export type RouteFetchRequest = {

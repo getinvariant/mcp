@@ -12,6 +12,7 @@ import { WorldBankProvider } from "./world-bank.js";
 import { CharityProvider } from "./charity.js";
 import { GeoapifyProvider } from "./geoapify.js";
 import { MapboxProvider } from "./mapbox.js";
+import { OpenStreetMapProvider } from "./openstreetmap.js";
 import { OpenLibraryProvider } from "./open-library.js";
 import { KhanAcademyProvider } from "./khan-academy.js";
 import { UnsplashProvider } from "./unsplash.js";
@@ -41,6 +42,7 @@ function ensureInitialized() {
     // Maps
     new GeoapifyProvider(),
     new MapboxProvider(),
+    new OpenStreetMapProvider(),
     // Education
     new OpenLibraryProvider(),
     new KhanAcademyProvider(),

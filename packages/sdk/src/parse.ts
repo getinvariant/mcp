@@ -34,5 +34,18 @@ export function parseRequest(url: string, _init?: RequestInit): RouteFetchReques
     return null;
   }
 
+  if (u.hostname === "nominatim.openstreetmap.org") {
+    if (u.pathname === "/search") {
+      const text = u.searchParams.get("q") ?? u.searchParams.get("text");
+      if (!text) return null;
+      const params: { text: string; [k: string]: any } = { text };
+      for (const [k, v] of u.searchParams.entries()) {
+        if (k !== "q" && k !== "text" && k !== "format") params[k] = v;
+      }
+      return { source: "nominatim", task_type: "places:geocode", params };
+    }
+    return null;
+  }
+
   return null;
 }

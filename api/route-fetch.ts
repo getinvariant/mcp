@@ -36,7 +36,7 @@ export interface RouteFetchResponse {
 
 export async function handleRouteFetch(
   accountId: string,
-  source: "geoapify" | "mapbox",
+  source: "geoapify" | "mapbox" | "nominatim",
   task_type: string,
   params: any,
 ): Promise<RouteFetchResponse> {

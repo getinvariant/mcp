@@ -1,7 +1,11 @@
 import { parseRequest } from "./parse.js";
 import type { InstallOpts, RouteFetchResponse } from "./types.js";
 
-const INTERCEPT_HOSTS = new Set(["api.geoapify.com", "api.mapbox.com"]);
+const INTERCEPT_HOSTS = new Set([
+  "api.geoapify.com",
+  "api.mapbox.com",
+  "nominatim.openstreetmap.org",
+]);
 
 let originalFetch: typeof fetch | null = null;
 
