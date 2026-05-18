@@ -3,6 +3,10 @@ import "dotenv/config";
 import http from "node:http";
 import querystring from "node:querystring";
 import crypto from "node:crypto";
+import { execFile } from "node:child_process";
+
+// ── Viz auto-open ────────────────────────────────────────────────────────────
+let vizHasOpened = false;
 
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
@@ -2685,6 +2689,623 @@ ${renderNav("dashboard")}
 </html>`;
 }
 
+// ── Viz page ──────────────────────────────────────────────────────────────────
+function renderVizPage(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Routing Viz | Invariant</title>
+<style>
+${SHARED_STYLES}
+  html,body{height:100%;overflow:hidden;}
+  body{display:flex;flex-direction:column;background:var(--bg);color:var(--fg);}
+
+  #viz-header{
+    border-bottom:2px solid var(--fg);
+    padding:0.6rem 1.25rem;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+    background:rgba(6,6,6,0.97);
+  }
+  #viz-header .logo{font-family:var(--mono);font-weight:700;font-size:0.85rem;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:0.5rem;}
+  #viz-header .logo::before{content:'';display:inline-block;width:10px;height:10px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
+  #viz-header .status{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);display:flex;align-items:center;gap:0.5rem;}
+  #viz-header .dot{width:7px;height:7px;background:var(--cyan);animation:pulse 1.2s ease-in-out infinite;}
+
+  #viz-grid{
+    flex:1;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:1fr 1fr;
+    overflow:hidden;
+  }
+
+  .viz-panel{
+    border:2px solid var(--fg);
+    margin:-1px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    position:relative;
+  }
+  .viz-panel-title{
+    font-family:var(--mono);
+    font-size:0.6rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.18em;
+    color:var(--amber);
+    padding:0.5rem 0.75rem;
+    border-bottom:2px solid var(--fg);
+    flex-shrink:0;
+    background:rgba(0,0,0,0.4);
+  }
+  .viz-panel-body{flex:1;overflow:hidden;position:relative;}
+
+  /* ── Event feed ── */
+  #event-feed{
+    font-family:var(--mono);
+    font-size:0.68rem;
+    overflow-y:auto;
+    height:100%;
+    padding:0.5rem 0.75rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.2rem;
+  }
+  #event-feed::-webkit-scrollbar{width:4px;}
+  #event-feed::-webkit-scrollbar-track{background:transparent;}
+  #event-feed::-webkit-scrollbar-thumb{background:var(--dim);}
+  .ev-row{
+    display:flex;
+    gap:0.6rem;
+    align-items:center;
+    padding:0.2rem 0.4rem;
+    border-left:2px solid transparent;
+    transition:border-color 0.2s;
+    opacity:0;
+    animation:rise 0.3s ease both;
+  }
+  .ev-row.ok{border-left-color:var(--cyan);}
+  .ev-row.fail{border-left-color:var(--red);}
+  .ev-idx{color:var(--muted);min-width:2.5rem;}
+  .ev-task{color:var(--amber);min-width:7rem;}
+  .ev-provider{color:var(--fg);min-width:6rem;}
+  .ev-latency{color:var(--muted);min-width:4rem;text-align:right;}
+  .ev-check{font-size:0.85rem;}
+  .ev-check.ok{color:var(--cyan);}
+  .ev-check.fail{color:var(--red);}
+
+  /* ── SVG chart ── */
+  #chart-wrap{width:100%;height:100%;padding:0.5rem 0.75rem;box-sizing:border-box;}
+  #routing-chart{width:100%;height:100%;display:block;}
+  .chart-legend{
+    position:absolute;
+    top:0.75rem;
+    right:0.75rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.3rem;
+    font-family:var(--mono);
+    font-size:0.6rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+  }
+  .legend-item{display:flex;align-items:center;gap:0.4rem;}
+  .legend-dot{width:10px;height:10px;border:2px solid currentColor;}
+
+  /* ── ROI counters ── */
+  #roi-panel{
+    display:flex;
+    align-items:stretch;
+    justify-content:stretch;
+    height:100%;
+  }
+  .roi-half{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:0.6rem;
+    padding:1rem;
+    border-right:2px solid var(--fg);
+    text-align:center;
+  }
+  .roi-half:last-child{border-right:none;}
+  .roi-label{
+    font-family:var(--mono);
+    font-size:0.6rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.18em;
+    color:var(--muted);
+    line-height:1.4;
+  }
+  .roi-number{
+    font-family:var(--serif);
+    font-size:clamp(2.5rem,5vw,4rem);
+    font-weight:400;
+    color:var(--amber);
+    line-height:1;
+    letter-spacing:-0.03em;
+    font-variant-numeric:tabular-nums;
+  }
+  .roi-number.cyan{color:var(--cyan);}
+  .roi-unit{
+    font-family:var(--mono);
+    font-size:0.6rem;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    color:var(--muted);
+  }
+
+  /* ── Raw table ── */
+  #raw-table-wrap{overflow-y:auto;height:100%;padding:0.5rem 0.75rem;}
+  #raw-table-wrap::-webkit-scrollbar{width:4px;}
+  #raw-table-wrap::-webkit-scrollbar-track{background:transparent;}
+  #raw-table-wrap::-webkit-scrollbar-thumb{background:var(--dim);}
+  table.raw{
+    width:100%;
+    border-collapse:collapse;
+    font-family:var(--mono);
+    font-size:0.6rem;
+  }
+  table.raw thead th{
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    color:var(--muted);
+    font-weight:700;
+    padding:0.25rem 0.4rem;
+    border-bottom:2px solid var(--fg);
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    z-index:2;
+    text-align:left;
+    white-space:nowrap;
+  }
+  table.raw tbody td{
+    padding:0.2rem 0.4rem;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+    line-height:1.4;
+  }
+  table.raw tbody tr:last-child td{border-bottom:none;}
+  table.raw .tc-call{color:var(--muted);white-space:nowrap;}
+  table.raw .tc-task{color:var(--amber);white-space:nowrap;}
+  table.raw .tc-provider{color:var(--fg);white-space:nowrap;}
+  table.raw .tc-latency{color:var(--muted);text-align:right;white-space:nowrap;}
+  table.raw .tc-ok{color:var(--cyan);text-align:center;}
+  table.raw .tc-fail{color:var(--red);text-align:center;}
+  table.raw .tc-rates{color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  @keyframes rise{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:translateY(0);}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
+</style>
+</head>
+<body>
+<div id="viz-header">
+  <div class="logo">INVARIANT / ROUTING VIZ</div>
+  <div class="status"><div class="dot"></div><span id="poll-status">CONNECTING...</span></div>
+</div>
+
+<div id="viz-grid">
+  <!-- TOP LEFT: Event feed -->
+  <div class="viz-panel">
+    <div class="viz-panel-title">01 / LIVE EVENT FEED</div>
+    <div class="viz-panel-body">
+      <div id="event-feed"></div>
+    </div>
+  </div>
+
+  <!-- TOP RIGHT: SVG learning curve -->
+  <div class="viz-panel">
+    <div class="viz-panel-title">02 / LEARNING CURVE &mdash; SUCCESS RATE BY CALL</div>
+    <div class="viz-panel-body" id="chart-container">
+      <div id="chart-wrap">
+        <svg id="routing-chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="chart-legend" id="chart-legend"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM LEFT: ROI counters -->
+  <div class="viz-panel">
+    <div class="viz-panel-title">03 / ROI METRICS</div>
+    <div class="viz-panel-body">
+      <div id="roi-panel">
+        <div class="roi-half">
+          <div class="roi-label">Failures<br>Avoided</div>
+          <div class="roi-number" id="roi-failures">0</div>
+          <div class="roi-unit">events</div>
+        </div>
+        <div class="roi-half">
+          <div class="roi-label">Latency<br>Saved</div>
+          <div class="roi-number cyan" id="roi-latency">0</div>
+          <div class="roi-unit">ms total</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM RIGHT: Raw events table -->
+  <div class="viz-panel">
+    <div class="viz-panel-title">04 / RAW ROUTING EVENTS (LAST 20)</div>
+    <div class="viz-panel-body">
+      <div id="raw-table-wrap">
+        <table class="raw">
+          <thead>
+            <tr>
+              <th>call#</th>
+              <th>task</th>
+              <th>provider</th>
+              <th>ms</th>
+              <th>ok</th>
+              <th>rates_after</th>
+            </tr>
+          </thead>
+          <tbody id="raw-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // NOTE: All data displayed here is read from the server-side routing-status
+  // API which returns only structured numeric/string values (provider names,
+  // success rates, latencies). No user-generated HTML is ever inserted; all
+  // string values are escaped via escHtml() before use in table cells, and the
+  // SVG is built from numeric coordinates only.
+
+  var TASK_TYPES = ['finance:price', 'places:geocode'];
+  var PROVIDER_COLORS = ['#ffb727', '#5fd3ff', '#b36fff', '#ff6b6b', '#7fff7f'];
+  var MAX_FEED_ROWS = 80;
+  var MAX_TABLE_ROWS = 20;
+
+  var allEvents = [];
+  var allProviders = {};
+  var pollCount = 0;
+  var lastEventCount = -1;
+
+  var feedEl = document.getElementById('event-feed');
+  var statusEl = document.getElementById('poll-status');
+  var roiFailures = document.getElementById('roi-failures');
+  var roiLatency = document.getElementById('roi-latency');
+  var rawTbody = document.getElementById('raw-tbody');
+  var chartSvg = document.getElementById('routing-chart');
+  var chartLegend = document.getElementById('chart-legend');
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function setText(el, val) {
+    el.textContent = String(val);
+  }
+
+  async function poll() {
+    try {
+      var results = await Promise.all(
+        TASK_TYPES.map(function(t) {
+          return fetch('/api/routing-status?task_type=' + encodeURIComponent(t))
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .catch(function(){ return null; });
+        })
+      );
+
+      var mergedEvents = [];
+      var mergedProviders = {};
+      for (var i = 0; i < results.length; i++) {
+        var data = results[i];
+        if (!data) continue;
+        var task = data.task_type || '';
+        var evs = data.events || [];
+        for (var j = 0; j < evs.length; j++) {
+          var ev = evs[j];
+          mergedEvents.push({
+            call_index: ev.call_index,
+            provider: ev.provider,
+            success: ev.success,
+            latency_ms: ev.latency_ms,
+            rates_after: ev.rates_after,
+            task_type: task
+          });
+        }
+        var provs = data.providers || [];
+        for (var k = 0; k < provs.length; k++) {
+          var p = provs[k];
+          mergedProviders[p.name] = p;
+        }
+      }
+
+      allEvents = mergedEvents;
+      allProviders = mergedProviders;
+      pollCount++;
+      setText(statusEl, 'LIVE · ' + pollCount + ' polls · ' + new Date().toLocaleTimeString());
+
+      renderFeed();
+      renderChart();
+      renderROI();
+      renderTable();
+    } catch(err) {
+      setText(statusEl, 'ERROR: ' + (err.message || err));
+    }
+  }
+
+  // ── Event feed (newest-first) ──
+  function renderFeed() {
+    var sorted = allEvents.slice().sort(function(a,b){ return b.call_index - a.call_index; });
+    if (sorted.length === lastEventCount) return;
+    lastEventCount = sorted.length;
+
+    // Remove existing children safely
+    while (feedEl.firstChild) { feedEl.removeChild(feedEl.firstChild); }
+
+    var slice = sorted.slice(0, MAX_FEED_ROWS);
+    for (var i = 0; i < slice.length; i++) {
+      var ev = slice[i];
+      var row = document.createElement('div');
+      row.className = 'ev-row ' + (ev.success ? 'ok' : 'fail');
+
+      var idxSpan = document.createElement('span');
+      idxSpan.className = 'ev-idx';
+      setText(idxSpan, '#' + ev.call_index);
+
+      var taskSpan = document.createElement('span');
+      taskSpan.className = 'ev-task';
+      setText(taskSpan, ev.task_type || '');
+
+      var provSpan = document.createElement('span');
+      provSpan.className = 'ev-provider';
+      setText(provSpan, ev.provider || '');
+
+      var latSpan = document.createElement('span');
+      latSpan.className = 'ev-latency';
+      setText(latSpan, ev.latency_ms != null ? ev.latency_ms + 'ms' : '--');
+
+      var checkSpan = document.createElement('span');
+      checkSpan.className = 'ev-check ' + (ev.success ? 'ok' : 'fail');
+      setText(checkSpan, ev.success ? '✓' : '✗');
+
+      row.appendChild(idxSpan);
+      row.appendChild(taskSpan);
+      row.appendChild(provSpan);
+      row.appendChild(latSpan);
+      row.appendChild(checkSpan);
+      feedEl.appendChild(row);
+    }
+  }
+
+  // ── SVG learning curve (built from numeric data only, no user strings in paths) ──
+  function renderChart() {
+    if (!allEvents.length) return;
+
+    var series = {};
+    for (var i = 0; i < allEvents.length; i++) {
+      var ev = allEvents[i];
+      if (!ev.rates_after) continue;
+      var keys = Object.keys(ev.rates_after);
+      for (var ki = 0; ki < keys.length; ki++) {
+        var pname = keys[ki];
+        if (!series[pname]) series[pname] = [];
+        series[pname].push({ x: ev.call_index, y: Number(ev.rates_after[pname]) });
+      }
+    }
+
+    var provNames = Object.keys(series).sort();
+    if (!provNames.length) return;
+
+    var maxX = 1;
+    for (var i = 0; i < allEvents.length; i++) {
+      if (allEvents[i].call_index > maxX) maxX = allEvents[i].call_index;
+    }
+
+    var W = 600, H = 200;
+    var PT = 8, PR = 8, PB = 24, PL = 30;
+    var chartW = W - PL - PR;
+    var chartH = H - PT - PB;
+
+    var svgParts = [];
+    var ns = 'http://www.w3.org/2000/svg';
+
+    // Clear SVG safely
+    while (chartSvg.firstChild) { chartSvg.removeChild(chartSvg.firstChild); }
+
+    // Grid lines and Y labels
+    for (var g = 0; g <= 4; g++) {
+      var yFrac = g / 4;
+      var svgY = PT + (1 - yFrac) * chartH;
+      var gridLine = document.createElementNS(ns, 'line');
+      gridLine.setAttribute('x1', String(PL));
+      gridLine.setAttribute('y1', String(svgY));
+      gridLine.setAttribute('x2', String(W - PR));
+      gridLine.setAttribute('y2', String(svgY));
+      gridLine.setAttribute('stroke', 'rgba(242,237,225,0.08)');
+      gridLine.setAttribute('stroke-width', '1');
+      chartSvg.appendChild(gridLine);
+
+      var yLabel = document.createElementNS(ns, 'text');
+      yLabel.setAttribute('x', String(PL - 4));
+      yLabel.setAttribute('y', String(svgY + 4));
+      yLabel.setAttribute('fill', '#6a6a66');
+      yLabel.setAttribute('font-size', '8');
+      yLabel.setAttribute('font-family', 'monospace');
+      yLabel.setAttribute('text-anchor', 'end');
+      yLabel.textContent = yFrac.toFixed(2);
+      chartSvg.appendChild(yLabel);
+    }
+
+    // X axis label
+    var xLabel = document.createElementNS(ns, 'text');
+    xLabel.setAttribute('x', String(W / 2));
+    xLabel.setAttribute('y', String(H - 2));
+    xLabel.setAttribute('fill', '#6a6a66');
+    xLabel.setAttribute('font-size', '8');
+    xLabel.setAttribute('font-family', 'monospace');
+    xLabel.setAttribute('text-anchor', 'middle');
+    xLabel.textContent = 'CALL INDEX';
+    chartSvg.appendChild(xLabel);
+
+    // Polylines (only numeric coordinates)
+    for (var pi = 0; pi < provNames.length; pi++) {
+      var pname = provNames[pi];
+      var color = PROVIDER_COLORS[pi % PROVIDER_COLORS.length];
+      var pts = series[pname].slice().sort(function(a,b){ return a.x - b.x; });
+      if (pts.length < 2) continue;
+      var pointsArr = [];
+      for (var pti = 0; pti < pts.length; pti++) {
+        var sx = (PL + (pts[pti].x / maxX) * chartW).toFixed(1);
+        var sy = (PT + (1 - pts[pti].y) * chartH).toFixed(1);
+        pointsArr.push(sx + ',' + sy);
+      }
+      var polyline = document.createElementNS(ns, 'polyline');
+      polyline.setAttribute('points', pointsArr.join(' '));
+      polyline.setAttribute('fill', 'none');
+      polyline.setAttribute('stroke', color);
+      polyline.setAttribute('stroke-width', '2');
+      polyline.setAttribute('stroke-linejoin', 'round');
+      polyline.setAttribute('stroke-linecap', 'round');
+      chartSvg.appendChild(polyline);
+    }
+
+    // Legend (provider names escaped as text nodes)
+    while (chartLegend.firstChild) { chartLegend.removeChild(chartLegend.firstChild); }
+    for (var li = 0; li < provNames.length; li++) {
+      var color = PROVIDER_COLORS[li % PROVIDER_COLORS.length];
+      var item = document.createElement('div');
+      item.className = 'legend-item';
+      item.style.color = color;
+
+      var dot = document.createElement('div');
+      dot.className = 'legend-dot';
+      dot.style.borderColor = color;
+      dot.style.background = color + '22';
+
+      var label = document.createTextNode(provNames[li]);
+      item.appendChild(dot);
+      item.appendChild(label);
+      chartLegend.appendChild(item);
+    }
+  }
+
+  // ── ROI computation ──
+  function renderROI() {
+    var failuresAvoided = 0;
+    var latencySaved = 0;
+    var providerList = Object.values(allProviders);
+
+    for (var i = 0; i < allEvents.length; i++) {
+      var ev = allEvents[i];
+      if (ev.rates_after) {
+        var chosenRate = Number(ev.rates_after[ev.provider] || 0);
+        var others = Object.keys(ev.rates_after)
+          .filter(function(k){ return k !== ev.provider; })
+          .map(function(k){ return Number(ev.rates_after[k]); });
+        if (others.length > 0) {
+          var avgOther = others.reduce(function(a,b){ return a+b; }, 0) / others.length;
+          failuresAvoided += Math.max(0, chosenRate - avgOther);
+        }
+      }
+      if (ev.latency_ms != null && providerList.length > 1) {
+        var worstLatency = 0;
+        for (var pi = 0; pi < providerList.length; pi++) {
+          var lat = providerList[pi].avg_latency_ms || 0;
+          if (lat > worstLatency) worstLatency = lat;
+        }
+        latencySaved += Math.max(0, worstLatency - ev.latency_ms);
+      }
+    }
+
+    animateCount(roiFailures, Math.round(failuresAvoided * 100) / 100, false);
+    animateCount(roiLatency, Math.round(latencySaved), true);
+  }
+
+  // ── Raw table (all values escaped) ──
+  function renderTable() {
+    var sorted = allEvents.slice().sort(function(a,b){ return b.call_index - a.call_index; });
+    var slice = sorted.slice(0, MAX_TABLE_ROWS);
+
+    // Remove existing rows safely
+    while (rawTbody.firstChild) { rawTbody.removeChild(rawTbody.firstChild); }
+
+    for (var i = 0; i < slice.length; i++) {
+      var ev = slice[i];
+      var tr = document.createElement('tr');
+
+      var tdCall = document.createElement('td');
+      tdCall.className = 'tc-call';
+      setText(tdCall, ev.call_index);
+
+      var tdTask = document.createElement('td');
+      tdTask.className = 'tc-task';
+      setText(tdTask, ev.task_type || '');
+
+      var tdProv = document.createElement('td');
+      tdProv.className = 'tc-provider';
+      setText(tdProv, ev.provider || '');
+
+      var tdLat = document.createElement('td');
+      tdLat.className = 'tc-latency';
+      setText(tdLat, ev.latency_ms != null ? ev.latency_ms + 'ms' : '--');
+
+      var tdOk = document.createElement('td');
+      tdOk.className = ev.success ? 'tc-ok' : 'tc-fail';
+      setText(tdOk, ev.success ? '✓' : '✗');
+
+      var tdRates = document.createElement('td');
+      tdRates.className = 'tc-rates';
+      var ratesStr = ev.rates_after ? JSON.stringify(ev.rates_after) : '';
+      tdRates.title = ratesStr;
+      setText(tdRates, ratesStr);
+
+      tr.appendChild(tdCall);
+      tr.appendChild(tdTask);
+      tr.appendChild(tdProv);
+      tr.appendChild(tdLat);
+      tr.appendChild(tdOk);
+      tr.appendChild(tdRates);
+      rawTbody.appendChild(tr);
+    }
+  }
+
+  // ── Animated counter ──
+  function animateCount(el, target, isInt) {
+    var prev = parseFloat(el.dataset.target || '0');
+    if (prev === target) return;
+    el.dataset.target = String(target);
+    var start = parseFloat(el.textContent.replace(/,/g,'') || '0');
+    var diff = target - start;
+    var steps = 20;
+    var step = 0;
+    var id = setInterval(function() {
+      step++;
+      var val = start + diff * (step / steps);
+      setText(el, isInt ? Math.round(val).toLocaleString() : val.toFixed(2));
+      if (step >= steps) clearInterval(id);
+    }, 30);
+  }
+
+  poll();
+  setInterval(poll, 2000);
+})();
+</script>
+</body>
+</html>`;
+}
+
 const server = http.createServer(async (req, res) => {
   const [path, qs] = (req.url || "").split("?");
 
@@ -2905,6 +3526,16 @@ const server = http.createServer(async (req, res) => {
     return res.end(renderDashboard());
   }
 
+  if (path === "/viz") {
+    const vizKey = getCookieValue(req.headers.cookie, "pl_key");
+    if (!vizKey) {
+      res.writeHead(302, { Location: "/login?next=/viz" });
+      return res.end();
+    }
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderVizPage());
+  }
+
   if (path === "/api/health") {
     res.setHeader("Content-Type", "application/json");
     return res.end(
@@ -2915,8 +3546,22 @@ const server = http.createServer(async (req, res) => {
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
   if (path === "/api/recommend") return recommendHandler(fakeReq, fakeRes);
-  if (path === "/api/route") return routeHandler(fakeReq, fakeRes);
-  if (path === "/api/route-fetch") return routeFetchHandler(fakeReq, fakeRes);
+  if (path === "/api/route") {
+    if (!vizHasOpened) {
+      vizHasOpened = true;
+      const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
+      execFile(openCmd, [`http://localhost:${PORT}/viz`]);
+    }
+    return routeHandler(fakeReq, fakeRes);
+  }
+  if (path === "/api/route-fetch") {
+    if (!vizHasOpened) {
+      vizHasOpened = true;
+      const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
+      execFile(openCmd, [`http://localhost:${PORT}/viz`]);
+    }
+    return routeFetchHandler(fakeReq, fakeRes);
+  }
   if (path === "/api/routing-status")
     return routingStatusHandler(fakeReq, fakeRes);
   if (path === "/api/mcp") {
