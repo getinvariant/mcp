@@ -8,6 +8,10 @@ import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
 import usageHandler from "./api/usage.js";
 import recommendHandler from "./api/recommend.js";
+import routeHandler, { handleRoute } from "./api/route.js";
+import routingStatusHandler, {
+  handleRoutingStatus,
+} from "./api/routing-status.js";
 import { getAllProviders } from "./lib/providers/registry.js";
 import { recommend, compareProviders } from "./lib/reasoning/engine.js";
 
@@ -171,6 +175,66 @@ async function createMcpSession(
       return {
         content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
       };
+    },
+  );
+
+  server.tool(
+    "route",
+    "Route a task to the best provider based on your account's recorded success history. Greedy over per-(account, task_type) success rates, cold-start prior 0.5. Records the outcome and returns the chosen provider, the result, and the updated rates.",
+    {
+      task_type: z
+        .enum(["finance:price"])
+        .describe("The kind of task to route."),
+      params: z
+        .record(z.any())
+        .describe(
+          "Task-specific parameters. For finance:price, expects { symbol: 'BTC' }.",
+        ),
+    },
+    async ({ task_type, params }) => {
+      try {
+        const out = await handleRoute(accountId, task_type, params);
+        return {
+          content: [{ type: "text", text: JSON.stringify(out, null, 2) }],
+        };
+      } catch (e: any) {
+        return {
+          content: [
+            { type: "text", text: `route error: ${e?.message ?? String(e)}` },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "routing_status",
+    "Show this account's learned routing state for a task type: per-provider success rates, recent calls, and a sparkline of performance over time. Renders as ASCII directly in chat.",
+    {
+      task_type: z
+        .enum(["finance:price"])
+        .optional()
+        .describe("Task type to inspect (default: finance:price)."),
+    },
+    async ({ task_type }) => {
+      try {
+        const out = await handleRoutingStatus(
+          accountId,
+          task_type ?? "finance:price",
+        );
+        return { content: [{ type: "text", text: out.ascii }] };
+      } catch (e: any) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `routing_status error: ${e?.message ?? String(e)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
     },
   );
 
@@ -2641,6 +2705,9 @@ const server = http.createServer(async (req, res) => {
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
   if (path === "/api/recommend") return recommendHandler(fakeReq, fakeRes);
+  if (path === "/api/route") return routeHandler(fakeReq, fakeRes);
+  if (path === "/api/routing-status")
+    return routingStatusHandler(fakeReq, fakeRes);
   if (path === "/api/mcp") {
     // Authenticate
     const plKey = req.headers["x-pl-key"] as string;

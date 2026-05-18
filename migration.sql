@@ -27,3 +27,31 @@ create table monthly_usage (
 
 create index idx_usage_log_account on usage_log(account_id, created_at);
 create index idx_monthly_usage_account on monthly_usage(account_id, month);
+
+create table if not exists routing_stats (
+  account_id      uuid    not null references accounts(id) on delete cascade,
+  task_type       text    not null,
+  provider        text    not null,
+  total_calls     integer not null default 0,
+  success_count   integer not null default 0,
+  sum_latency_ms  bigint  not null default 0,
+  last_latency_ms real    not null default 0,
+  last_success    boolean not null default true,
+  last_updated_at timestamptz not null default now(),
+  primary key (account_id, task_type, provider)
+);
+
+create table if not exists routing_events (
+  id          bigserial primary key,
+  account_id  uuid    not null references accounts(id) on delete cascade,
+  task_type   text    not null,
+  call_index  integer not null,
+  provider    text    not null,
+  success     boolean not null,
+  latency_ms  real    not null,
+  rates_after jsonb   not null,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists idx_routing_events_account_task_call
+  on routing_events (account_id, task_type, call_index);
