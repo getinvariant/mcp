@@ -1,7 +1,34 @@
 import 'dotenv/config';
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 const BASE_URL = process.env.PL_BACKEND_URL ?? 'http://localhost:3000';
-const API_KEY = process.env.PL_API_KEY;
+
+function detectKey(): string | undefined {
+  // 1. Explicit env var wins
+  if (process.env.PL_API_KEY) return process.env.PL_API_KEY;
+
+  // 2. Read from ~/.cursor/mcp.json — key embedded as ?token= in the URL
+  const sources = [
+    join(homedir(), '.cursor', 'mcp.json'),
+    join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json'),
+  ];
+  for (const src of sources) {
+    try {
+      const cfg = JSON.parse(readFileSync(src, 'utf8'));
+      const servers = cfg?.mcpServers ?? {};
+      for (const s of Object.values(servers) as any[]) {
+        const url: string = s?.url ?? '';
+        const token = new URL(url).searchParams.get('token');
+        if (token) return token;
+      }
+    } catch {}
+  }
+  return undefined;
+}
+
+const API_KEY = detectKey();
 
 interface Provider {
   name: string;

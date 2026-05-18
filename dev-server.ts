@@ -566,8 +566,9 @@ function renderNav(active?: string): string {
   </div></nav>`;
 }
 
-function renderInstallPage(baseUrl: string, _key: string): string {
+function renderInstallPage(baseUrl: string, sessionKey: string): string {
   const mcpUrl = `${baseUrl}/api/mcp`;
+  const mcpUrlWithToken = `${mcpUrl}?token=${encodeURIComponent(sessionKey)}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -609,6 +610,13 @@ ${SHARED_STYLES}
   .ic-verify{font-size:0.75rem;color:var(--muted);}
   .ic-verify code{color:var(--fg);font-family:var(--mono);}
 
+  /* key display */
+  .key-row{display:flex;align-items:center;gap:0;border:2px solid var(--line-strong);margin-bottom:2.5rem;background:#0a0a0a;}
+  .key-val{flex:1;font-family:var(--mono);font-size:0.8rem;color:var(--fg);padding:0.85rem 1rem;letter-spacing:0.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .key-copy{font-family:var(--mono);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.85rem 1.25rem;background:var(--fg);color:#000;border:none;border-left:2px solid var(--fg);cursor:pointer;flex-shrink:0;transition:background .15s;}
+  .key-copy:hover{background:var(--amber);}
+  .key-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+
   /* verify section */
   .verify-box{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-top:2rem;}
   .verify-box-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
@@ -623,7 +631,13 @@ ${renderNav("install")}
 <div class="install-wrap">
   <p class="install-eyebrow">One-click setup</p>
   <h1 class="install-h1">Add Invariant<br>to your agent</h1>
-  <p class="install-sub">Click your agent below. No terminal, no OAuth prompt, no key to copy.</p>
+  <p class="install-sub">Click your agent below. Your key is embedded automatically.</p>
+
+  <div class="key-label">Your API key</div>
+  <div class="key-row">
+    <div class="key-val" id="key-display">${sessionKey}</div>
+    <button class="key-copy" onclick="copyKey()">Copy</button>
+  </div>
 
   <div class="install-cards">
     <div class="ic" id="cursor-card" onclick="installCursor()">
@@ -673,6 +687,16 @@ ${renderNav("install")}
 
 <script>
   const MCP_URL = ${JSON.stringify(mcpUrl)};
+  const MCP_URL_TOKEN = ${JSON.stringify(mcpUrlWithToken)};
+
+  function copyKey() {
+    var key = document.getElementById('key-display').textContent;
+    navigator.clipboard.writeText(key).then(function() {
+      var btn = document.querySelector('.key-copy');
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+    });
+  }
 
   function installCursor() {
     const card = document.getElementById('cursor-card');
@@ -680,7 +704,8 @@ ${renderNav("install")}
     card.classList.add('ic-pending');
     document.getElementById('cursor-btn-label').textContent = 'Opening Cursor...';
 
-    const config = JSON.stringify({ url: MCP_URL });
+    // Embed token in URL so it's saved to ~/.cursor/mcp.json — readable by viz.ts
+    const config = JSON.stringify({ url: MCP_URL_TOKEN });
     const encoded = btoa(config);
     window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
 
