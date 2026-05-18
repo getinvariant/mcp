@@ -697,38 +697,20 @@ ${renderNav("install")}
       </div>
     </div>
 
-    <div class="ic" id="claude-card" onclick="installClaude()">
+    <div class="ic" id="claude-card">
       <div class="ic-logo">◆</div>
-      <div class="ic-name">Claude Desktop</div>
-      <div class="ic-desc">Follow the steps below to connect Invariant to Claude Desktop in under 2 minutes.</div>
-      <span class="ic-btn" id="claude-btn-label">Auto-install →</span>
-      <div class="manual-steps" id="claude-manual" style="display:block">
-        <div class="manual-steps-title">Setup — 4 steps</div>
-        <div class="mstep"><span class="mstep-n">1</span><span>Open the <strong>Finder</strong> on your Mac. In the menu bar click <strong>Go &rsaquo; Go to Folder</strong> and paste this path:</span></div>
-        <code class="path-hint">~/Library/Application Support/Claude/</code>
-        <div class="mstep"><span class="mstep-n">2</span><span>Open the file called <strong>claude_desktop_config.json</strong>. If it doesn't exist, create a new file with that exact name in that folder.</span></div>
-        <div class="mstep"><span class="mstep-n">3</span><span>Copy the block below and paste it into the file. If the file already has content, merge the <code>"mcpServers"</code> section — don't replace anything else.</span></div>
+      <div class="ic-name">Claude</div>
+      <div class="ic-desc">One command in your terminal. Works with Claude Code and Claude Desktop.</div>
+      <div class="manual-steps" style="display:block;border-top:none;padding-top:0;margin-top:1.5rem;">
+        <div class="mstep"><span class="mstep-n">1</span><span>Open your terminal and run this command:</span></div>
         <div class="config-snippet" onclick="event.stopPropagation()">
           <div class="config-snippet-header">
-            <span>claude_desktop_config.json</span>
+            <span>terminal</span>
             <button class="config-snippet-copy" onclick="copySnippet('claude-snippet',event)">Copy</button>
           </div>
-          <pre id="claude-snippet">{
-  "mcpServers": {
-    "invariant": {
-      "url": "${mcpUrl}",
-      "headers": {
-        "Authorization": "Bearer <span class='hl'>${sessionKey}</span>"
-      }
-    }
-  }
-}</pre>
+          <pre id="claude-snippet">claude mcp add invariant --transport http ${mcpUrl} --header "Authorization: Bearer <span class='hl'>${sessionKey}</span>"</pre>
         </div>
-        <div class="mstep"><span class="mstep-n">4</span><span>Save the file, then <strong>fully quit and reopen Claude Desktop</strong>. Open a new chat and ask: <code>list the available API providers</code></span></div>
-      </div>
-      <div class="ic-success" id="claude-success" style="display:none;margin-top:1rem;border-top:1px solid var(--amber);padding-top:1rem;">
-        <div class="ic-success-msg">Invariant connected to Claude Desktop.</div>
-        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
+        <div class="mstep"><span class="mstep-n">2</span><span>Restart Claude. Open a new chat and ask: <code>list the available API providers</code></span></div>
       </div>
     </div>
   </div>
@@ -780,22 +762,11 @@ ${renderNav("install")}
     }, 4000);
   }
 
-  function installClaude() {
-    // Claude auto-install is the same deep link attempt; manual steps are always shown
-    const config = JSON.stringify({ url: MCP_URL, headers: { 'Authorization': 'Bearer ' + PL_KEY } });
-    const encoded = btoa(config);
-    window.location.href = 'claude://add-mcp-server?name=invariant&config=' + encoded;
-
-    setTimeout(() => {
-      document.getElementById('claude-confirm').style.display = 'block';
-    }, 5000);
-  }
-
   function confirmYes(app, e) {
     e.stopPropagation();
     document.getElementById(app + '-confirm').style.display = 'none';
     document.getElementById(app + '-success').style.display = 'block';
-    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? '✓ Added to Cursor' : '✓ Added to Claude';
+    document.getElementById(app + '-btn-label').textContent = '✓ Added to Cursor';
   }
 
   function confirmNo(app, e) {
