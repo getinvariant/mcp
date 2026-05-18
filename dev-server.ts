@@ -570,7 +570,6 @@ function renderNav(active?: string): string {
     </div>
     <div class="nav-right">
       <div class="links">
-        <a href="/how-it-works"${active === "how" ? ' class="active"' : ""}>HOW IT WORKS</a>
       </div>
       <a href="/login" class="nav-cta${active === "login" || active === "install" ? " nav-cta-active" : ""}">Sign Up / Log In →</a>
     </div>
@@ -657,7 +656,6 @@ ${SHARED_STYLES}
 ${renderNav("install")}
 
 <div class="install-wrap">
-  <p class="install-eyebrow">One-click setup</p>
   <h1 class="install-h1">Add Invariant<br>to your agent</h1>
   <p class="install-sub">Click your agent below. Your key is embedded automatically.</p>
 
@@ -1159,22 +1157,6 @@ ${SHARED_STYLES}
 <body>
 ${renderNav()}
 
-<div class="ticker">
-  <div class="ticker-track">
-    <span>one key · every api</span>
-    <span>the api layer, subtracted</span>
-    <span>zero .env files on your machine</span>
-    <span>zero provider accounts</span>
-    <span>built for agents, not humans</span>
-    <span>live now · free tier available</span>
-    <span>one key · every api</span>
-    <span>the api layer, subtracted</span>
-    <span>zero .env files on your machine</span>
-    <span>zero provider accounts</span>
-    <span>built for agents, not humans</span>
-    <span>live now · free tier available</span>
-  </div>
-</div>
 
 <div class="container">
   <div class="hero-wrap">
@@ -1189,13 +1171,6 @@ ${renderNav()}
         </p>
         <div class="hero-cta-block">
           <a href="/login?mode=signup" class="hero-cta-btn">Get your free key →</a>
-          <div class="hero-cta-sub">Free forever · No credit card · Instant access</div>
-        </div>
-        <div class="hero-meta">
-          <span>no auth hell</span>
-          <span>no .env files</span>
-          <span>no cron for rotation</span>
-          <span>no vendor dashboards</span>
         </div>
       </div>
 
@@ -1263,7 +1238,6 @@ ${renderNav()}
 <div class="container">
   <div class="game-section reveal">
     <div class="game-label">
-      <span class="eyebrow">run.exe // loop</span>
       <h2><span class="num">00/</span>an endless <em>auto&#8209;pilot.</em></h2>
       <p>watch the circle do what your agent should: leap the obstacles on its own while you worry about literally anything else.</p>
     </div>
@@ -1323,7 +1297,6 @@ ${renderNav()}
 <section class="collab">
   <div class="collab-inner">
     <div class="collab-header">
-      <span class="collab-eyebrow">◆ teams · soon</span>
       <h2>api key governance<br>for your <em>whole team.</em></h2>
       <p>the same one-key magic, extended to orgs. <strong>workspace credentials, per-seat usage, one-click rotation, instant offboarding.</strong></p>
     </div>
@@ -1732,163 +1705,6 @@ ${renderNav()}
 </html>`;
 }
 
-function renderHowItWorks(): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-${SHARED_HEAD}
-<title>How It Works | Invariant</title>
-<style>
-${SHARED_STYLES}
-  .page-hero{padding:5rem 0 3rem;position:relative;}
-  .page-hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 85% 10%, rgba(255,183,39,0.07), transparent 45%);pointer-events:none;}
-  .page-hero .kicker{display:inline-flex;align-items:center;gap:0.75rem;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:1.75rem;border:2px solid var(--amber);padding:0.55rem 1rem;animation:rise 0.8s ease both;}
-  .page-hero .kicker::before{content:'';display:inline-block;width:9px;height:9px;background:var(--amber);animation:pulse 1.4s ease-in-out infinite;}
-  .page-hero h1{font-family:var(--serif);font-size:clamp(3rem, 7vw, 6.5rem);font-weight:400;line-height:0.9;letter-spacing:-0.035em;color:var(--fg);margin-bottom:1.5rem;animation:rise 0.95s 0.1s ease both;}
-  .page-hero h1 em{font-style:italic;color:var(--amber);}
-  .page-hero .lede{font-family:var(--sans);font-size:clamp(1.05rem, 1.4vw, 1.3rem);color:#b4ae9f;max-width:640px;margin-top:1.5rem;line-height:1.45;animation:rise 0.95s 0.25s ease both;}
-
-  .steps{padding:2rem 0 4rem;display:grid;gap:2.5rem;}
-  .step{display:grid;grid-template-columns:auto 1fr;gap:2rem;border:2px solid var(--fg);background:#0a0a0a;padding:2rem 2.25rem;position:relative;transition:transform .2s ease, box-shadow .2s ease;animation:rise 0.9s ease both;}
-  .step:nth-child(1){animation-delay:0.1s;}
-  .step:nth-child(2){animation-delay:0.2s;}
-  .step:nth-child(3){animation-delay:0.3s;}
-  .step:nth-child(4){animation-delay:0.4s;}
-  .step:nth-child(5){animation-delay:0.5s;}
-  .step:hover{transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--amber);}
-  .step:nth-child(even):hover{box-shadow:6px 6px 0 var(--cyan);}
-  .step-num{font-family:var(--serif);font-style:italic;font-size:3.5rem;line-height:0.8;color:var(--amber);min-width:3.5rem;}
-  .step-body h3{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--fg);margin-bottom:0.75rem;letter-spacing:-0.02em;}
-  .step-body h3 em{font-style:italic;color:var(--amber);}
-  .step-body p{font-family:var(--sans);font-size:0.95rem;color:#b4ae9f;margin-bottom:1rem;line-height:1.55;max-width:680px;}
-  .step-body p a{color:var(--cyan);border-bottom:1px solid var(--cyan);}
-  .step-body p strong{color:var(--fg);}
-  .step-body pre{border:2px solid var(--line-strong);background:#050505;padding:1.1rem 1.35rem;font-family:var(--mono);font-size:0.78rem;color:var(--cream);overflow-x:auto;margin:0.5rem 0 1rem;box-shadow:-4px 4px 0 var(--line-strong);white-space:pre;}
-  .step-body code{font-family:var(--mono);font-size:0.78rem;color:var(--amber);background:#050505;padding:0.15rem 0.45rem;border:1px solid var(--line-strong);}
-
-  .cta-strip{border:2px solid var(--fg);background:#0a0a0a;padding:3rem 2.5rem;margin:3rem 0 4rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;box-shadow:-8px 8px 0 var(--cyan);}
-  .cta-strip .cta-copy{flex:1;min-width:260px;}
-  .cta-strip h2{font-family:var(--serif);font-size:clamp(1.8rem,3vw,2.8rem);color:var(--fg);line-height:0.95;margin-bottom:0.5rem;letter-spacing:-0.02em;}
-  .cta-strip h2 em{font-style:italic;color:var(--amber);}
-  .cta-strip p{font-family:var(--mono);font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;}
-
-  @media(max-width:720px){
-    .step{grid-template-columns:1fr;gap:1rem;padding:1.5rem 1.35rem;}
-    .step-num{font-size:2.5rem;}
-    .step-body h3{font-size:1.5rem;}
-    .cta-strip{padding:2rem 1.35rem;}
-  }
-</style>
-</head>
-<body>
-${renderNav("how")}
-<div class="container">
-  <div class="page-hero">
-    <div class="kicker">// the how</div>
-    <h1>from zero to <em>shipping</em><br>in under a minute.</h1>
-    <p class="lede">five steps. one key. every provider your agent will ever need, already plugged in.</p>
-  </div>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">01</div>
-      <div class="step-body">
-        <h3>create <em>your key.</em></h3>
-        <p>drop your email on the <a href="/login?mode=signup">sign up page</a>. you get a unique api key instantly. no credit card. no approval. the free tier is 500 requests per month, forever.</p>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">02</div>
-      <div class="step-body">
-        <h3>wire it to <em>your agent.</em></h3>
-        <p>works with any mcp-compatible client. one command for <strong>claude code</strong>:</p>
-        <pre>claude mcp add invariant \\
-  --transport http https://pclabs.dev/api/mcp \\
-  --header "x-pl-key: pl_your_key"</pre>
-        <p>for <strong>codex</strong>, edit <code>~/.codex/config.toml</code>:</p>
-        <pre>[mcp_servers.invariant]
-type = "http"
-url = "https://pclabs.dev/api/mcp"
-
-[mcp_servers.invariant.headers]
-x-pl-key = "pl_your_key"</pre>
-        <p>for <strong>cursor</strong>, add to <code>~/.cursor/mcp.json</code>:</p>
-        <pre>{
-  "mcpServers": {
-    "invariant": {
-      "url": "https://pclabs.dev/api/mcp",
-      "headers": { "x-pl-key": "pl_your_key" }
-    }
-  }
-}</pre>
-        <p>same flow in windsurf, claude desktop, and claude.ai.</p>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">03</div>
-      <div class="step-body">
-        <h3>let it <em>pick the api.</em></h3>
-        <p>not sure which provider fits? just ask your agent. <code>recommend</code>, <code>compare</code>, <code>list_providers</code>, and <code>get_api_docs</code> are exposed as mcp tools — the agent picks the best provider for the job, with a score and reasoning.</p>
-        <pre>you: "find me a free api for real-time stock data"
-
-agent calls recommend{
-  need: "real-time stock data",
-  priorities: ["cost","reliability"],
-  budget: "free"
-}
-
-→ Finnhub (score 85/100)
-  Free tier · 60 req/min · high reliability</pre>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">04</div>
-      <div class="step-body">
-        <h3>talk to it <em>in english.</em></h3>
-        <p>ask your agent naturally. it routes to the right provider automatically.</p>
-        <pre>"what's the weather in tokyo?"          → OpenWeatherMap
-"look up adverse events for ibuprofen"  → OpenFDA
-"get the BTC price"                     → CoinGecko
-"what's AAPL trading at?"               → Finnhub
-"find a crisis hotline for veterans"    → Mental Health</pre>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">05</div>
-      <div class="step-body">
-        <h3>watch the <em>usage tick.</em></h3>
-        <p>head to the <a href="/dashboard">dashboard</a> for live quota, per-provider breakdown, and rate limits. your key sticks around in a cookie, no re-login.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="cta-strip">
-    <div class="cta-copy">
-      <h2>ready to <em>ship?</em></h2>
-      <p>500 requests/month · zero credit card</p>
-    </div>
-    <a href="/login?mode=signup" class="btn btn-primary">claim your key →</a>
-  </div>
-
-  <footer class="page-footer">
-    <span>© invariant</span>
-    <a href="https://github.com/getinvariant/mcp">github →</a>
-  </footer>
-</div>
-<script>
-  if (document.cookie.match(/pl_key=/)) {
-    var links = document.querySelectorAll('nav .links a');
-    links.forEach(function(a) { if (a.textContent === 'LOGIN') { a.href = '/dashboard'; a.textContent = 'DASHBOARD'; } });
-  }
-</script>
-</body>
-</html>`;
-}
-
 function renderLogin(): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1948,7 +1764,6 @@ ${SHARED_STYLES}
 ${renderNav("login")}
 <div class="container">
   <div class="login-page">
-    <div class="login-kicker"><span>// the door</span></div>
     <h1 id="page-heading">welcome <em>back.</em></h1>
     <p class="sub" id="page-sub">sign in with your existing key, or mint a fresh one. takes seconds.</p>
 
@@ -1960,7 +1775,6 @@ ${renderNav("login")}
 
     <div class="login-panel" data-tag="EMAIL">
       <h2 id="email-panel-title">sign <em>in.</em></h2>
-      <p id="email-panel-sub">with your email</p>
       <input type="email" id="email-input" placeholder="you@working.hard">
       <button class="btn btn-primary" id="email-submit-btn">sign in →</button>
       <div id="email-error" class="login-error"></div>
@@ -2005,7 +1819,6 @@ ${renderNav("login")}
   var headingEl = document.getElementById('page-heading');
   var pageSubEl = document.getElementById('page-sub');
   var titleEl = document.getElementById('email-panel-title');
-  var subEl = document.getElementById('email-panel-sub');
   var btnEl = document.getElementById('email-submit-btn');
   var toggleText = document.getElementById('toggle-mode-text');
   var toggleLink = document.getElementById('toggle-mode-link');
@@ -2032,9 +1845,8 @@ ${renderNav("login")}
     errEl.textContent = '';
     if (mode === 'signup') {
       renderHeading('create your', 'key.');
-      pageSubEl.textContent = 'one email. one key. 500 requests/month, forever.';
+      pageSubEl.textContent = 'one email. one key. takes seconds.';
       renderTitle('create', 'account.');
-      subEl.textContent = 'free · 500 requests/month';
       btnEl.textContent = 'create account →';
       toggleText.textContent = 'already have an account?';
       toggleLink.textContent = 'sign in';
@@ -2042,7 +1854,6 @@ ${renderNav("login")}
       renderHeading('welcome', 'back.');
       pageSubEl.textContent = 'sign in with your email, or with your api key.';
       renderTitle('sign', 'in.');
-      subEl.textContent = 'with your email';
       btnEl.textContent = 'sign in →';
       toggleText.textContent = "don't have an account?";
       toggleLink.textContent = 'create one';
@@ -2387,7 +2198,6 @@ ${renderNav("dashboard")}
 </script>
 <div class="container">
   <div class="dash-hero">
-    <div class="kicker">// the console</div>
     <h1>your <em>gateway.</em></h1>
     <p class="lede"><span>${total}</span> providers · <span>${Object.keys(grouped).length}</span> categories · wired and live</p>
   </div>
@@ -3572,11 +3382,6 @@ const server = http.createServer(async (req, res) => {
   if (path === "/") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderHomepage());
-  }
-
-  if (path === "/how-it-works") {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.end(renderHowItWorks());
   }
 
   if (path === "/install") {
