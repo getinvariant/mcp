@@ -1270,14 +1270,6 @@ ${renderNav()}
 </div>
 
 <script>
-  // cookie check — logged-in users go to install
-  if (document.cookie.match(/pl_key=/)) {
-    var navCta = document.querySelector('nav .nav-cta');
-    if (navCta) { navCta.href = '/install'; navCta.textContent = 'Open Install →'; }
-    var heroCta = document.querySelector('.hero-cta-btn');
-    if (heroCta) { heroCta.href = '/install'; heroCta.textContent = 'Open Install →'; }
-  }
-
   // ── scroll reveal observer ──
   function animateCountUp(el){
     if (el.dataset.counted === '1') return;
@@ -1944,14 +1936,20 @@ ${renderNav("login")}
       });
       var data = await res.json();
       if (!res.ok) {
+        // No account found — auto-switch to signup instead of showing an error
+        if (mode === 'signin' && res.status === 404) {
+          applyMode('signup');
+          errEl.textContent = 'No account for that email — fill in below to create one';
+          return;
+        }
         var fallback = mode === 'signup' ? 'Signup failed' : 'Sign in failed';
         errEl.textContent = data.error || fallback;
         return;
       }
+      var next = new URLSearchParams(window.location.search).get('next');
+      var dest = (next && next.startsWith('/')) ? next : '/install';
       if (mode === 'signin') {
-        // Cookie already set by server; jump to next param or dashboard.
-        var next = new URLSearchParams(window.location.search).get('next');
-        window.location.href = (next && next.startsWith('/')) ? next : '/dashboard';
+        window.location.href = dest;
         return;
       }
       // signup — flash the new key, then redirect
@@ -1965,8 +1963,7 @@ ${renderNav("login")}
         setTimeout(function() { t.classList.remove('show'); }, 1200);
       };
       flash.classList.add('visible');
-      var next2 = new URLSearchParams(window.location.search).get('next');
-      setTimeout(function() { window.location.href = (next2 && next2.startsWith('/')) ? next2 : '/dashboard'; }, 3000);
+      setTimeout(function() { window.location.href = dest; }, 3000);
     } catch (e) { errEl.textContent = 'Connection error'; }
     finally { btnEl.disabled = false; btnEl.textContent = originalText; }
   }
@@ -1985,7 +1982,7 @@ ${renderNav("login")}
       if (!res.ok) { errEl.textContent = 'Invalid key'; return; }
       setCookie('pl_key', key);
       var nextDest = new URLSearchParams(window.location.search).get('next');
-      window.location.href = (nextDest && nextDest.startsWith('/')) ? nextDest : '/dashboard';
+      window.location.href = (nextDest && nextDest.startsWith('/')) ? nextDest : '/install';
     } catch (e) { errEl.textContent = 'Connection error'; }
   }
 })();
