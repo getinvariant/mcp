@@ -530,6 +530,15 @@ ${SHARED_STYLES}
   .ic-verify{font-size:0.75rem;color:var(--muted);}
   .ic-verify code{color:var(--fg);font-family:var(--mono);}
 
+  .verify-always{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-bottom:2rem;}
+  .verify-always-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+  .verify-step{display:flex;gap:0.85rem;align-items:flex-start;margin-bottom:0.7rem;font-size:0.82rem;color:var(--fg);line-height:1.5;}
+  .vstep-n{flex-shrink:0;width:1.4rem;height:1.4rem;background:var(--amber);color:#000;font-size:0.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .verify-step code{color:var(--amber);font-family:var(--mono);}
+  .verify-note{margin-top:1rem;font-size:0.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:0.85rem;line-height:1.6;}
+  .verify-note strong{color:var(--fg);}
+  .verify-note code{color:var(--fg);font-family:var(--mono);}
+
   .fallback{border:1px solid var(--line);padding:1.5rem;margin-top:2rem;}
   .fallback-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;}
   .fallback-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:1rem;}
@@ -557,15 +566,15 @@ ${renderNav("install")}
       <div class="ic-desc">Adds Invariant via OAuth. Works on Cursor 0.43+.</div>
       <span class="ic-btn" id="cursor-btn-label">Add to Cursor →</span>
       <div class="ic-confirm" id="cursor-confirm">
-        <div class="ic-confirm-q">Did Cursor open and add the server?</div>
+        <div class="ic-confirm-q">Switch to Cursor and check <strong>Settings &rsaquo; MCP</strong>. Does it show <strong>invariant</strong> as connected?</div>
         <div class="ic-confirm-btns">
-          <button class="ic-yes" onclick="confirmYes('cursor',event)">Yes, it worked</button>
+          <button class="ic-yes" onclick="confirmYes('cursor',event)">Yes, connected</button>
           <button class="ic-no" onclick="confirmNo('cursor',event)">No, show manual setup</button>
         </div>
       </div>
       <div class="ic-success" id="cursor-success">
         <div class="ic-success-msg">Invariant added to Cursor.</div>
-        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
+        <div class="ic-verify">To verify, ask your agent: <code>list the available API providers</code></div>
       </div>
     </div>
     <div class="ic" id="claude-card" onclick="install('claude')">
@@ -574,17 +583,25 @@ ${renderNav("install")}
       <div class="ic-desc">Adds Invariant via OAuth. Works on Claude Desktop 0.7+.</div>
       <span class="ic-btn" id="claude-btn-label">Add to Claude →</span>
       <div class="ic-confirm" id="claude-confirm">
-        <div class="ic-confirm-q">Did Claude Desktop open and add the server?</div>
+        <div class="ic-confirm-q">Switch to Claude Desktop and check <strong>Settings &rsaquo; Developer &rsaquo; MCP Servers</strong>. Does it show <strong>invariant</strong> as connected?</div>
         <div class="ic-confirm-btns">
-          <button class="ic-yes" onclick="confirmYes('claude',event)">Yes, it worked</button>
+          <button class="ic-yes" onclick="confirmYes('claude',event)">Yes, connected</button>
           <button class="ic-no" onclick="confirmNo('claude',event)">No, show manual setup</button>
         </div>
       </div>
       <div class="ic-success" id="claude-success">
         <div class="ic-success-msg">Invariant added to Claude Desktop.</div>
-        <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
+        <div class="ic-verify">To verify, ask your agent: <code>list the available API providers</code></div>
       </div>
     </div>
+  </div>
+
+  <div class="verify-always">
+    <div class="verify-always-label">How to confirm it worked</div>
+    <div class="verify-step"><span class="vstep-n">1</span><span>Open your agent and start a new conversation.</span></div>
+    <div class="verify-step"><span class="vstep-n">2</span><span>Type: <code>list the available API providers</code></span></div>
+    <div class="verify-step"><span class="vstep-n">3</span><span>You should see a list of providers like OpenAI, Anthropic, Finnhub, etc. If you see "I don't have access to that tool", the server is not connected yet.</span></div>
+    <div class="verify-note">If Cursor already shows a server named <strong>procurement-labs</strong> or <strong>invariant-mcp</strong>, remove that old entry first: open <code>~/.cursor/mcp.json</code>, delete the stale key, save, then restart Cursor.</div>
   </div>
 
   <div class="fallback" id="fallback-section" style="display:none">
@@ -626,10 +643,10 @@ ${renderNav("install")}
     card.classList.add('ic-pending');
     document.getElementById(app + '-btn-label').textContent = 'Opening ' + (app === 'cursor' ? 'Cursor' : 'Claude') + '...';
     DEEP_LINKS[app]();
-    // After 2.5s show "did it work?" — enough time for the app to handle the link
+    // Give the user time to switch to the app and check before the prompt appears
     setTimeout(() => {
       document.getElementById(app + '-confirm').style.display = 'block';
-    }, 2500);
+    }, 5000);
   }
 
   function confirmYes(app, e) {
@@ -2857,28 +2874,42 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ error: "Invalid API key" }));
     }
 
-    // Check for existing session
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    // SSE reconnection: GET on an existing session means the client is trying
+    // to re-open its event stream. The SDK returns 409 if a stream is already
+    // open, which causes Cursor to exhaust retries and disconnect. Close the
+    // stale session so the client's next POST re-initializes cleanly.
+    if (req.method === "GET" && sessionId && mcpSessions.has(sessionId)) {
+      const stale = mcpSessions.get(sessionId)!;
+      try {
+        await stale.transport.close();
+      } catch {}
+      mcpSessions.delete(sessionId);
+      res.writeHead(404, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "session_expired" }));
+    }
+
+    // All other requests on an existing session
     if (sessionId && mcpSessions.has(sessionId)) {
       return mcpSessions
         .get(sessionId)!
         .transport.handleRequest(req, res, body);
     }
 
-    // New session (must be initialize request or POST without session)
+    // New session (must be initialize request)
     if (req.method === "POST") {
       const session = await createMcpSession(account.id);
       await session.transport.handleRequest(req, res, body);
-      // Store session after initialize sets the session ID
       if (session.transport.sessionId) {
         mcpSessions.set(session.transport.sessionId, session);
       }
       return;
     }
 
-    // GET for SSE stream on existing session
+    // GET with unknown session
     if (req.method === "GET" && sessionId) {
-      res.writeHead(400, { "Content-Type": "application/json" });
+      res.writeHead(404, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Session not found" }));
     }
 
