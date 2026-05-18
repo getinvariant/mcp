@@ -19,7 +19,10 @@ function detectKey(): string | undefined {
       const cfg = JSON.parse(readFileSync(src, 'utf8'));
       const servers = cfg?.mcpServers ?? {};
       for (const s of Object.values(servers) as any[]) {
-        // Check headers first (preferred — set by Cursor deep link)
+        // Check Authorization: Bearer KEY (standard format)
+        const authHeader: string = s?.headers?.['Authorization'] ?? s?.headers?.['authorization'] ?? '';
+        if (authHeader.startsWith('Bearer ')) return authHeader.slice(7);
+        // Check x-pl-key (legacy)
         const headerKey = s?.headers?.['x-pl-key'];
         if (headerKey) return headerKey;
         // Fall back to ?token= in URL

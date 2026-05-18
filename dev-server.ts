@@ -617,12 +617,22 @@ ${SHARED_STYLES}
   .key-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
 
   /* config snippet */
-  .config-snippet{margin-top:1.5rem;border:1px solid var(--line-strong);background:#0a0a0a;}
+  .config-snippet{margin-top:1.25rem;border:1px solid var(--line-strong);background:#0a0a0a;}
   .config-snippet-header{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
   .config-snippet-copy{font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:none;border:1px solid var(--line);color:var(--fg);padding:0.25rem 0.6rem;cursor:pointer;transition:all .15s;}
   .config-snippet-copy:hover{background:var(--amber);color:#000;border-color:var(--amber);}
-  .config-snippet pre{padding:0.85rem;font-size:0.72rem;line-height:1.6;color:var(--fg);overflow-x:auto;margin:0;}
+  .config-snippet pre{padding:0.85rem;font-size:0.72rem;line-height:1.6;color:var(--fg);overflow-x:auto;margin:0;white-space:pre-wrap;word-break:break-all;}
   .config-snippet .hl{color:var(--amber);}
+
+  /* manual steps */
+  .manual-steps{display:none;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:1.25rem;}
+  .manual-steps-title{font-family:var(--mono);font-size:0.68rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;}
+  .mstep{display:flex;gap:0.75rem;margin-bottom:0.85rem;font-size:0.8rem;color:var(--fg);line-height:1.55;}
+  .mstep-n{flex-shrink:0;width:1.3rem;height:1.3rem;background:var(--amber);color:#000;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono);margin-top:0.1rem;}
+  .mstep a{color:var(--amber);text-decoration:underline;}
+  .mstep code{font-family:var(--mono);font-size:0.75rem;color:var(--cyan);background:#111;padding:0.1rem 0.3rem;}
+  .mstep strong{color:var(--fg);}
+  .path-hint{font-family:var(--mono);font-size:0.72rem;color:var(--muted);background:#111;border:1px solid var(--line);padding:0.4rem 0.7rem;margin:0.5rem 0 0.75rem;display:block;word-break:break-all;}
 
   /* verify section */
   .verify-box{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-top:2rem;}
@@ -650,53 +660,74 @@ ${renderNav("install")}
     <div class="ic" id="cursor-card" onclick="installCursor()">
       <div class="ic-logo">⌨</div>
       <div class="ic-name">Cursor</div>
-      <div class="ic-desc">One click — opens Cursor and writes your key directly to the MCP config.</div>
-      <span class="ic-btn" id="cursor-btn-label">Add to Cursor →</span>
+      <div class="ic-desc">Auto-installs Invariant into Cursor with your key. If it doesn't work, follow the manual steps below.</div>
+      <span class="ic-btn" id="cursor-btn-label">Auto-install →</span>
       <div class="ic-confirm" id="cursor-confirm">
-        <div class="ic-confirm-q">Check Cursor <strong>Settings &rsaquo; MCP</strong>. Is <strong>invariant</strong> listed?</div>
+        <div class="ic-confirm-q">Did Cursor open and show a prompt to add <strong>invariant</strong>?</div>
         <div class="ic-confirm-btns">
-          <button class="ic-yes" onclick="confirmYes('cursor',event)">Yes, connected</button>
-          <button class="ic-no" onclick="confirmNo('cursor',event)">No, show manual setup</button>
+          <button class="ic-yes" onclick="confirmYes('cursor',event)">Yes, it worked</button>
+          <button class="ic-no" onclick="confirmNo('cursor',event)">No — show manual steps</button>
         </div>
       </div>
       <div class="ic-success" id="cursor-success">
         <div class="ic-success-msg">Invariant added to Cursor.</div>
         <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
       </div>
-      <div id="cursor-manual" style="display:none">
-        <div class="config-snippet">
+      <div class="manual-steps" id="cursor-manual">
+        <div class="manual-steps-title">Manual setup — 3 steps</div>
+        <div class="mstep"><span class="mstep-n">1</span><span>Open Cursor. Press <strong>Cmd+Shift+P</strong>, type <code>Open MCP Settings</code> and press Enter. This opens a file called <code>mcp.json</code>.</span></div>
+        <div class="mstep"><span class="mstep-n">2</span><span>Copy the block below and paste it inside the <code>"mcpServers": &#123; &#125;</code> section of that file. If the file is empty, paste the whole thing.</span></div>
+        <div class="config-snippet" onclick="event.stopPropagation()">
           <div class="config-snippet-header">
-            <span>~/.cursor/mcp.json — add inside mcpServers</span>
+            <span>mcp.json</span>
             <button class="config-snippet-copy" onclick="copySnippet('cursor-snippet',event)">Copy</button>
           </div>
-          <pre id="cursor-snippet">"invariant": {
-  "url": "${mcpUrl}",
-  "headers": {
-    "x-pl-key": "<span class='hl'>${sessionKey}</span>"
+          <pre id="cursor-snippet">{
+  "mcpServers": {
+    "invariant": {
+      "url": "${mcpUrl}",
+      "headers": {
+        "Authorization": "Bearer <span class='hl'>${sessionKey}</span>"
+      }
+    }
   }
 }</pre>
         </div>
+        <div class="mstep"><span class="mstep-n">3</span><span>Save the file and restart Cursor. Open a new chat and ask: <code>list the available API providers</code></span></div>
       </div>
     </div>
+
     <div class="ic" id="claude-card" onclick="installClaude()">
       <div class="ic-logo">◆</div>
       <div class="ic-name">Claude Desktop</div>
-      <div class="ic-desc">One click to try auto-install, or paste the config below into claude_desktop_config.json.</div>
-      <span class="ic-btn" id="claude-btn-label">Try Auto-install →</span>
-      <div class="config-snippet" style="margin-top:1.5rem" onclick="event.stopPropagation()">
-        <div class="config-snippet-header">
-          <span>claude_desktop_config.json — add inside mcpServers</span>
-          <button class="config-snippet-copy" onclick="copySnippet('claude-snippet',event)">Copy</button>
-        </div>
-        <pre id="claude-snippet">"invariant": {
-  "url": "${mcpUrl}",
-  "headers": {
-    "x-pl-key": "<span class='hl'>${sessionKey}</span>"
+      <div class="ic-desc">Follow the steps below to connect Invariant to Claude Desktop in under 2 minutes.</div>
+      <span class="ic-btn" id="claude-btn-label">Auto-install →</span>
+      <div class="manual-steps" id="claude-manual" style="display:block">
+        <div class="manual-steps-title">Setup — 4 steps</div>
+        <div class="mstep"><span class="mstep-n">1</span><span>Open the <strong>Finder</strong> on your Mac. In the menu bar click <strong>Go &rsaquo; Go to Folder</strong> and paste this path:</span></div>
+        <code class="path-hint">~/Library/Application Support/Claude/</code>
+        <div class="mstep"><span class="mstep-n">2</span><span>Open the file called <strong>claude_desktop_config.json</strong>. If it doesn't exist, create a new file with that exact name in that folder.</span></div>
+        <div class="mstep"><span class="mstep-n">3</span><span>Copy the block below and paste it into the file. If the file already has content, merge the <code>"mcpServers"</code> section — don't replace anything else.</span></div>
+        <div class="config-snippet" onclick="event.stopPropagation()">
+          <div class="config-snippet-header">
+            <span>claude_desktop_config.json</span>
+            <button class="config-snippet-copy" onclick="copySnippet('claude-snippet',event)">Copy</button>
+          </div>
+          <pre id="claude-snippet">{
+  "mcpServers": {
+    "invariant": {
+      "url": "${mcpUrl}",
+      "headers": {
+        "Authorization": "Bearer <span class='hl'>${sessionKey}</span>"
+      }
+    }
   }
 }</pre>
+        </div>
+        <div class="mstep"><span class="mstep-n">4</span><span>Save the file, then <strong>fully quit and reopen Claude Desktop</strong>. Open a new chat and ask: <code>list the available API providers</code></span></div>
       </div>
-      <div class="ic-success" id="claude-success" style="margin-top:1rem">
-        <div class="ic-success-msg">Restart Claude Desktop after pasting.</div>
+      <div class="ic-success" id="claude-success" style="display:none;margin-top:1rem;border-top:1px solid var(--amber);padding-top:1rem;">
+        <div class="ic-success-msg">Invariant connected to Claude Desktop.</div>
         <div class="ic-verify">Ask your agent: <code>list the available API providers</code></div>
       </div>
     </div>
@@ -740,23 +771,18 @@ ${renderNav("install")}
     card.classList.add('ic-pending');
     document.getElementById('cursor-btn-label').textContent = 'Opening Cursor...';
 
-    // Use headers so the key is written to ~/.cursor/mcp.json and auth works immediately
-    const config = JSON.stringify({ url: MCP_URL, headers: { 'x-pl-key': PL_KEY } });
+    const config = JSON.stringify({ url: MCP_URL, headers: { 'Authorization': 'Bearer ' + PL_KEY } });
     const encoded = btoa(config);
     window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
 
     setTimeout(() => {
       document.getElementById('cursor-confirm').style.display = 'block';
-    }, 5000);
+    }, 4000);
   }
 
   function installClaude() {
-    const card = document.getElementById('claude-card');
-    if (card.classList.contains('ic-pending')) return;
-    card.classList.add('ic-pending');
-    document.getElementById('claude-btn-label').textContent = 'Opening Claude...';
-
-    const config = JSON.stringify({ url: MCP_URL, headers: { 'x-pl-key': PL_KEY } });
+    // Claude auto-install is the same deep link attempt; manual steps are always shown
+    const config = JSON.stringify({ url: MCP_URL, headers: { 'Authorization': 'Bearer ' + PL_KEY } });
     const encoded = btoa(config);
     window.location.href = 'claude://add-mcp-server?name=invariant&config=' + encoded;
 
@@ -776,10 +802,8 @@ ${renderNav("install")}
     e.stopPropagation();
     document.getElementById(app + '-confirm').style.display = 'none';
     document.getElementById(app + '-card').classList.remove('ic-pending');
-    document.getElementById(app + '-btn-label').textContent = app === 'cursor' ? 'Add to Cursor →' : 'Try Auto-install →';
-    if (app === 'cursor') {
-      document.getElementById('cursor-manual').style.display = 'block';
-    }
+    document.getElementById(app + '-btn-label').textContent = 'Auto-install →';
+    document.getElementById(app + '-manual').style.display = 'block';
   }
 </script>
 </body>
