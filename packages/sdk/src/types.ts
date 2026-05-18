@@ -18,4 +18,8 @@ export type RouteFetchResponse = {
   rates_after: Record<string, number>;
 };
 
-export type InstallOpts = { pl_key: string; base_url?: string };
+export type InstallOpts = {
+  pl_key: string;
+  base_url?: string;
+  verbose?: boolean;
+};

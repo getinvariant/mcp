@@ -1,5 +1,8 @@
 import { parseRequest } from "./parse.js";
+import { pushEvent, setVerbose, printInvariantTrace } from "./trace.js";
 import type { InstallOpts, RouteFetchResponse } from "./types.js";
+
+export { printInvariantTrace, getTrace } from "./trace.js";
 
 const INTERCEPT_HOSTS = new Set([
   "api.geoapify.com",
@@ -19,10 +22,14 @@ export function installInvariant(opts: InstallOpts): void {
   if (originalFetch) return;
   const base = (opts.base_url ?? "http://localhost:3000").replace(/\/$/, "");
   const pl_key = opts.pl_key;
+  setVerbose(!!opts.verbose);
   originalFetch = globalThis.fetch.bind(globalThis);
   const orig = originalFetch;
 
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  globalThis.fetch = (async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
     const url = urlOf(input);
     let host: string;
     try {
@@ -35,6 +42,7 @@ export function installInvariant(opts: InstallOpts): void {
     const parsed = parseRequest(url, init);
     if (!parsed) return orig(input as any, init);
 
+    const t0 = Date.now();
     try {
       const res = await orig(`${base}/api/route-fetch`, {
         method: "POST",
@@ -46,6 +54,14 @@ export function installInvariant(opts: InstallOpts): void {
         return orig(input as any, init);
       }
       const data = (await res.json()) as RouteFetchResponse;
+      pushEvent({
+        source: parsed.source,
+        routed_to: data.routed_to,
+        context: data.context,
+        call_index: data.call_index,
+        latency_ms: Date.now() - t0,
+        success: data.ok,
+      });
       return new Response(JSON.stringify(data.body), {
         status: data.status,
         headers: {
