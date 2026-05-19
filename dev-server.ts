@@ -2967,7 +2967,7 @@ ${SHARED_STYLES}
   // SVG is built from numeric coordinates only.
 
   var VIZ_KEY = ${JSON.stringify(plKey)};
-  var TASK_TYPES = ['finance:price', 'places:geocode'];
+  var TASK_TYPES = ['finance:price', 'finance:price:crypto', 'finance:price:stock', 'places:geocode', 'env:weather'];
   var PROVIDER_COLORS = ['#ffb727', '#5fd3ff', '#b36fff', '#ff6b6b', '#7fff7f'];
   var MAX_FEED_ROWS = 80;
   var MAX_TABLE_ROWS = 20;

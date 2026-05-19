@@ -26,3 +26,6 @@ secrets/
 
 # Explicit (kept for paranoia even though *.csv covers it)
 hackathon_keys.csv
+
+# Demo files
+demo/
