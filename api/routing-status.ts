@@ -18,6 +18,7 @@ export interface RoutingStatusResponse {
     provider: string;
     success: boolean;
     rates_after: Record<string, number>;
+    latency_ms: number | null;
   }[];
   ascii: string;
 }

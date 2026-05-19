@@ -229,7 +229,7 @@ export async function getStatus(accountId: string, taskType: string) {
 
   const { data: events } = await supabase
     .from("routing_events")
-    .select("call_index, provider, success, rates_after")
+    .select("call_index, provider, success, rates_after, latency_ms")
     .eq("account_id", accountId)
     .eq("task_type", taskType)
     .order("call_index", { ascending: true })
@@ -242,6 +242,7 @@ export async function getStatus(accountId: string, taskType: string) {
       provider: string;
       success: boolean;
       rates_after: Record<string, number>;
+      latency_ms: number | null;
     }[],
     calls_routed: events?.length ?? 0,
   };
