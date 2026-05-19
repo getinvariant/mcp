@@ -12,8 +12,6 @@ export default async function handler(req: any, res: any) {
     return res.status(auth.status || 401).json({ error: auth.error });
   }
 
-  res.setHeader("X-RateLimit-Remaining", String(auth.remaining ?? 0));
-
   const { provider_id, action, params } = req.body;
 
   if (!provider_id || !action) {

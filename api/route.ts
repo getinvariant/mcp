@@ -181,8 +181,6 @@ export default async function handler(req: any, res: any) {
   if (!auth.ok) {
     return res.status(auth.status || 401).json({ error: auth.error });
   }
-  res.setHeader("X-RateLimit-Remaining", String(auth.remaining ?? 0));
-
   const body = req.body ?? {};
   const taskType: string | undefined = body.task_type;
   const params: Record<string, any> = body.params ?? {};
