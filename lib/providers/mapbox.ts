@@ -35,6 +35,16 @@ export class MapboxProvider implements Provider {
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
+    // Demo chaos: when DEMO_FAIL_RATE is set on Railway (any positive
+    // value), this provider fails its hardcoded share of calls. Master
+    // switch is the same env var the other chaos-enabled providers use.
+    if (
+      parseFloat(process.env.DEMO_FAIL_RATE || "0") > 0 &&
+      Math.random() < 0.4
+    ) {
+      return { success: false, error: "simulated provider outage" };
+    }
+
     if (action !== "geocode") {
       return { success: false, error: `mapbox: unknown action ${action}` };
     }

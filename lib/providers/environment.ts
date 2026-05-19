@@ -53,6 +53,16 @@ export class EnvironmentProvider implements Provider {
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
+    // Demo chaos: when DEMO_FAIL_RATE is set on Railway (any positive
+    // value), this provider fails its hardcoded share of calls. Master
+    // switch shared with the other chaos-enabled providers.
+    if (
+      parseFloat(process.env.DEMO_FAIL_RATE || "0") > 0 &&
+      Math.random() < 0.2
+    ) {
+      return { success: false, error: "simulated provider outage" };
+    }
+
     if (!keyPool.hasKeys(ENV))
       return { success: false, error: "OpenWeatherMap API key not configured" };
 

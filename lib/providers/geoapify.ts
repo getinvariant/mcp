@@ -84,11 +84,13 @@ export class GeoapifyProvider implements Provider {
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
-    // Demo chaos toggle: failure rate (0.0–1.0) is read live from env so we
-    // can flip it on Railway without redeploying. When triggered, failure
-    // looks identical to a real provider outage from the router's POV.
-    const failRate = parseFloat(process.env.DEMO_FAIL_RATE || "0");
-    if (failRate > 0 && Math.random() < failRate) {
+    // Demo chaos: when DEMO_FAIL_RATE is set on Railway (any positive
+    // value), this provider fails its hardcoded share of calls. Master
+    // switch shared with the other chaos-enabled providers.
+    if (
+      parseFloat(process.env.DEMO_FAIL_RATE || "0") > 0 &&
+      Math.random() < 0.3
+    ) {
       return { success: false, error: "simulated provider outage" };
     }
 
