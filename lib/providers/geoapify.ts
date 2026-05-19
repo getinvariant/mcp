@@ -84,6 +84,14 @@ export class GeoapifyProvider implements Provider {
     action: string,
     params: Record<string, unknown>,
   ): Promise<QueryResult> {
+    // Demo chaos toggle: failure rate (0.0–1.0) is read live from env so we
+    // can flip it on Railway without redeploying. When triggered, failure
+    // looks identical to a real provider outage from the router's POV.
+    const failRate = parseFloat(process.env.DEMO_FAIL_RATE || "0");
+    if (failRate > 0 && Math.random() < failRate) {
+      return { success: false, error: "simulated provider outage" };
+    }
+
     if (!keyPool.hasKeys(ENV))
       return { success: false, error: "Geoapify API key not configured" };
 
