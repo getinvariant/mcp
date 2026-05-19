@@ -2262,21 +2262,31 @@ ${SHARED_HEAD}
 <style>
 ${SHARED_STYLES}
   html,body{height:100%;overflow:hidden;}
-  body{display:flex;flex-direction:column;background:var(--bg);color:var(--fg);}
+  body{
+    display:flex;flex-direction:column;color:var(--fg);
+    /* preserve the SHARED_STYLES warm-gold wash */
+    background-color:var(--bg);
+  }
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse 50% 35% at 50% -5%, rgba(245,200,80,.10), transparent 70%);
+  }
+  body > *{position:relative;z-index:1;}
 
   #viz-header{
-    border-bottom:2px solid var(--fg);
-    padding:0.6rem 1.25rem;
+    border-bottom:1px solid var(--line);
+    padding:0.85rem 1.5rem;
     display:flex;
     align-items:center;
     justify-content:space-between;
     flex-shrink:0;
-    background:rgba(6,6,6,0.97);
+    background:rgba(10,8,7,0.92);
+    backdrop-filter:blur(8px);
   }
-  #viz-header .logo{font-family:var(--mono);font-weight:700;font-size:1.25rem;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:0.6rem;}
-  #viz-header .logo::before{content:'';display:inline-block;width:13px;height:13px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
-  #viz-header .status{font-family:var(--mono);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);display:flex;align-items:center;gap:0.5rem;}
-  #viz-header .dot{width:9px;height:9px;background:var(--cyan);animation:pulse 1.2s ease-in-out infinite;}
+  #viz-header .logo{font-family:var(--mono);font-weight:700;font-size:1rem;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:0.7rem;color:var(--fg);}
+  #viz-header .logo::before{content:'';display:inline-block;width:14px;height:14px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
+  #viz-header .status{font-family:var(--mono);font-size:0.78rem;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:0.55rem;}
+  #viz-header .dot{width:8px;height:8px;background:var(--cyan);border-radius:50%;box-shadow:0 0 6px var(--cyan);animation:pulse 1.6s ease-in-out infinite;}
 
   #viz-grid{
     flex:1;
@@ -2284,27 +2294,32 @@ ${SHARED_STYLES}
     grid-template-columns:1fr 1fr;
     grid-template-rows:1fr 1fr;
     overflow:hidden;
+    gap:0;
+    border-top:1px solid var(--line);
   }
 
   .viz-panel{
-    border:2px solid var(--fg);
-    margin:-1px;
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
     display:flex;
     flex-direction:column;
     overflow:hidden;
     position:relative;
+    background:transparent;
   }
+  .viz-panel:nth-child(2n){border-right:none;}
+  .viz-panel:nth-child(n+3){border-bottom:none;}
   .viz-panel-title{
     font-family:var(--mono);
-    font-size:1rem;
+    font-size:0.72rem;
     font-weight:700;
     text-transform:uppercase;
-    letter-spacing:0.18em;
+    letter-spacing:.2em;
     color:var(--amber);
-    padding:0.7rem 1rem;
-    border-bottom:2px solid var(--fg);
+    padding:0.8rem 1.25rem;
+    border-bottom:1px solid var(--line);
     flex-shrink:0;
-    background:rgba(0,0,0,0.4);
+    background:rgba(245,200,80,0.03);
   }
   .viz-panel-body{flex:1;overflow:hidden;position:relative;}
 
@@ -2375,7 +2390,7 @@ ${SHARED_STYLES}
     justify-content:center;
     gap:0.6rem;
     padding:1rem;
-    border-right:2px solid var(--fg);
+    border-right:1px solid var(--line);
     text-align:center;
   }
   .roi-half:last-child{border-right:none;}
@@ -2419,11 +2434,11 @@ ${SHARED_STYLES}
   }
   table.raw thead th{
     text-transform:uppercase;
-    letter-spacing:0.12em;
+    letter-spacing:.14em;
     color:var(--muted);
     font-weight:700;
-    padding:0.35rem 0.6rem;
-    border-bottom:2px solid var(--fg);
+    padding:0.4rem 0.6rem;
+    border-bottom:1px solid var(--line);
     position:sticky;
     top:0;
     background:var(--bg);
@@ -2447,7 +2462,7 @@ ${SHARED_STYLES}
   table.raw .tc-rates{color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   @keyframes rise{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:translateY(0);}}
-  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.55;transform:scale(.85);}}
 </style>
 </head>
 <body>
