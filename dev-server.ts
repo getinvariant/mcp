@@ -713,10 +713,13 @@ ${SHARED_STYLES}
   .mstep strong{color:var(--fg);}
   .path-hint{font-family:var(--mono);font-size:0.72rem;color:var(--muted);background:#111;border:1px solid var(--line);padding:0.4rem 0.7rem;margin:0.5rem 0 0.75rem;display:block;word-break:break-all;}
 
-  /* node runtime card — wide variant */
-  .install-divider{font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin:0.75rem 0 1.25rem;text-align:center;}
-  .ic-wide{display:block;}
-  .ic-cmd{display:block;background:#0a0a0a;border:1px solid var(--line);padding:1rem 1.25rem;margin:0 0 1.5rem;font-family:var(--mono);font-size:0.78rem;color:var(--amber);overflow-x:auto;white-space:nowrap;}
+  /* "also run in terminal" step inside Cursor card (post-deeplink) */
+  .ic-step2{display:none;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:1rem;}
+  .ic-step2-label{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);margin-bottom:0.5rem;}
+  .ic-step2-desc{font-size:0.78rem;color:var(--muted);line-height:1.5;margin-bottom:0.75rem;}
+  .ic-cmd{display:block;background:#0a0a0a;border:1px solid var(--line);padding:0.85rem 1rem;margin:0 0 0.75rem;font-family:var(--mono);font-size:0.72rem;color:var(--amber);overflow-x:auto;white-space:nowrap;}
+  .ic-step2-copy{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.4rem 0.85rem;cursor:pointer;font-family:var(--mono);border:1px solid var(--amber);background:none;color:var(--amber);transition:all .15s;}
+  .ic-step2-copy:hover{background:var(--amber);color:#000;}
 
   /* verify section */
   .verify-box{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-top:2rem;}
@@ -745,6 +748,12 @@ ${renderNav("install")}
       <div class="ic-name">Cursor</div>
       <div class="ic-desc">Auto-installs Invariant into Cursor with your key. If it doesn't work, follow the manual steps below.</div>
       <span class="ic-btn" id="cursor-btn-label">Auto-install →</span>
+      <div class="ic-step2" id="cursor-step2" onclick="event.stopPropagation()">
+        <div class="ic-step2-label">Also run in terminal — enables code routing</div>
+        <div class="ic-step2-desc">Cursor's URL handler installs the MCP server. This second command patches your node runtime so any fetch in code your agent writes routes through Invariant.</div>
+        <code class="ic-cmd" id="cursor-node-cmd">${escapeHtml(installCmd)}</code>
+        <button class="ic-step2-copy" onclick="copyNodeCmd('cursor',event)">Copy command</button>
+      </div>
       <div class="ic-confirm" id="cursor-confirm">
         <div class="ic-confirm-q">Did Cursor open and show a prompt to add <strong>invariant</strong>?</div>
         <div class="ic-confirm-btns">
@@ -799,27 +808,6 @@ ${renderNav("install")}
     </div>
   </div>
 
-  <p class="install-divider">— or, for code your agent writes —</p>
-
-  <div class="ic ic-wide" id="node-card" onclick="installNode()">
-    <div class="ic-logo">❯_</div>
-    <div class="ic-name">Node runtime</div>
-    <div class="ic-desc">Intercepts <code>fetch()</code> in any node process you run. Agent code stays naive — calls to nominatim, coingecko, openweather route transparently under your PL key.</div>
-    <code class="ic-cmd" id="node-cmd">${escapeHtml(installCmd)}</code>
-    <span class="ic-btn" id="node-btn-label">Copy install command →</span>
-    <div class="ic-confirm" id="node-confirm">
-      <div class="ic-confirm-q">Paste in your terminal, then <strong>restart your shell</strong>. Did the install finish?</div>
-      <div class="ic-confirm-btns">
-        <button class="ic-yes" onclick="confirmYes('node',event)">Yes, done</button>
-        <button class="ic-no" onclick="confirmNo('node',event)">It failed</button>
-      </div>
-    </div>
-    <div class="ic-success" id="node-success">
-      <div class="ic-success-msg">Invariant active in your node runtime.</div>
-      <div class="ic-verify">Any script that calls <code>fetch("nominatim.openstreetmap.org/...")</code> now routes through Invariant.</div>
-    </div>
-  </div>
-
   <div class="verify-box">
     <div class="verify-box-label">How to confirm it worked</div>
     <div class="vstep"><span class="vstep-n">1</span><span>Open your agent and start a new conversation.</span></div>
@@ -832,7 +820,6 @@ ${renderNav("install")}
 <script>
   const MCP_URL = ${JSON.stringify(mcpUrl)};
   const PL_KEY = ${JSON.stringify(sessionKey)};
-  const INSTALL_CMD = ${JSON.stringify(installCmd)};
 
   function copyKey() {
     navigator.clipboard.writeText(PL_KEY).then(function() {
@@ -862,33 +849,34 @@ ${renderNav("install")}
     const encoded = btoa(config);
     window.location.href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=invariant&config=' + encoded;
 
+    // Reveal the "also run in terminal" step right away — user can copy
+    // while Cursor is still launching.
     setTimeout(() => {
+      document.getElementById('cursor-step2').style.display = 'block';
       document.getElementById('cursor-confirm').style.display = 'block';
-    }, 4000);
+    }, 1500);
   }
 
-  function installNode() {
-    const card = document.getElementById('node-card');
-    if (card.classList.contains('ic-pending')) return;
-    navigator.clipboard.writeText(INSTALL_CMD).then(() => {
-      card.classList.add('ic-pending');
-      document.getElementById('node-btn-label').textContent = '✓ Copied — paste in your terminal';
-      setTimeout(() => {
-        document.getElementById('node-confirm').style.display = 'block';
-      }, 1200);
+  function copyNodeCmd(app, e) {
+    e.stopPropagation();
+    const cmdEl = document.getElementById(app + '-node-cmd');
+    navigator.clipboard.writeText(cmdEl.textContent).then(() => {
+      const btn = e.target;
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
     }, () => {
-      // clipboard blocked — fall back to selecting the visible command
+      // clipboard blocked — select for manual copy
       const range = document.createRange();
-      range.selectNode(document.getElementById('node-cmd'));
+      range.selectNode(cmdEl);
       const sel = window.getSelection();
       sel.removeAllRanges();
       sel.addRange(range);
-      document.getElementById('node-btn-label').textContent = 'Selected — ⌘C to copy';
     });
   }
 
-  const DONE_LABELS = { cursor: '✓ Added to Cursor', claude: '✓ Added to Claude', node: '✓ Invariant active' };
-  const RESET_LABELS = { cursor: 'Add to Cursor →', claude: 'Add to Claude →', node: 'Copy install command →' };
+  const DONE_LABELS = { cursor: '✓ Added to Cursor', claude: '✓ Added to Claude' };
+  const RESET_LABELS = { cursor: 'Add to Cursor →', claude: 'Add to Claude →' };
 
   function confirmYes(app, e) {
     e.stopPropagation();
@@ -3604,8 +3592,16 @@ const server = http.createServer(async (req, res) => {
     const vizUrl = `${base}/viz?key=${encodeURIComponent(setupKey)}`;
     const script = [
       "#!/bin/sh",
+      `set -e`,
+      ``,
+      `# 1/2 — register Invariant MCP with Claude Code`,
       `claude mcp add invariant --transport http "${mcpEndpoint}" --header "Authorization: Bearer ${setupKey}"`,
-      `if [ $? -eq 0 ]; then`,
+      `MCP_OK=$?`,
+      ``,
+      `# 2/2 — install the Node runtime fetch interceptor`,
+      `curl -fsSL "${base}/install.sh?key=${setupKey}" | bash`,
+      ``,
+      `if [ "$MCP_OK" -eq 0 ]; then`,
       `  echo ""`,
       `  echo "Invariant installed. Opening live routing dashboard..."`,
       `  if [ "$(uname)" = "Darwin" ]; then`,
@@ -3613,9 +3609,9 @@ const server = http.createServer(async (req, res) => {
       `  else`,
       `    xdg-open "${vizUrl}" 2>/dev/null || true`,
       `  fi`,
-      `  echo "Start a new Claude conversation - routing intelligence is now active."`,
+      `  echo "Start a new Claude conversation — routing intelligence is now active."`,
       `else`,
-      `  echo "Install failed. Run: claude mcp add invariant --transport http \\"${mcpEndpoint}\\" --header \\"Authorization: Bearer ${setupKey}\\""`,
+      `  echo "MCP install failed. Run: claude mcp add invariant --transport http \\"${mcpEndpoint}\\" --header \\"Authorization: Bearer ${setupKey}\\""`,
       `fi`,
     ].join("\n");
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
