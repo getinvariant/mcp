@@ -554,7 +554,7 @@ const SHARED_HEAD = `<meta charset="utf-8">
 <meta name="twitter:description" content="One key unlocks every API your agent needs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,500&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>`;
 
 const SHARED_STYLES = `
@@ -577,7 +577,7 @@ const SHARED_STYLES = `
     --sans:'Inter','Space Grotesk','Helvetica Neue',sans-serif;
   }
   html,body{overflow-x:hidden;}
-  body{font-family:var(--mono);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+  body{font-family:var(--sans);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
     background-image:
       linear-gradient(rgba(245,200,80,0.04) 1px, transparent 1px),
       linear-gradient(90deg, rgba(245,200,80,0.04) 1px, transparent 1px),
@@ -1013,7 +1013,7 @@ function renderHomepage(): string {
 <title>Invariant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;}
@@ -2264,29 +2264,24 @@ ${SHARED_STYLES}
   html,body{height:100%;overflow:hidden;}
   body{
     display:flex;flex-direction:column;color:var(--fg);
-    /* preserve the SHARED_STYLES warm-gold wash */
-    background-color:var(--bg);
+    background:#0a0807;
+    /* override the SHARED_STYLES grid+wash for an opaque dashboard surface */
+    background-image:none;
   }
-  body::before{
-    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:radial-gradient(ellipse 50% 35% at 50% -5%, rgba(245,200,80,.10), transparent 70%);
-  }
-  body > *{position:relative;z-index:1;}
 
   #viz-header{
     border-bottom:1px solid var(--line);
-    padding:0.85rem 1.5rem;
+    padding:1rem 1.75rem;
     display:flex;
     align-items:center;
     justify-content:space-between;
     flex-shrink:0;
-    background:rgba(10,8,7,0.92);
-    backdrop-filter:blur(8px);
+    background:#0a0807;
   }
-  #viz-header .logo{font-family:var(--mono);font-weight:700;font-size:1rem;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:0.7rem;color:var(--fg);}
-  #viz-header .logo::before{content:'';display:inline-block;width:14px;height:14px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
-  #viz-header .status{font-family:var(--mono);font-size:0.78rem;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:0.55rem;}
-  #viz-header .dot{width:8px;height:8px;background:var(--cyan);border-radius:50%;box-shadow:0 0 6px var(--cyan);animation:pulse 1.6s ease-in-out infinite;}
+  #viz-header .logo{font-family:var(--mono);font-weight:700;font-size:1.15rem;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:0.8rem;color:var(--fg);}
+  #viz-header .logo::before{content:'';display:inline-block;width:16px;height:16px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
+  #viz-header .status{font-family:var(--mono);font-size:0.95rem;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:0.6rem;}
+  #viz-header .dot{width:10px;height:10px;background:var(--cyan);border-radius:50%;box-shadow:0 0 8px var(--cyan);animation:pulse 1.6s ease-in-out infinite;}
 
   #viz-grid{
     flex:1;
@@ -2305,43 +2300,43 @@ ${SHARED_STYLES}
     flex-direction:column;
     overflow:hidden;
     position:relative;
-    background:transparent;
+    background:#0c0a08;
   }
   .viz-panel:nth-child(2n){border-right:none;}
   .viz-panel:nth-child(n+3){border-bottom:none;}
   .viz-panel-title{
     font-family:var(--mono);
-    font-size:0.72rem;
+    font-size:0.95rem;
     font-weight:700;
     text-transform:uppercase;
-    letter-spacing:.2em;
+    letter-spacing:.22em;
     color:var(--amber);
-    padding:0.8rem 1.25rem;
+    padding:1rem 1.5rem;
     border-bottom:1px solid var(--line);
     flex-shrink:0;
-    background:rgba(245,200,80,0.03);
+    background:rgba(245,200,80,0.06);
   }
-  .viz-panel-body{flex:1;overflow:hidden;position:relative;}
+  .viz-panel-body{flex:1;overflow:hidden;position:relative;background:#0c0a08;}
 
   /* ── Event feed ── */
   #event-feed{
     font-family:var(--mono);
-    font-size:0.88rem;
+    font-size:1.05rem;
     overflow-y:auto;
     height:100%;
-    padding:0.6rem 1rem;
+    padding:0.9rem 1.25rem;
     display:flex;
     flex-direction:column;
-    gap:0.2rem;
+    gap:0.35rem;
   }
   #event-feed::-webkit-scrollbar{width:4px;}
   #event-feed::-webkit-scrollbar-track{background:transparent;}
   #event-feed::-webkit-scrollbar-thumb{background:var(--dim);}
   .ev-row{
     display:flex;
-    gap:0.6rem;
+    gap:0.75rem;
     align-items:center;
-    padding:0.2rem 0.4rem;
+    padding:0.3rem 0.5rem;
     border-left:2px solid transparent;
     transition:border-color 0.2s;
     opacity:0;
@@ -2349,11 +2344,11 @@ ${SHARED_STYLES}
   }
   .ev-row.ok{border-left-color:var(--cyan);}
   .ev-row.fail{border-left-color:var(--red);}
-  .ev-idx{color:var(--muted);min-width:2.5rem;}
-  .ev-task{color:var(--amber);min-width:7rem;}
-  .ev-provider{color:var(--fg);min-width:6rem;}
-  .ev-latency{color:var(--muted);min-width:4rem;text-align:right;}
-  .ev-check{font-size:0.85rem;}
+  .ev-idx{color:var(--muted);min-width:3rem;}
+  .ev-task{color:var(--amber);min-width:8rem;}
+  .ev-provider{color:var(--fg);min-width:7rem;}
+  .ev-latency{color:var(--muted);min-width:5rem;text-align:right;}
+  .ev-check{font-size:1rem;}
   .ev-check.ok{color:var(--cyan);}
   .ev-check.fail{color:var(--red);}
 
@@ -2362,18 +2357,18 @@ ${SHARED_STYLES}
   #routing-chart{width:100%;height:100%;display:block;}
   .chart-legend{
     position:absolute;
-    top:0.75rem;
-    right:0.75rem;
+    top:0.85rem;
+    right:0.85rem;
     display:flex;
     flex-direction:column;
-    gap:0.3rem;
+    gap:0.4rem;
     font-family:var(--mono);
-    font-size:0.6rem;
+    font-size:0.8rem;
     text-transform:uppercase;
-    letter-spacing:0.1em;
+    letter-spacing:.14em;
   }
-  .legend-item{display:flex;align-items:center;gap:0.4rem;}
-  .legend-dot{width:10px;height:10px;border:2px solid currentColor;}
+  .legend-item{display:flex;align-items:center;gap:0.5rem;}
+  .legend-dot{width:12px;height:12px;border:2px solid currentColor;}
 
   /* ── ROI counters ── */
   #roi-panel{
@@ -2396,28 +2391,29 @@ ${SHARED_STYLES}
   .roi-half:last-child{border-right:none;}
   .roi-label{
     font-family:var(--mono);
-    font-size:0.85rem;
+    font-size:1rem;
     font-weight:700;
     text-transform:uppercase;
-    letter-spacing:0.18em;
+    letter-spacing:.2em;
     color:var(--muted);
     line-height:1.4;
   }
   .roi-number{
     font-family:var(--serif);
-    font-size:clamp(4rem,8vw,7rem);
-    font-weight:400;
+    font-size:clamp(5rem,9vw,8.5rem);
+    font-weight:300;
     color:var(--amber);
     line-height:1;
-    letter-spacing:-0.03em;
+    letter-spacing:-.04em;
     font-variant-numeric:tabular-nums;
+    font-variation-settings:'opsz' 144;
   }
   .roi-number.cyan{color:var(--cyan);}
   .roi-unit{
     font-family:var(--mono);
-    font-size:0.8rem;
+    font-size:0.95rem;
     text-transform:uppercase;
-    letter-spacing:0.14em;
+    letter-spacing:.16em;
     color:var(--muted);
   }
 
