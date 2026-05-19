@@ -5,7 +5,6 @@
   "private": true,
   "scripts": {
     "dispatch": "node src/dispatch.mjs",
-    "warehouse": "node src/warehouse.mjs",
-    "rainfall": "node src/rainfall.mjs"
+    "warehouse": "node src/warehouse.mjs"
   }
 }
