@@ -554,35 +554,34 @@ const SHARED_HEAD = `<meta charset="utf-8">
 <meta name="twitter:description" content="One key unlocks every API your agent needs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>`;
 
 const SHARED_STYLES = `
   *{margin:0;padding:0;box-sizing:border-box;border-radius:0 !important;}
   :root{
-    /* Origin palette — warm-black, warm-ink, true gold. Matches the homepage
-       redesign in renderHomepage(). Shared by /login, /install, /viz, etc. */
-    --bg:#0a0807;
-    --fg:#f3eee3;
-    --muted:#8a8475;
-    --dim:#5a564b;
-    --amber:#f5c850;
-    --cyan:#6cc9ef;
-    --red:#ef4f3a;
-    --cream:#f3eee3;
-    --line:rgba(245,200,80,0.16);
-    --line-strong:rgba(245,200,80,0.36);
-    --serif:'Fraunces','Instrument Serif','Times New Roman',serif;
-    --mono:'JetBrains Mono','Geist Mono','Courier New',monospace;
-    --sans:'Inter','Space Grotesk','Helvetica Neue',sans-serif;
+    --bg:#060606;
+    --fg:#f2ede1;
+    --muted:#6a6a66;
+    --dim:#38342c;
+    --amber:#ffb727;
+    --cyan:#5fd3ff;
+    --red:#ff3b14;
+    --cream:#f2ede1;
+    --line:rgba(242,237,225,0.12);
+    --line-strong:rgba(242,237,225,0.28);
+    --serif:'Instrument Serif','Times New Roman',serif;
+    --mono:'Geist Mono','JetBrains Mono','Courier New',monospace;
+    --sans:'Space Grotesk','Helvetica Neue',sans-serif;
   }
   html,body{overflow-x:hidden;}
-  body{font-family:var(--sans);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+  body{font-family:var(--mono);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
     background-image:
-      linear-gradient(rgba(245,200,80,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(245,200,80,0.04) 1px, transparent 1px),
-      radial-gradient(ellipse 50% 35% at 50% -5%, rgba(245,200,80,0.12), transparent 70%);
-    background-size:56px 56px,56px 56px,100% 100%;
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+      radial-gradient(circle at 80% -10%, rgba(255,183,39,0.06), transparent 45%),
+      radial-gradient(circle at 0% 110%, rgba(95,211,255,0.05), transparent 45%);
+    background-size:48px 48px,48px 48px,100% 100%,100% 100%;
   }
   ::selection{background:var(--amber);color:#000;}
   a{color:var(--fg);text-decoration:none;transition:color .18s ease, background .18s ease}
@@ -1013,7 +1012,7 @@ function renderHomepage(): string {
 <title>Invariant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;}
@@ -1435,11 +1434,11 @@ ${SHARED_STYLES}
   .flash-sub{font-family:var(--mono);font-size:0.68rem;color:var(--muted);margin-top:0.6rem;letter-spacing:0.08em;}
   .flash-sub code{background:#050505;border:1px solid var(--line-strong);padding:0.1rem 0.4rem;color:var(--cyan);font-family:var(--mono);}
 
-  .signed-in-banner{border:1px solid var(--line);background:rgba(245,200,80,0.04);padding:1.25rem 1.4rem;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;animation:rise 0.5s ease both;}
-  .signed-in-banner .sib-label{font-family:var(--mono);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--muted);}
+  .signed-in-banner{border:2px solid var(--amber);background:#0a0a0a;padding:1.25rem 1.4rem;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;animation:rise 0.5s ease both;}
+  .signed-in-banner .sib-label{font-family:var(--mono);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);}
   .signed-in-banner .sib-key{color:var(--amber);font-weight:700;letter-spacing:0.06em;text-transform:none;}
   .signed-in-banner .sib-actions{display:flex;gap:0.75rem;flex-wrap:wrap;}
-  .signed-in-banner .btn{padding:0.6rem 1.1rem;font-size:0.76rem;}
+  .signed-in-banner .btn{padding:0.6rem 1.1rem;font-size:0.78rem;}
 
   .copied-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--amber);color:#000;padding:0.75rem 1.25rem;font-family:var(--mono);font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0;transition:opacity .2s;pointer-events:none;border:2px solid var(--fg);box-shadow:-4px 4px 0 var(--fg);}
   .copied-toast.show{opacity:1;}
@@ -1493,7 +1492,8 @@ ${renderNav("login")}
 <script>
 (function() {
   // If already signed in, surface a "signed in as X" banner with log-out
-  // and continue-to-install actions instead of silently redirecting.
+  // and continue-to-install actions. No silent auto-redirect — login surface
+  // is always visible so users see the auth state explicitly.
   var existingKey = (document.cookie.match(/pl_key=([^;]+)/) || [])[1];
   if (existingKey) {
     try { existingKey = decodeURIComponent(existingKey); } catch (e) {}
@@ -2278,26 +2278,21 @@ ${SHARED_HEAD}
 <style>
 ${SHARED_STYLES}
   html,body{height:100%;overflow:hidden;}
-  body{
-    display:flex;flex-direction:column;color:var(--fg);
-    background:#0a0807;
-    /* override the SHARED_STYLES grid+wash for an opaque dashboard surface */
-    background-image:none;
-  }
+  body{display:flex;flex-direction:column;background:var(--bg);color:var(--fg);}
 
   #viz-header{
-    border-bottom:1px solid var(--line);
-    padding:1rem 1.75rem;
+    border-bottom:2px solid var(--fg);
+    padding:0.6rem 1.25rem;
     display:flex;
     align-items:center;
     justify-content:space-between;
     flex-shrink:0;
-    background:#0a0807;
+    background:rgba(6,6,6,0.97);
   }
-  #viz-header .logo{font-family:var(--mono);font-weight:700;font-size:1.15rem;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:0.8rem;color:var(--fg);}
-  #viz-header .logo::before{content:'';display:inline-block;width:16px;height:16px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
-  #viz-header .status{font-family:var(--mono);font-size:0.95rem;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:0.6rem;}
-  #viz-header .dot{width:10px;height:10px;background:var(--cyan);border-radius:50%;box-shadow:0 0 8px var(--cyan);animation:pulse 1.6s ease-in-out infinite;}
+  #viz-header .logo{font-family:var(--mono);font-weight:700;font-size:1.25rem;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:0.6rem;}
+  #viz-header .logo::before{content:'';display:inline-block;width:13px;height:13px;background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
+  #viz-header .status{font-family:var(--mono);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);display:flex;align-items:center;gap:0.5rem;}
+  #viz-header .dot{width:9px;height:9px;background:var(--cyan);animation:pulse 1.2s ease-in-out infinite;}
 
   #viz-grid{
     flex:1;
@@ -2305,54 +2300,49 @@ ${SHARED_STYLES}
     grid-template-columns:1fr 1fr;
     grid-template-rows:1fr 1fr;
     overflow:hidden;
-    gap:0;
-    border-top:1px solid var(--line);
   }
 
   .viz-panel{
-    border-right:1px solid var(--line);
-    border-bottom:1px solid var(--line);
+    border:2px solid var(--fg);
+    margin:-1px;
     display:flex;
     flex-direction:column;
     overflow:hidden;
     position:relative;
-    background:#0c0a08;
   }
-  .viz-panel:nth-child(2n){border-right:none;}
-  .viz-panel:nth-child(n+3){border-bottom:none;}
   .viz-panel-title{
     font-family:var(--mono);
-    font-size:0.95rem;
+    font-size:1rem;
     font-weight:700;
     text-transform:uppercase;
-    letter-spacing:.22em;
+    letter-spacing:0.18em;
     color:var(--amber);
-    padding:1rem 1.5rem;
-    border-bottom:1px solid var(--line);
+    padding:0.7rem 1rem;
+    border-bottom:2px solid var(--fg);
     flex-shrink:0;
-    background:rgba(245,200,80,0.06);
+    background:rgba(0,0,0,0.4);
   }
-  .viz-panel-body{flex:1;overflow:hidden;position:relative;background:#0c0a08;}
+  .viz-panel-body{flex:1;overflow:hidden;position:relative;}
 
   /* ── Event feed ── */
   #event-feed{
     font-family:var(--mono);
-    font-size:1.05rem;
+    font-size:0.88rem;
     overflow-y:auto;
     height:100%;
-    padding:0.9rem 1.25rem;
+    padding:0.6rem 1rem;
     display:flex;
     flex-direction:column;
-    gap:0.35rem;
+    gap:0.2rem;
   }
   #event-feed::-webkit-scrollbar{width:4px;}
   #event-feed::-webkit-scrollbar-track{background:transparent;}
   #event-feed::-webkit-scrollbar-thumb{background:var(--dim);}
   .ev-row{
     display:flex;
-    gap:0.75rem;
+    gap:0.6rem;
     align-items:center;
-    padding:0.3rem 0.5rem;
+    padding:0.2rem 0.4rem;
     border-left:2px solid transparent;
     transition:border-color 0.2s;
     opacity:0;
@@ -2360,11 +2350,11 @@ ${SHARED_STYLES}
   }
   .ev-row.ok{border-left-color:var(--cyan);}
   .ev-row.fail{border-left-color:var(--red);}
-  .ev-idx{color:var(--muted);min-width:3rem;}
-  .ev-task{color:var(--amber);min-width:8rem;}
-  .ev-provider{color:var(--fg);min-width:7rem;}
-  .ev-latency{color:var(--muted);min-width:5rem;text-align:right;}
-  .ev-check{font-size:1rem;}
+  .ev-idx{color:var(--muted);min-width:2.5rem;}
+  .ev-task{color:var(--amber);min-width:7rem;}
+  .ev-provider{color:var(--fg);min-width:6rem;}
+  .ev-latency{color:var(--muted);min-width:4rem;text-align:right;}
+  .ev-check{font-size:0.85rem;}
   .ev-check.ok{color:var(--cyan);}
   .ev-check.fail{color:var(--red);}
 
@@ -2373,18 +2363,18 @@ ${SHARED_STYLES}
   #routing-chart{width:100%;height:100%;display:block;}
   .chart-legend{
     position:absolute;
-    top:0.85rem;
-    right:0.85rem;
+    top:0.75rem;
+    right:0.75rem;
     display:flex;
     flex-direction:column;
-    gap:0.4rem;
+    gap:0.3rem;
     font-family:var(--mono);
-    font-size:0.8rem;
+    font-size:0.6rem;
     text-transform:uppercase;
-    letter-spacing:.14em;
+    letter-spacing:0.1em;
   }
-  .legend-item{display:flex;align-items:center;gap:0.5rem;}
-  .legend-dot{width:12px;height:12px;border:2px solid currentColor;}
+  .legend-item{display:flex;align-items:center;gap:0.4rem;}
+  .legend-dot{width:10px;height:10px;border:2px solid currentColor;}
 
   /* ── ROI counters ── */
   #roi-panel{
@@ -2401,35 +2391,34 @@ ${SHARED_STYLES}
     justify-content:center;
     gap:0.6rem;
     padding:1rem;
-    border-right:1px solid var(--line);
+    border-right:2px solid var(--fg);
     text-align:center;
   }
   .roi-half:last-child{border-right:none;}
   .roi-label{
     font-family:var(--mono);
-    font-size:1rem;
+    font-size:0.85rem;
     font-weight:700;
     text-transform:uppercase;
-    letter-spacing:.2em;
+    letter-spacing:0.18em;
     color:var(--muted);
     line-height:1.4;
   }
   .roi-number{
     font-family:var(--serif);
-    font-size:clamp(5rem,9vw,8.5rem);
-    font-weight:300;
+    font-size:clamp(4rem,8vw,7rem);
+    font-weight:400;
     color:var(--amber);
     line-height:1;
-    letter-spacing:-.04em;
+    letter-spacing:-0.03em;
     font-variant-numeric:tabular-nums;
-    font-variation-settings:'opsz' 144;
   }
   .roi-number.cyan{color:var(--cyan);}
   .roi-unit{
     font-family:var(--mono);
-    font-size:0.95rem;
+    font-size:0.8rem;
     text-transform:uppercase;
-    letter-spacing:.16em;
+    letter-spacing:0.14em;
     color:var(--muted);
   }
 
@@ -2446,11 +2435,11 @@ ${SHARED_STYLES}
   }
   table.raw thead th{
     text-transform:uppercase;
-    letter-spacing:.14em;
+    letter-spacing:0.12em;
     color:var(--muted);
     font-weight:700;
-    padding:0.4rem 0.6rem;
-    border-bottom:1px solid var(--line);
+    padding:0.35rem 0.6rem;
+    border-bottom:2px solid var(--fg);
     position:sticky;
     top:0;
     background:var(--bg);
@@ -2474,7 +2463,7 @@ ${SHARED_STYLES}
   table.raw .tc-rates{color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   @keyframes rise{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:translateY(0);}}
-  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.55;transform:scale(.85);}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
 </style>
 </head>
 <body>
@@ -3138,7 +3127,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (path === "/logout") {
-    // Clear the session cookie, then bounce back to the home page.
+    // Clear the session cookie and bounce back to the home page.
     res.writeHead(302, {
       Location: "/",
       "Set-Cookie":
