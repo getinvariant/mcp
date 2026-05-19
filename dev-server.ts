@@ -203,12 +203,18 @@ async function createMcpSession(
     "Route a task to the best provider based on your account's recorded success history. Greedy over per-(account, task_type) success rates, cold-start prior 0.5. Records the outcome and returns the chosen provider, the result, and the updated rates.",
     {
       task_type: z
-        .enum(["finance:price"])
+        .enum([
+          "finance:price",
+          "finance:price:crypto",
+          "finance:price:stock",
+          "places:geocode",
+          "env:weather",
+        ])
         .describe("The kind of task to route."),
       params: z
         .record(z.any())
         .describe(
-          "Task-specific parameters. For finance:price, expects { symbol: 'BTC' }.",
+          "Task-specific parameters. Examples: finance:price { symbol: 'BTC' } · finance:price:crypto { coins: 'bitcoin,ethereum', currency: 'usd' } · finance:price:stock { symbol: 'AAPL' } · places:geocode { text: 'Ferry Building, San Francisco' } · env:weather { lat: 37.79, lon: -122.39 } or { city: 'San Francisco' }.",
         ),
     },
     withVizOpen(async ({ task_type, params }: any) => {

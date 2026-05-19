@@ -5,10 +5,22 @@ import {
   recordOutcome,
   PROVIDERS_BY_TASK,
 } from "../lib/routing/router.js";
+import { handleRouteFetch } from "./route-fetch.js";
 
 const ACTION_BY_PROVIDER: Record<string, Record<string, string>> = {
   "finance:price": { coingecko: "coin_price", finnhub: "stock_quote" },
   "places:geocode": { geoapify: "geocode", mapbox: "geocode" },
+};
+
+// For task types not covered by the legacy finance:price normalize/result
+// flow, we delegate to handleRouteFetch (the SDK path) via a stub source so
+// the agent can call the MCP `route` tool for geocoding, weather, etc. and
+// get a routed response back in the same RouteResponse shape.
+const DELEGATE_SOURCE: Record<string, string> = {
+  "places:geocode": "nominatim",
+  "env:weather": "openweather",
+  "finance:price:crypto": "coingecko",
+  "finance:price:stock": "finnhub",
 };
 
 const COINGECKO_SLUG: Record<string, string> = {
@@ -123,6 +135,24 @@ export async function handleRoute(
   if (!PROVIDERS_BY_TASK[taskType]) {
     throw new Error(`no candidates for task_type: ${taskType}`);
   }
+
+  // Delegate non-finance:price task types to handleRouteFetch.
+  // It already supports per-task-type dispatch, response transforms, region
+  // context, etc. We map its response into RouteResponse shape.
+  if (taskType !== "finance:price") {
+    const stubSource = DELEGATE_SOURCE[taskType];
+    if (!stubSource) throw new Error(`no stub source for ${taskType}`);
+    const r = await handleRouteFetch(accountId, stubSource, taskType, params);
+    return {
+      provider: r.routed_to,
+      rates: r.rates_after,
+      success: r.ok,
+      latency_ms: 0,
+      result: r.body,
+      call_index: r.call_index,
+    };
+  }
+
   const perProvider = ACTION_BY_PROVIDER[taskType];
   if (!perProvider) throw new Error(`no actions defined for ${taskType}`);
 
