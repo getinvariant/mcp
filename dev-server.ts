@@ -2500,7 +2500,6 @@ ${SHARED_STYLES}
 <body>
 <div id="viz-header">
   <div class="logo">INVARIANT / ROUTING VIZ</div>
-  <div class="status"><div class="dot"></div><span id="poll-status">CONNECTING...</span></div>
 </div>
 
 <div id="viz-grid">
@@ -2604,6 +2603,7 @@ ${SHARED_STYLES}
   }
 
   function setText(el, val) {
+    if (!el) return;
     el.textContent = String(val);
   }
 
