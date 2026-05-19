@@ -2394,13 +2394,13 @@ ${SHARED_STYLES}
   #routing-chart{width:100%;height:100%;display:block;}
   .chart-legend{
     position:absolute;
-    top:0.75rem;
-    right:0.75rem;
+    bottom:0.9rem;
+    right:0.9rem;
     display:flex;
     flex-direction:column;
-    gap:0.3rem;
+    gap:0.35rem;
     font-family:var(--mono);
-    font-size:0.6rem;
+    font-size:0.7rem;
     text-transform:uppercase;
     letter-spacing:0.1em;
   }
@@ -2430,15 +2430,6 @@ ${SHARED_STYLES}
     color:var(--fg);
     white-space:nowrap;
   }
-  .race-tag{
-    font-size:0.62rem;
-    margin-left:0.4rem;
-    padding:0.1rem 0.4rem;
-    color:var(--muted);
-    border:1px solid var(--line);
-    border-radius:2px;
-    letter-spacing:0.08em;
-  }
   .race-track{
     height:1.5rem;
     background:rgba(245,200,80,0.04);
@@ -2461,14 +2452,6 @@ ${SHARED_STYLES}
     text-align:right;
     font-variant-numeric:tabular-nums;
     white-space:nowrap;
-  }
-  .race-footnote{
-    font-family:var(--mono);
-    font-size:0.7rem;
-    color:var(--muted);
-    letter-spacing:0.06em;
-    text-align:center;
-    margin-top:0.4rem;
   }
 
   /* ── Raw table ── */
@@ -2523,7 +2506,7 @@ ${SHARED_STYLES}
 <div id="viz-grid">
   <!-- TOP LEFT: Event feed -->
   <div class="viz-panel">
-    <div class="viz-panel-title">01 / LIVE EVENT FEED</div>
+    <div class="viz-panel-title">LIVE EVENT FEED</div>
     <div class="viz-panel-body">
       <div id="event-feed"></div>
     </div>
@@ -2531,7 +2514,7 @@ ${SHARED_STYLES}
 
   <!-- TOP RIGHT: SVG learning curve -->
   <div class="viz-panel">
-    <div class="viz-panel-title">02 / LEARNING CURVE &mdash; SUCCESS RATE BY CALL</div>
+    <div class="viz-panel-title">LEARNING CURVE &mdash; SUCCESS RATE BY CALL</div>
     <div class="viz-panel-body" id="chart-container">
       <div id="chart-wrap">
         <svg id="routing-chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
@@ -2542,27 +2525,26 @@ ${SHARED_STYLES}
 
   <!-- BOTTOM LEFT: latency race bars (chosen vs slowest) -->
   <div class="viz-panel">
-    <div class="viz-panel-title">03 / LATENCY · CHOSEN vs SLOWEST</div>
+    <div class="viz-panel-title">ROI</div>
     <div class="viz-panel-body">
       <div id="race-panel">
         <div class="race-row">
-          <div class="race-label">Chosen route <span class="race-tag chosen">avg</span></div>
+          <div class="race-label">Chosen route</div>
           <div class="race-track"><div class="race-bar chosen" id="race-bar-chosen"></div></div>
           <div class="race-value" id="race-val-chosen">— ms</div>
         </div>
         <div class="race-row">
-          <div class="race-label">Slowest provider <span class="race-tag slow">avg</span></div>
+          <div class="race-label">Slowest provider</div>
           <div class="race-track"><div class="race-bar slow" id="race-bar-slow"></div></div>
           <div class="race-value" id="race-val-slow">— ms</div>
         </div>
-        <div class="race-footnote" id="race-footnote">awaiting calls…</div>
       </div>
     </div>
   </div>
 
   <!-- BOTTOM RIGHT: Raw events table -->
   <div class="viz-panel">
-    <div class="viz-panel-title">04 / RAW ROUTING EVENTS (LAST 20)</div>
+    <div class="viz-panel-title">RAW ROUTING EVENTS (LAST 20)</div>
     <div class="viz-panel-body">
       <div id="raw-table-wrap">
         <table class="raw">
@@ -2610,7 +2592,6 @@ ${SHARED_STYLES}
   var raceBarSlow = document.getElementById('race-bar-slow');
   var raceValChosen = document.getElementById('race-val-chosen');
   var raceValSlow = document.getElementById('race-val-slow');
-  var raceFoot = document.getElementById('race-footnote');
   var rawTbody = document.getElementById('raw-tbody');
   var chartSvg = document.getElementById('routing-chart');
   var chartLegend = document.getElementById('chart-legend');
@@ -2862,14 +2843,10 @@ ${SHARED_STYLES}
 
     // slowest provider: highest running avg_latency_ms across registered providers
     var slowestAvg = 0;
-    var slowestName = '';
     for (var pi = 0; pi < providerList.length; pi++) {
       var p = providerList[pi];
       var lat = Number(p.avg_latency_ms || 0);
-      if (lat > slowestAvg) {
-        slowestAvg = lat;
-        slowestName = p.name;
-      }
+      if (lat > slowestAvg) slowestAvg = lat;
     }
 
     // Empty / pre-data state
@@ -2878,7 +2855,6 @@ ${SHARED_STYLES}
       raceBarSlow.style.width = '0%';
       raceValChosen.textContent = '— ms';
       raceValSlow.textContent = '— ms';
-      raceFoot.textContent = 'awaiting calls…';
       return;
     }
 
@@ -2889,18 +2865,6 @@ ${SHARED_STYLES}
 
     raceValChosen.textContent = Math.round(chosenAvg) + ' ms';
     raceValSlow.textContent = Math.round(slowestAvg) + ' ms';
-
-    var delta = slowestAvg - chosenAvg;
-    if (delta > 0 && chosenAvg > 0) {
-      var ratio = slowestAvg / chosenAvg;
-      raceFoot.textContent =
-        Math.round(delta) + ' ms faster per call · ' +
-        ratio.toFixed(1) + '× speedup · vs ' + (slowestName || 'slowest') +
-        ' (across ' + chosenN + ' calls)';
-    } else {
-      raceFoot.textContent =
-        'across ' + chosenN + ' calls · chosen route matches slowest';
-    }
   }
 
   // ── Raw table (all values escaped) ──
