@@ -3,6 +3,9 @@ import "dotenv/config";
 import http from "node:http";
 import querystring from "node:querystring";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 
 import providersHandler from "./api/providers.js";
@@ -316,6 +319,70 @@ function verifyPKCE(verifier: string, challenge: string): boolean {
   return hash === challenge;
 }
 
+// ── SDK auto-install helpers ─────────────────────────────────────────────────
+const __dirname_dev = path.dirname(fileURLToPath(import.meta.url));
+let __sdkBundleCache: string | null = null;
+
+function readSdkBundle(): string {
+  if (__sdkBundleCache !== null) return __sdkBundleCache;
+  // Source-run: dev-server.ts lives at repo root, bundle at <root>/dist/sdk-auto.mjs.
+  // Built-run:  dev-server.js lives at <root>/dist, bundle in same dir.
+  const candidates = [
+    path.join(__dirname_dev, "dist", "sdk-auto.mjs"),
+    path.join(__dirname_dev, "sdk-auto.mjs"),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) {
+      __sdkBundleCache = fs.readFileSync(c, "utf8");
+      return __sdkBundleCache;
+    }
+  }
+  throw new Error("sdk bundle not found — run `npm run build:sdk`");
+}
+
+// Generates a POSIX shell script that installs Invariant's fetch interceptor
+// into the user's node runtime via NODE_OPTIONS=--import. Idempotent: re-runs
+// just refresh the key.
+function renderInstallScript(baseUrl: string, plKey: string): string {
+  // sanity: keep the key in a tight charset so it can't break the shell line
+  const safeKey = /^[A-Za-z0-9_-]+$/.test(plKey) ? plKey : "";
+  return [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    "",
+    'INVARIANT_DIR="$HOME/.invariant"',
+    'LOADER="$INVARIANT_DIR/auto.mjs"',
+    "",
+    'mkdir -p "$INVARIANT_DIR"',
+    `curl -fsSL "${baseUrl}/sdk/auto.mjs" -o "$LOADER"`,
+    "",
+    'case "${SHELL:-}" in',
+    '  */zsh)  RC="$HOME/.zshrc" ;;',
+    '  */bash) RC="$HOME/.bashrc" ;;',
+    '  *)      RC="$HOME/.profile" ;;',
+    "esac",
+    "",
+    'touch "$RC"',
+    'if grep -q "# >>> invariant >>>" "$RC" 2>/dev/null; then',
+    "  # remove previous block — re-running updates the key",
+    `  sed -i.bak '/# >>> invariant >>>/,/# <<< invariant <<</d' "$RC"`,
+    "fi",
+    "",
+    "{",
+    '  echo ""',
+    '  echo "# >>> invariant >>>"',
+    `  echo "export INVARIANT_PL_KEY=${safeKey}"`,
+    `  printf 'export NODE_OPTIONS="\${NODE_OPTIONS:-} --import=%s"\\n' "$LOADER"`,
+    '  echo "# <<< invariant <<<"',
+    '} >> "$RC"',
+    "",
+    `printf '\\n  invariant installed.\\n'`,
+    `printf '  → restart your terminal (or: source %s)\\n' "$RC"`,
+    `printf '  → every node script you run now routes through invariant\\n\\n'`,
+    "",
+  ].join("\n");
+}
+
 function parseFormBody(
   req: http.IncomingMessage,
 ): Promise<Record<string, string>> {
@@ -578,6 +645,7 @@ function renderNav(active?: string): string {
 
 function renderInstallPage(baseUrl: string, sessionKey: string): string {
   const mcpUrl = `${baseUrl}/api/mcp`;
+  const installCmd = `curl -fsSL "${baseUrl}/install.sh?key=${sessionKey}" | bash`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -643,6 +711,11 @@ ${SHARED_STYLES}
   .mstep code{font-family:var(--mono);font-size:0.75rem;color:var(--cyan);background:#111;padding:0.1rem 0.3rem;}
   .mstep strong{color:var(--fg);}
   .path-hint{font-family:var(--mono);font-size:0.72rem;color:var(--muted);background:#111;border:1px solid var(--line);padding:0.4rem 0.7rem;margin:0.5rem 0 0.75rem;display:block;word-break:break-all;}
+
+  /* node runtime card — wide variant */
+  .install-divider{font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin:0.75rem 0 1.25rem;text-align:center;}
+  .ic-wide{display:block;}
+  .ic-cmd{display:block;background:#0a0a0a;border:1px solid var(--line);padding:1rem 1.25rem;margin:0 0 1.5rem;font-family:var(--mono);font-size:0.78rem;color:var(--amber);overflow-x:auto;white-space:nowrap;}
 
   /* verify section */
   .verify-box{border:1px solid var(--line);padding:1.5rem 1.75rem;margin-top:2rem;}
@@ -725,6 +798,27 @@ ${renderNav("install")}
     </div>
   </div>
 
+  <p class="install-divider">— or, for code your agent writes —</p>
+
+  <div class="ic ic-wide" id="node-card" onclick="installNode()">
+    <div class="ic-logo">❯_</div>
+    <div class="ic-name">Node runtime</div>
+    <div class="ic-desc">Intercepts <code>fetch()</code> in any node process you run. Agent code stays naive — calls to nominatim, coingecko, openweather route transparently under your PL key.</div>
+    <code class="ic-cmd" id="node-cmd">${escapeHtml(installCmd)}</code>
+    <span class="ic-btn" id="node-btn-label">Copy install command →</span>
+    <div class="ic-confirm" id="node-confirm">
+      <div class="ic-confirm-q">Paste in your terminal, then <strong>restart your shell</strong>. Did the install finish?</div>
+      <div class="ic-confirm-btns">
+        <button class="ic-yes" onclick="confirmYes('node',event)">Yes, done</button>
+        <button class="ic-no" onclick="confirmNo('node',event)">It failed</button>
+      </div>
+    </div>
+    <div class="ic-success" id="node-success">
+      <div class="ic-success-msg">Invariant active in your node runtime.</div>
+      <div class="ic-verify">Any script that calls <code>fetch("nominatim.openstreetmap.org/...")</code> now routes through Invariant.</div>
+    </div>
+  </div>
+
   <div class="verify-box">
     <div class="verify-box-label">How to confirm it worked</div>
     <div class="vstep"><span class="vstep-n">1</span><span>Open your agent and start a new conversation.</span></div>
@@ -737,6 +831,7 @@ ${renderNav("install")}
 <script>
   const MCP_URL = ${JSON.stringify(mcpUrl)};
   const PL_KEY = ${JSON.stringify(sessionKey)};
+  const INSTALL_CMD = ${JSON.stringify(installCmd)};
 
   function copyKey() {
     navigator.clipboard.writeText(PL_KEY).then(function() {
@@ -749,7 +844,6 @@ ${renderNav("install")}
   function copySnippet(id, e) {
     e.stopPropagation();
     var pre = document.getElementById(id);
-    // strip HTML tags to get plain text
     navigator.clipboard.writeText(pre.innerText).then(function() {
       var btn = e.target;
       btn.textContent = 'Copied!';
@@ -772,19 +866,41 @@ ${renderNav("install")}
     }, 4000);
   }
 
+  function installNode() {
+    const card = document.getElementById('node-card');
+    if (card.classList.contains('ic-pending')) return;
+    navigator.clipboard.writeText(INSTALL_CMD).then(() => {
+      card.classList.add('ic-pending');
+      document.getElementById('node-btn-label').textContent = '✓ Copied — paste in your terminal';
+      setTimeout(() => {
+        document.getElementById('node-confirm').style.display = 'block';
+      }, 1200);
+    }, () => {
+      // clipboard blocked — fall back to selecting the visible command
+      const range = document.createRange();
+      range.selectNode(document.getElementById('node-cmd'));
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.getElementById('node-btn-label').textContent = 'Selected — ⌘C to copy';
+    });
+  }
+
+  const DONE_LABELS = { cursor: '✓ Added to Cursor', claude: '✓ Added to Claude', node: '✓ Invariant active' };
+  const RESET_LABELS = { cursor: 'Add to Cursor →', claude: 'Add to Claude →', node: 'Copy install command →' };
+
   function confirmYes(app, e) {
     e.stopPropagation();
     document.getElementById(app + '-confirm').style.display = 'none';
     document.getElementById(app + '-success').style.display = 'block';
-    document.getElementById(app + '-btn-label').textContent = '✓ Added to Cursor';
+    document.getElementById(app + '-btn-label').textContent = DONE_LABELS[app] || '✓ Done';
   }
 
   function confirmNo(app, e) {
     e.stopPropagation();
     document.getElementById(app + '-confirm').style.display = 'none';
     document.getElementById(app + '-card').classList.remove('ic-pending');
-    document.getElementById(app + '-btn-label').textContent = 'Auto-install →';
-    document.getElementById(app + '-manual').style.display = 'block';
+    document.getElementById(app + '-btn-label').textContent = RESET_LABELS[app] || 'Retry';
   }
 </script>
 </body>
@@ -3408,6 +3524,34 @@ const server = http.createServer(async (req, res) => {
     }
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderInstallPage(getBaseUrl(req), sessionKey));
+  }
+
+  if (path === "/sdk/auto.mjs") {
+    try {
+      const body = readSdkBundle();
+      res.setHeader("Content-Type", "text/javascript; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=300");
+      return res.end(body);
+    } catch {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      return res.end("sdk bundle missing — run `npm run build:sdk`");
+    }
+  }
+
+  if (path === "/install.sh") {
+    // Accept key from cookie (browser preview) or ?key= (curl one-liner).
+    const queryKey = querystring.parse(qs || "").key as string | undefined;
+    const sessionKey =
+      queryKey ?? getCookieValue(req.headers.cookie, "pl_key");
+    if (!sessionKey) {
+      res.writeHead(401, { "Content-Type": "text/plain" });
+      return res.end(
+        "sign in at " + getBaseUrl(req) + "/login to get an install link\n",
+      );
+    }
+    res.setHeader("Content-Type", "text/x-shellscript; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(renderInstallScript(getBaseUrl(req), sessionKey));
   }
 
   if (path === "/login") {
