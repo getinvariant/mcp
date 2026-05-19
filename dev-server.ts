@@ -554,34 +554,35 @@ const SHARED_HEAD = `<meta charset="utf-8">
 <meta name="twitter:description" content="One key unlocks every API your agent needs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,500&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>`;
 
 const SHARED_STYLES = `
   *{margin:0;padding:0;box-sizing:border-box;border-radius:0 !important;}
   :root{
-    --bg:#060606;
-    --fg:#f2ede1;
-    --muted:#6a6a66;
-    --dim:#38342c;
-    --amber:#ffb727;
-    --cyan:#5fd3ff;
-    --red:#ff3b14;
-    --cream:#f2ede1;
-    --line:rgba(242,237,225,0.12);
-    --line-strong:rgba(242,237,225,0.28);
-    --serif:'Instrument Serif','Times New Roman',serif;
-    --mono:'Geist Mono','JetBrains Mono','Courier New',monospace;
-    --sans:'Space Grotesk','Helvetica Neue',sans-serif;
+    /* Origin palette — warm-black, warm-ink, true gold. Matches the homepage
+       redesign in renderHomepage(). Shared by /login, /install, /viz, etc. */
+    --bg:#0a0807;
+    --fg:#f3eee3;
+    --muted:#8a8475;
+    --dim:#5a564b;
+    --amber:#f5c850;
+    --cyan:#6cc9ef;
+    --red:#ef4f3a;
+    --cream:#f3eee3;
+    --line:rgba(245,200,80,0.16);
+    --line-strong:rgba(245,200,80,0.36);
+    --serif:'Fraunces','Instrument Serif','Times New Roman',serif;
+    --mono:'JetBrains Mono','Geist Mono','Courier New',monospace;
+    --sans:'Inter','Space Grotesk','Helvetica Neue',sans-serif;
   }
   html,body{overflow-x:hidden;}
   body{font-family:var(--mono);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
     background-image:
-      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
-      radial-gradient(circle at 80% -10%, rgba(255,183,39,0.06), transparent 45%),
-      radial-gradient(circle at 0% 110%, rgba(95,211,255,0.05), transparent 45%);
-    background-size:48px 48px,48px 48px,100% 100%,100% 100%;
+      linear-gradient(rgba(245,200,80,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,200,80,0.04) 1px, transparent 1px),
+      radial-gradient(ellipse 50% 35% at 50% -5%, rgba(245,200,80,0.12), transparent 70%);
+    background-size:56px 56px,56px 56px,100% 100%;
   }
   ::selection{background:var(--amber);color:#000;}
   a{color:var(--fg);text-decoration:none;transition:color .18s ease, background .18s ease}
@@ -1384,7 +1385,7 @@ function renderHomepage(): string {
 </script>
 
 </body>
-</html>\`;
+</html>`;
 }
 
 function renderLogin(): string {
