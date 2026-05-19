@@ -1237,7 +1237,7 @@ function renderHomepage(): string {
     </p>
 
     <div class="cta-row">
-      <a class="cta gold" href="/login">try the mvp →</a>
+      <a class="cta gold" href="/login">start building →</a>
       <div class="trust">
         <b>free</b> while we're an mvp · <b>no</b> credit card · <b>10+</b> devs already
       </div>
@@ -1352,7 +1352,7 @@ function renderHomepage(): string {
 
 <section class="final">
   <h2>write the <em>agent.</em><br>we'll handle the <em>apis.</em></h2>
-  <a class="cta gold" href="/login">try the mvp →</a>
+  <a class="cta gold" href="/login">start building →</a>
   <div class="sub-cta">free while we're an mvp · no card · sf-based · summer 2026</div>
 </section>
 
@@ -1435,6 +1435,12 @@ ${SHARED_STYLES}
   .flash-sub{font-family:var(--mono);font-size:0.68rem;color:var(--muted);margin-top:0.6rem;letter-spacing:0.08em;}
   .flash-sub code{background:#050505;border:1px solid var(--line-strong);padding:0.1rem 0.4rem;color:var(--cyan);font-family:var(--mono);}
 
+  .signed-in-banner{border:1px solid var(--line);background:rgba(245,200,80,0.04);padding:1.25rem 1.4rem;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;animation:rise 0.5s ease both;}
+  .signed-in-banner .sib-label{font-family:var(--mono);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--muted);}
+  .signed-in-banner .sib-key{color:var(--amber);font-weight:700;letter-spacing:0.06em;text-transform:none;}
+  .signed-in-banner .sib-actions{display:flex;gap:0.75rem;flex-wrap:wrap;}
+  .signed-in-banner .btn{padding:0.6rem 1.1rem;font-size:0.76rem;}
+
   .copied-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--amber);color:#000;padding:0.75rem 1.25rem;font-family:var(--mono);font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0;transition:opacity .2s;pointer-events:none;border:2px solid var(--fg);box-shadow:-4px 4px 0 var(--fg);}
   .copied-toast.show{opacity:1;}
 
@@ -1486,11 +1492,21 @@ ${renderNav("login")}
 <div class="copied-toast" id="copied-toast">Copied</div>
 <script>
 (function() {
-  // If already signed in and not coming from a "get free key" intent, go to install
-  var isModeSignup = new URLSearchParams(window.location.search).get('mode') === 'signup';
-  if (document.cookie.match(/pl_key=/) && !isModeSignup) {
-    window.location.href = '/install';
-    return;
+  // If already signed in, surface a "signed in as X" banner with log-out
+  // and continue-to-install actions instead of silently redirecting.
+  var existingKey = (document.cookie.match(/pl_key=([^;]+)/) || [])[1];
+  if (existingKey) {
+    try { existingKey = decodeURIComponent(existingKey); } catch (e) {}
+    var banner = document.createElement('div');
+    banner.className = 'signed-in-banner';
+    banner.innerHTML =
+      '<div class="sib-label">signed in as <span class="sib-key">' + existingKey.slice(0, 12) + '…</span></div>' +
+      '<div class="sib-actions">' +
+        '<a class="btn btn-primary" href="/install">continue to install →</a>' +
+        '<a class="btn btn-ghost" href="/logout">log out</a>' +
+      '</div>';
+    var pageEl = document.querySelector('.login-page');
+    pageEl.insertBefore(banner, pageEl.firstChild);
   }
 
   function setCookie(name, val) {
@@ -3119,6 +3135,16 @@ const server = http.createServer(async (req, res) => {
   if (path === "/login") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderLogin());
+  }
+
+  if (path === "/logout") {
+    // Clear the session cookie, then bounce back to the home page.
+    res.writeHead(302, {
+      Location: "/",
+      "Set-Cookie":
+        "pl_key=; Path=/; Max-Age=0; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    });
+    return res.end();
   }
 
   if (path === "/dashboard") {
