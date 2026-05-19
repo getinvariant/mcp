@@ -372,6 +372,7 @@ function renderInstallScript(baseUrl: string, plKey: string): string {
     '  echo ""',
     '  echo "# >>> invariant >>>"',
     `  echo "export INVARIANT_PL_KEY=${safeKey}"`,
+    `  echo "export INVARIANT_BASE_URL=${baseUrl}"`,
     `  printf 'export NODE_OPTIONS="\${NODE_OPTIONS:-} --import=%s"\\n' "$LOADER"`,
     '  echo "# <<< invariant <<<"',
     '} >> "$RC"',
