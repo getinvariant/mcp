@@ -2407,50 +2407,68 @@ ${SHARED_STYLES}
   .legend-item{display:flex;align-items:center;gap:0.4rem;}
   .legend-dot{width:10px;height:10px;border:2px solid currentColor;}
 
-  /* ── ROI counters ── */
-  #roi-panel{
-    display:flex;
-    align-items:stretch;
-    justify-content:stretch;
+  /* ── Latency race bars ── */
+  #race-panel{
     height:100%;
-  }
-  .roi-half{
-    flex:1;
+    padding:1.5rem 1.75rem;
     display:flex;
     flex-direction:column;
-    align-items:center;
     justify-content:center;
-    gap:0.6rem;
-    padding:1rem;
-    border-right:2px solid var(--fg);
-    text-align:center;
+    gap:1.5rem;
   }
-  .roi-half:last-child{border-right:none;}
-  .roi-label{
+  .race-row{
+    display:grid;
+    grid-template-columns:minmax(8rem,auto) 1fr minmax(5rem,auto);
+    gap:1rem;
+    align-items:center;
+  }
+  .race-label{
     font-family:var(--mono);
-    font-size:0.85rem;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:0.18em;
-    color:var(--muted);
-    line-height:1.4;
-  }
-  .roi-number{
-    font-family:var(--serif);
-    font-size:clamp(4rem,8vw,7rem);
-    font-weight:400;
-    color:var(--amber);
-    line-height:1;
-    letter-spacing:-0.03em;
-    font-variant-numeric:tabular-nums;
-  }
-  .roi-number.cyan{color:var(--cyan);}
-  .roi-unit{
-    font-family:var(--mono);
-    font-size:0.8rem;
+    font-size:0.78rem;
     text-transform:uppercase;
     letter-spacing:0.14em;
+    color:var(--fg);
+    white-space:nowrap;
+  }
+  .race-tag{
+    font-size:0.62rem;
+    margin-left:0.4rem;
+    padding:0.1rem 0.4rem;
     color:var(--muted);
+    border:1px solid var(--line);
+    border-radius:2px;
+    letter-spacing:0.08em;
+  }
+  .race-track{
+    height:1.5rem;
+    background:rgba(245,200,80,0.04);
+    border:1px solid var(--line);
+    position:relative;
+    overflow:hidden;
+  }
+  .race-bar{
+    height:100%;
+    width:0;
+    transition:width 0.6s cubic-bezier(0.25,0.1,0.25,1);
+  }
+  .race-bar.chosen{background:var(--amber);}
+  .race-bar.slow{background:rgba(239,79,58,0.55);} /* warm red, dimmer than chosen */
+  .race-value{
+    font-family:var(--mono);
+    font-size:1rem;
+    font-weight:600;
+    color:var(--fg);
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  .race-footnote{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:var(--muted);
+    letter-spacing:0.06em;
+    text-align:center;
+    margin-top:0.4rem;
   }
 
   /* ── Raw table ── */
@@ -2522,21 +2540,22 @@ ${SHARED_STYLES}
     </div>
   </div>
 
-  <!-- BOTTOM LEFT: ROI counters -->
+  <!-- BOTTOM LEFT: latency race bars (chosen vs slowest) -->
   <div class="viz-panel">
-    <div class="viz-panel-title">03 / ROI METRICS</div>
+    <div class="viz-panel-title">03 / LATENCY · CHOSEN vs SLOWEST</div>
     <div class="viz-panel-body">
-      <div id="roi-panel">
-        <div class="roi-half">
-          <div class="roi-label">Failures<br>Avoided</div>
-          <div class="roi-number" id="roi-failures">0</div>
-          <div class="roi-unit">events</div>
+      <div id="race-panel">
+        <div class="race-row">
+          <div class="race-label">Chosen route <span class="race-tag chosen">avg</span></div>
+          <div class="race-track"><div class="race-bar chosen" id="race-bar-chosen"></div></div>
+          <div class="race-value" id="race-val-chosen">— ms</div>
         </div>
-        <div class="roi-half">
-          <div class="roi-label">Latency<br>Saved</div>
-          <div class="roi-number cyan" id="roi-latency">0</div>
-          <div class="roi-unit">ms total</div>
+        <div class="race-row">
+          <div class="race-label">Slowest provider <span class="race-tag slow">avg</span></div>
+          <div class="race-track"><div class="race-bar slow" id="race-bar-slow"></div></div>
+          <div class="race-value" id="race-val-slow">— ms</div>
         </div>
+        <div class="race-footnote" id="race-footnote">awaiting calls…</div>
       </div>
     </div>
   </div>
@@ -2587,8 +2606,11 @@ ${SHARED_STYLES}
 
   var feedEl = document.getElementById('event-feed');
   var statusEl = document.getElementById('poll-status');
-  var roiFailures = document.getElementById('roi-failures');
-  var roiLatency = document.getElementById('roi-latency');
+  var raceBarChosen = document.getElementById('race-bar-chosen');
+  var raceBarSlow = document.getElementById('race-bar-slow');
+  var raceValChosen = document.getElementById('race-val-chosen');
+  var raceValSlow = document.getElementById('race-val-slow');
+  var raceFoot = document.getElementById('race-footnote');
   var rawTbody = document.getElementById('raw-tbody');
   var chartSvg = document.getElementById('routing-chart');
   var chartLegend = document.getElementById('chart-legend');
@@ -2814,36 +2836,71 @@ ${SHARED_STYLES}
     }
   }
 
-  // ── ROI computation ──
+  // ── Latency race bars: chosen-route avg vs slowest-provider avg ──
+  //
+  // Both numbers come straight from observed data:
+  //   chosenAvg  = mean(event.latency_ms) across all routed events
+  //   slowestAvg = max(provider.avg_latency_ms) across all providers seen
+  //
+  // No counterfactual reweighting — partner can verify both with the raw
+  // event table on the right. The visual width ratio mirrors the latency
+  // ratio (both bars share the same max scale).
   function renderROI() {
-    var failuresAvoided = 0;
-    var latencySaved = 0;
     var providerList = Object.values(allProviders);
 
+    // chosen-route avg: mean of actual event latencies
+    var chosenSum = 0;
+    var chosenN = 0;
     for (var i = 0; i < allEvents.length; i++) {
-      var ev = allEvents[i];
-      if (ev.rates_after) {
-        var chosenRate = Number(ev.rates_after[ev.provider] || 0);
-        var others = Object.keys(ev.rates_after)
-          .filter(function(k){ return k !== ev.provider; })
-          .map(function(k){ return Number(ev.rates_after[k]); });
-        if (others.length > 0) {
-          var avgOther = others.reduce(function(a,b){ return a+b; }, 0) / others.length;
-          failuresAvoided += Math.max(0, chosenRate - avgOther);
-        }
+      var l = allEvents[i].latency_ms;
+      if (typeof l === 'number' && l >= 0) {
+        chosenSum += l;
+        chosenN++;
       }
-      if (ev.latency_ms != null && providerList.length > 1) {
-        var worstLatency = 0;
-        for (var pi = 0; pi < providerList.length; pi++) {
-          var lat = providerList[pi].avg_latency_ms || 0;
-          if (lat > worstLatency) worstLatency = lat;
-        }
-        latencySaved += Math.max(0, worstLatency - ev.latency_ms);
+    }
+    var chosenAvg = chosenN > 0 ? chosenSum / chosenN : 0;
+
+    // slowest provider: highest running avg_latency_ms across registered providers
+    var slowestAvg = 0;
+    var slowestName = '';
+    for (var pi = 0; pi < providerList.length; pi++) {
+      var p = providerList[pi];
+      var lat = Number(p.avg_latency_ms || 0);
+      if (lat > slowestAvg) {
+        slowestAvg = lat;
+        slowestName = p.name;
       }
     }
 
-    animateCount(roiFailures, Math.round(failuresAvoided * 100) / 100, false);
-    animateCount(roiLatency, Math.round(latencySaved), true);
+    // Empty / pre-data state
+    if (chosenN === 0 || slowestAvg === 0) {
+      raceBarChosen.style.width = '0%';
+      raceBarSlow.style.width = '0%';
+      raceValChosen.textContent = '— ms';
+      raceValSlow.textContent = '— ms';
+      raceFoot.textContent = 'awaiting calls…';
+      return;
+    }
+
+    // Same denominator so the visual ratio = the real ratio
+    var scaleMax = Math.max(chosenAvg, slowestAvg);
+    raceBarChosen.style.width = ((chosenAvg / scaleMax) * 100).toFixed(1) + '%';
+    raceBarSlow.style.width = ((slowestAvg / scaleMax) * 100).toFixed(1) + '%';
+
+    raceValChosen.textContent = Math.round(chosenAvg) + ' ms';
+    raceValSlow.textContent = Math.round(slowestAvg) + ' ms';
+
+    var delta = slowestAvg - chosenAvg;
+    if (delta > 0 && chosenAvg > 0) {
+      var ratio = slowestAvg / chosenAvg;
+      raceFoot.textContent =
+        Math.round(delta) + ' ms faster per call · ' +
+        ratio.toFixed(1) + '× speedup · vs ' + (slowestName || 'slowest') +
+        ' (across ' + chosenN + ' calls)';
+    } else {
+      raceFoot.textContent =
+        'across ' + chosenN + ' calls · chosen route matches slowest';
+    }
   }
 
   // ── Raw table (all values escaped) ──
