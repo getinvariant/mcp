@@ -946,20 +946,16 @@ function renderHomepage(): string {
     )
     .join("");
 
-  let ix = 0;
   const categorySections = grouped
     .map((c) => {
       const cards = c.provs
         .map((p) => {
-          ix++;
-          const num = String(ix).padStart(2, "0");
           const status = p.available
             ? `<span class="status live">live</span>`
             : `<span class="status key">key needed</span>`;
           const acts = p.actions.length;
           return `<div class="prov-card">
             <div class="hd">
-              <span class="ix">${num}</span>
               ${status}
             </div>
             <h4>${escapeHtml(p.name)}</h4>
@@ -1049,7 +1045,7 @@ ${SHARED_STYLES}
 
   /* ── Section base ── */
   .section{max-width:1640px;margin:0 auto;padding:96px 56px;border-top:1px solid var(--line);}
-  .sec-hd{display:grid;grid-template-columns:220px 1fr;gap:48px;align-items:baseline;margin-bottom:64px;}
+  .sec-hd{margin-bottom:64px;}
   .sec-hd .ix{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
   .sec-hd h2{font-family:var(--serif);font-weight:300;font-size:clamp(44px,5vw,76px);line-height:1;
     letter-spacing:-.03em;margin:0;font-variation-settings:'opsz' 144;color:var(--ink);}
@@ -1173,14 +1169,12 @@ ${renderNav()}
     <span><i class="di">◆</i> zero provider accounts</span>
     <span><i class="di">◆</i> built for agents, not humans</span>
     <span><i class="di">◆</i> ${total} providers · ${categoryCount} categories</span>
-    <span><i class="di">◆</i> alpha drops soon</span>
     <span><i class="di">◆</i> one key · every api</span>
     <span><i class="di">◆</i> the api layer, subtracted</span>
     <span><i class="di">◆</i> zero .env files on your machine</span>
     <span><i class="di">◆</i> zero provider accounts</span>
     <span><i class="di">◆</i> built for agents, not humans</span>
     <span><i class="di">◆</i> ${total} providers · ${categoryCount} categories</span>
-    <span><i class="di">◆</i> alpha drops soon</span>
   </div>
 </div>
 
@@ -1200,23 +1194,13 @@ ${renderNav()}
     </p>
 
     <div class="cta-row">
-      <a class="cta-gold" href="/login?mode=signup">try the mvp →</a>
-      <div class="trust">
-        <b>free</b> while we're an mvp · <b>no</b> credit card · <b>10+</b> devs already
-      </div>
-    </div>
-
-    <div class="negatives">
-      <span>no auth hell</span>
-      <span>no .env files</span>
-      <span>no cron for rotation</span>
-      <span>no key dashboards</span>
+      <a class="cta-gold" href="/login?mode=signup">start building →</a>
     </div>
   </div>
 
   <div class="right-col">
     <div class="ascii">
-      <div class="hd">ascii.terminal // mvp</div>
+      <div class="hd">ascii.terminal</div>
       <pre>${ASCII}</pre>
     </div>
 
@@ -1229,8 +1213,6 @@ ${renderNav()}
       <span class="v">mcp · http</span>
       <span class="k">overhead</span>
       <span class="v">~12ms</span>
-      <span class="k">alpha cost</span>
-      <span class="v"><span class="gold">zero</span></span>
       <span class="k">last learned</span>
       <span class="v"><span id="ticker"></span></span>
     </div>
@@ -1239,7 +1221,6 @@ ${renderNav()}
 
 <section class="section">
   <div class="sec-hd">
-    <div class="ix">// 01 · the loop</div>
     <h2>four steps. <em>your stack tunes itself.</em></h2>
   </div>
   <div class="steps">
@@ -1268,18 +1249,6 @@ ${renderNav()}
 
 <section class="section">
   <div class="sec-hd">
-    <div class="ix">// 02 · the ambition</div>
-    <h2>infra for a world that <em>hasn't shipped yet.</em></h2>
-  </div>
-  <div class="infra">
-    <p>in five years, agents will make more api calls per day than humans make google searches. so we're re-building the infra for that, now.</p>
-    <p>we want to become what <b>Cloudflare</b> became for the web, and what <b>Stripe</b> became for payments.</p>
-  </div>
-</section>
-
-<section class="section">
-  <div class="sec-hd">
-    <div class="ix">// 03 · every api, one key</div>
     <h2>the full <em>roster.</em></h2>
   </div>
 
@@ -1302,13 +1271,12 @@ ${renderNav()}
 
 <section class="final">
   <h2>write the <em>agent.</em><br>we'll handle the <em>apis.</em></h2>
-  <a class="cta-gold" href="/login?mode=signup">try the mvp →</a>
-  <div class="sub-line">free while we're an mvp · no card · sf-based · summer 2026</div>
+  <a class="cta-gold" href="/login?mode=signup">start building →</a>
 </section>
 
 <footer class="foot">
   <div>invariant · 2026 · made in sf</div>
-  <div>${total} providers · ${categoryCount} categories · alpha drops soon</div>
+  <div>${total} providers · ${categoryCount} categories</div>
 </footer>
 
 <script>
@@ -1678,8 +1646,7 @@ ${SHARED_STYLES}
   .stat:hover{background:var(--fg);}
   .stat:hover .stat-value{color:#000;}
   .stat:hover .stat-label{color:#333;}
-  .stat::before{content:attr(data-num);position:absolute;top:0.65rem;right:0.85rem;font-family:var(--mono);font-size:0.6rem;color:var(--ink-faint);letter-spacing:0.15em;}
-  .stat-value{font-family:var(--serif);font-size:clamp(2.4rem,4.5vw,3.6rem);font-weight:400;color:var(--fg);line-height:0.95;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;transition:color .25s;}
+.stat-value{font-family:var(--serif);font-size:clamp(2.4rem,4.5vw,3.6rem);font-weight:400;color:var(--fg);line-height:0.95;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;transition:color .25s;}
   .stat-value.green{color:var(--amber);}
   .stat-value.amber{color:var(--cyan);}
   .stat-label{font-family:var(--mono);font-size:0.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-top:0.75rem;font-weight:500;transition:color .25s;}
@@ -1854,19 +1821,19 @@ ${renderNav("dashboard")}
   <!-- Home Tab -->
   <div id="tab-home" class="tab-content active">
     <div class="stats">
-      <div class="stat" data-num="01 ▸">
+      <div class="stat">
         <div class="stat-value">${total}</div>
         <div class="stat-label">Total Providers</div>
       </div>
-      <div class="stat" data-num="02 ▸">
+      <div class="stat">
         <div class="stat-value green">${live}</div>
         <div class="stat-label">Live</div>
       </div>
-      <div class="stat" data-num="03 ▸">
+      <div class="stat">
         <div class="stat-value amber">${total - live}</div>
         <div class="stat-label">Needs API Key</div>
       </div>
-      <div class="stat" data-num="04 ▸">
+      <div class="stat">
         <div class="stat-value">${noKey}</div>
         <div class="stat-label">Free (No Key)</div>
       </div>
@@ -2420,7 +2387,7 @@ ${SHARED_STYLES}
 <div id="viz-grid">
   <!-- TOP LEFT: Event feed -->
   <div class="viz-panel">
-    <div class="viz-panel-title">01 / LIVE EVENT FEED</div>
+    <div class="viz-panel-title">LIVE EVENT FEED</div>
     <div class="viz-panel-body">
       <div id="event-feed"></div>
     </div>
@@ -2428,7 +2395,7 @@ ${SHARED_STYLES}
 
   <!-- TOP RIGHT: SVG learning curve -->
   <div class="viz-panel">
-    <div class="viz-panel-title">02 / LEARNING CURVE &mdash; SUCCESS RATE BY CALL</div>
+    <div class="viz-panel-title">LEARNING CURVE &mdash; SUCCESS RATE BY CALL</div>
     <div class="viz-panel-body" id="chart-container">
       <div id="chart-wrap">
         <svg id="routing-chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
@@ -2439,7 +2406,7 @@ ${SHARED_STYLES}
 
   <!-- BOTTOM LEFT: ROI counters -->
   <div class="viz-panel">
-    <div class="viz-panel-title">03 / ROI METRICS</div>
+    <div class="viz-panel-title">ROI METRICS</div>
     <div class="viz-panel-body">
       <div id="roi-panel">
         <div class="roi-half">
@@ -2458,7 +2425,7 @@ ${SHARED_STYLES}
 
   <!-- BOTTOM RIGHT: Raw events table -->
   <div class="viz-panel">
-    <div class="viz-panel-title">04 / RAW ROUTING EVENTS (LAST 20)</div>
+    <div class="viz-panel-title">RAW ROUTING EVENTS (LAST 20)</div>
     <div class="viz-panel-body">
       <div id="raw-table-wrap">
         <table class="raw">
