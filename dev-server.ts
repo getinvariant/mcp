@@ -942,7 +942,6 @@ function renderHomepage(): string {
     "zero provider accounts",
     "built for agents, not humans",
     "21 providers · 9 categories",
-    "alpha drops soon",
   ];
   // Duplicate the track so the -50% translate loops seamlessly.
   const marqueeHtml = [...marqueePhrases, ...marqueePhrases]
@@ -1006,7 +1005,6 @@ function renderHomepage(): string {
           (p) => `
           <div class="prov-card">
             <div class="hd">
-              <span class="ix">${p.ix}</span>
               <span class="status-pill ${p.live ? "live" : "key"}">${p.live ? "live" : "key needed"}</span>
             </div>
             <h4>${p.nm}</h4>
@@ -1139,7 +1137,7 @@ function renderHomepage(): string {
   @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 
   .section{max-width:1640px;margin:0 auto;padding:96px 56px;border-top:1px solid var(--line);}
-  .sec-hd{display:grid;grid-template-columns:220px 1fr;gap:48px;align-items:baseline;margin-bottom:64px;}
+  .sec-hd{margin-bottom:64px;}
   .sec-hd .ix{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
   .sec-hd h2{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(44px, 5vw, 76px);line-height:1;letter-spacing:-.03em;margin:0;font-variation-settings:'opsz' 144;color:var(--ink);}
   .sec-hd h2 em{font-style:italic;color:var(--gold);font-weight:300;font-variation-settings:'opsz' 144;}
@@ -1268,22 +1266,12 @@ function renderHomepage(): string {
 
     <div class="cta-row">
       <a class="cta gold" href="/login">start building →</a>
-      <div class="trust">
-        <b>free</b> while we're an mvp · <b>no</b> credit card · <b>10+</b> devs already
-      </div>
-    </div>
-
-    <div class="negatives">
-      <span>no auth hell</span>
-      <span>no .env files</span>
-      <span>no cron for rotation</span>
-      <span>no key dashboards</span>
     </div>
   </div>
 
   <div class="hero-right">
     <div class="ascii">
-      <div class="hd">ascii.terminal // mvp</div>
+      <div class="hd">ascii.terminal</div>
 <pre>         ┌─────────────────────────────────────────────┐
          │                                             │
          │   /\\           invariant            /\\      │
@@ -1304,8 +1292,6 @@ function renderHomepage(): string {
       <span class="v">mcp · http</span>
       <span class="k">overhead</span>
       <span class="v">~12ms</span>
-      <span class="k">alpha cost</span>
-      <span class="v"><span class="gold">zero</span></span>
       <span class="k">last learned</span>
       <span class="v"><span id="ticker" style="display:inline-block;animation:fadeIn .45s ease both;"></span></span>
     </div>
@@ -1314,7 +1300,6 @@ function renderHomepage(): string {
 
 <section class="section" id="loop">
   <div class="sec-hd">
-    <div class="ix">// 01 · the loop</div>
     <h2>four steps. <em>your stack tunes itself.</em></h2>
   </div>
   <div class="steps">
@@ -1343,18 +1328,6 @@ function renderHomepage(): string {
 
 <section class="section">
   <div class="sec-hd">
-    <div class="ix">// 02 · the bet</div>
-    <h2>infra for a world that <em>hasn't shipped yet.</em></h2>
-  </div>
-  <div class="pitch">
-    <p>in five years, agents will make more api calls per day than humans make google searches. so we're re-building the infra for that, now.</p>
-    <p>we want to become what <b>Cloudflare</b> became for the web, and what <b>Stripe</b> became for payments.</p>
-  </div>
-</section>
-
-<section class="section">
-  <div class="sec-hd">
-    <div class="ix">// 03 · every api, one key</div>
     <h2>the full <em>roster.</em></h2>
   </div>
 
@@ -1383,12 +1356,11 @@ function renderHomepage(): string {
 <section class="final">
   <h2>write the <em>agent.</em><br>we'll handle the <em>apis.</em></h2>
   <a class="cta gold" href="/login">start building →</a>
-  <div class="sub-cta">free while we're an mvp · no card · sf-based · summer 2026</div>
 </section>
 
 <footer class="foot">
   <div>invariant · 2026 · made in sf</div>
-  <div>mvp · 21 providers · 9 categories</div>
+  <div>21 providers · 9 categories</div>
 </footer>
 
 <script>
@@ -1764,7 +1736,6 @@ ${SHARED_STYLES}
   .stat:hover{background:var(--fg);}
   .stat:hover .stat-value{color:#000;}
   .stat:hover .stat-label{color:#333;}
-  .stat::before{content:attr(data-num);position:absolute;top:0.65rem;right:0.85rem;font-family:var(--mono);font-size:0.6rem;color:#3a362d;letter-spacing:0.15em;}
   .stat-value{font-family:var(--serif);font-size:clamp(2.4rem,4.5vw,3.6rem);font-weight:400;color:var(--fg);line-height:0.95;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;transition:color .25s;}
   .stat-value.green{color:var(--amber);}
   .stat-value.amber{color:var(--cyan);}
@@ -1940,19 +1911,19 @@ ${renderNav("dashboard")}
   <!-- Home Tab -->
   <div id="tab-home" class="tab-content active">
     <div class="stats">
-      <div class="stat" data-num="01 ▸">
+      <div class="stat">
         <div class="stat-value">${total}</div>
         <div class="stat-label">Total Providers</div>
       </div>
-      <div class="stat" data-num="02 ▸">
+      <div class="stat">
         <div class="stat-value green">${live}</div>
         <div class="stat-label">Live</div>
       </div>
-      <div class="stat" data-num="03 ▸">
+      <div class="stat">
         <div class="stat-value amber">${total - live}</div>
         <div class="stat-label">Needs API Key</div>
       </div>
-      <div class="stat" data-num="04 ▸">
+      <div class="stat">
         <div class="stat-value">${noKey}</div>
         <div class="stat-label">Free (No Key)</div>
       </div>
