@@ -1,0 +1,11 @@
+.env
+node_modules/
+creds/*.json
+data/*.json
+!data/.gitkeep
+*.log
+playwright-report/
+test-results/
+.stagehand/
+chrome-profile/
+extensions/

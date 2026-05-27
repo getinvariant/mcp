@@ -8,6 +8,13 @@ create table accounts (
   created_at timestamptz default now()
 );
 
+-- Option B additions: Auth0 sub for OAuth-authenticated accounts,
+-- stripe_customer_id for billing reconciliation.
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS auth0_sub text;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_customer_id text;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_auth0_sub ON accounts(auth0_sub) WHERE auth0_sub IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_stripe_customer ON accounts(stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
+
 create table usage_log (
   id bigint generated always as identity primary key,
   account_id uuid references accounts(id),

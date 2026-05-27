@@ -1,5 +1,6 @@
 import { authenticateRequest } from "../lib/auth.js";
 import { logUsage } from "../lib/db.js";
+import { checkQuota } from "../lib/quota.js";
 import { getProvider } from "../lib/providers/registry.js";
 
 export default async function handler(req: any, res: any) {
@@ -7,9 +8,29 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const auth = await authenticateRequest(req.headers["x-pl-key"] as string);
+  const auth = await authenticateRequest(
+    req.headers["x-pl-key"] as string,
+    req.headers["authorization"] as string | undefined,
+  );
   if (!auth.ok) {
+    if (auth.status === 401) {
+      // MCP-spec: hint where to authorize via WWW-Authenticate.
+      res.setHeader(
+        "WWW-Authenticate",
+        `Bearer resource_metadata="${publicBaseUrl(req)}/.well-known/oauth-protected-resource"`,
+      );
+    }
     return res.status(auth.status || 401).json({ error: auth.error });
+  }
+
+  // Quota enforcement before dispatching the provider call so an over-quota
+  // user doesn't burn an upstream key on a request that would be rejected.
+  const quota = await checkQuota(auth.account!);
+  if (!quota.ok) {
+    if (quota.retryAfterMs) {
+      res.setHeader("Retry-After", String(Math.ceil(quota.retryAfterMs / 1000)));
+    }
+    return res.status(quota.status || 429).json({ error: quota.error });
   }
 
   const { provider_id, action, params } = req.body;
@@ -44,5 +65,14 @@ export default async function handler(req: any, res: any) {
     return res.status(502).json({ error: result.error });
   }
 
-  return res.status(200).json({ data: result.data });
+  return res.status(200).json({
+    data: result.data,
+    quota: { remaining: quota.remaining - 1 },
+  });
+}
+
+function publicBaseUrl(req: any): string {
+  const host = req.headers["x-forwarded-host"] || req.headers["host"] || "";
+  const proto = req.headers["x-forwarded-proto"] || "https";
+  return `${proto}://${host}`;
 }
