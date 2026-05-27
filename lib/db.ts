@@ -28,13 +28,16 @@ export async function getAccount(plKey: string): Promise<Account | null> {
 export async function getAccountByEmail(
   email: string,
 ): Promise<Account | null> {
+  // Use limit(1) + order so we tolerate duplicate-email rows from prior
+  // buggy deploys instead of erroring out via .single().
   const { data, error } = await supabase
     .from("accounts")
     .select("*")
     .eq("email", email)
-    .single();
-  if (error || !data) return null;
-  return data as Account;
+    .order("created_at", { ascending: true })
+    .limit(1);
+  if (error || !data || data.length === 0) return null;
+  return data[0] as Account;
 }
 
 export async function logUsage(
