@@ -87,7 +87,15 @@ export async function createAccount(opts: {
     })
     .select("*")
     .single();
-  if (error || !data) return null;
+  if (error || !data) {
+    console.error("[createAccount] supabase insert failed:", {
+      message: error?.message,
+      code: (error as any)?.code,
+      details: (error as any)?.details,
+      hint: (error as any)?.hint,
+    });
+    return null;
+  }
   return data as Account;
 }
 

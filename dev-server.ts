@@ -3381,11 +3381,33 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Valid email is required" }));
     }
+    // Idempotent on email: if an account already exists, return its key
+    // instead of failing on a duplicate insert.
+    const existing = await getAccountByEmail(email);
+    if (existing) {
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Set-Cookie": `pl_key=${existing.pl_key}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+      });
+      return res.end(
+        JSON.stringify({
+          key: existing.pl_key,
+          tier: existing.tier,
+          quota: existing.monthly_quota,
+          already_existed: true,
+        }),
+      );
+    }
     const plKey = "pl_" + crypto.randomBytes(12).toString("hex");
     const account = await createAccount({ plKey, email });
     if (!account) {
       res.writeHead(500, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "Failed to create account" }));
+      return res.end(
+        JSON.stringify({
+          error: "Failed to create account",
+          hint: "check server logs for supabase error details",
+        }),
+      );
     }
     addToWaitlist(email).catch(() => {});
     res.writeHead(201, {
