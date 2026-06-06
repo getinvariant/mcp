@@ -4,7 +4,7 @@
  *
  * Usage:
  *   Local:  PL_API_KEY=pl_your_test_key PL_BACKEND_URL=http://localhost:3000 npx tsx test.ts
- *   Prod:   PL_API_KEY=pl_your_test_key PL_BACKEND_URL=https://pclabs.dev npx tsx test.ts
+ *   Prod:   PL_API_KEY=pl_your_test_key PL_BACKEND_URL=https://getinvariant.com npx tsx test.ts
  *
  * Both env vars are REQUIRED. There is no demo-key fallback — issue yourself
  * a fresh key via /api/signup before running the suite.

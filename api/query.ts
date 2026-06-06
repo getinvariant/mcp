@@ -2,6 +2,8 @@ import { authenticateRequest } from "../lib/auth.js";
 import { logUsage } from "../lib/db.js";
 import { checkQuota } from "../lib/quota.js";
 import { getProvider } from "../lib/providers/registry.js";
+import { accrueCharge, refundAccrual } from "../lib/billing.js";
+import { providerCostFor, trueUpCost } from "../lib/pricing.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
@@ -54,7 +56,35 @@ export default async function handler(req: any, res: any) {
       });
   }
 
+  // Billing gate: accrue the worst-case cost BEFORE the upstream call so an
+  // agent that hangs up mid-response still owes for what it triggered. Free
+  // providers return 0 and short-circuit. Hard 402 on cap/card issues —
+  // never serve a request we can't bill for.
+  const callParams = params || {};
+  const estimatedCents = providerCostFor(provider_id, action, callParams);
+  if (estimatedCents > 0) {
+    const accrued = await accrueCharge(auth.account!.id, provider_id, estimatedCents);
+    if (!accrued.ok) {
+      return res.status(402).json({
+        error: `Payment required: ${accrued.reason}`,
+        reason: accrued.reason,
+      });
+    }
+  }
+
   const result = await provider.query(action, params || {});
+
+  // True up estimated → actual for usage-based providers (LLMs). For flat-
+  // priced providers trueUpCost returns 0 and refundAccrual is a no-op.
+  // Only refund on success — a failed call still cost us the upstream attempt.
+  if (estimatedCents > 0 && result.success) {
+    const refundCents = trueUpCost(provider_id, action, callParams, result.data);
+    if (refundCents > 0) {
+      refundAccrual(auth.account!.id, provider_id, refundCents).catch((e) =>
+        console.error("[billing] refund failed", e),
+      );
+    }
+  }
 
   // log async — don't block the response
   logUsage(auth.account!.id, provider_id, action, result.success).catch(

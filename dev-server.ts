@@ -579,7 +579,7 @@ const SHARED_HEAD = `<meta charset="utf-8">
 <meta property="og:site_name" content="Invariant">
 <meta property="og:title" content="Invariant">
 <meta property="og:description" content="One key unlocks every API your agent needs.">
-<meta property="og:url" content="https://pclabs.dev">
+<meta property="og:url" content="https://getinvariant.com">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Invariant">
 <meta name="twitter:description" content="One key unlocks every API your agent needs.">
@@ -2270,6 +2270,227 @@ ${renderNav("dashboard")}
 </html>`;
 }
 
+// ── Billing page ──────────────────────────────────────────────────────────────
+// One-time "save a card" flow. Mints a SetupIntent on load, mounts Stripe
+// Payment Element, confirms client-side. Webhook (api/stripe-webhook.ts)
+// flips card_validated_at on setup_intent.succeeded; this page only shows
+// success/failure UI.
+function renderBillingPage(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Billing | Invariant</title>
+<!-- Stripe.js cannot use SRI: the script is versioned by Stripe at runtime
+     and the hash changes without notice. Stripe's docs explicitly say "do
+     not add integrity=" to this tag. crossorigin is fine. -->
+<script src="https://js.stripe.com/v3/" crossorigin="anonymous"></script>
+<style>
+${SHARED_STYLES}
+  .billing-wrap{max-width:520px;margin:5rem auto;padding:0 1.5rem;}
+  .billing-card{border:2px solid var(--fg);padding:2.5rem;background:var(--bg);}
+  .billing-card h1{font-family:var(--serif);font-size:2.5rem;font-weight:400;letter-spacing:-0.02em;margin:0 0 0.5rem;}
+  .billing-card h1 em{font-style:italic;color:var(--amber);}
+  .billing-card .lede{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--fg);opacity:0.7;margin-bottom:2rem;}
+  #payment-element{margin:1.5rem 0;}
+  .btn-submit{width:100%;padding:1rem;background:var(--fg);color:var(--bg);border:none;font-family:var(--mono);font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;}
+  .btn-submit:hover{opacity:0.85;}
+  .btn-submit:disabled{opacity:0.4;cursor:not-allowed;}
+  .msg{font-family:var(--mono);font-size:0.72rem;margin-top:1rem;padding:0.75rem;border:1px solid;}
+  .msg.err{border-color:#c33;color:#c33;}
+  .msg.ok{border-color:var(--amber);color:var(--amber);}
+  .skeleton{height:120px;background:linear-gradient(90deg, rgba(0,0,0,0.05), rgba(0,0,0,0.1), rgba(0,0,0,0.05));background-size:200% 100%;animation:shimmer 1.5s infinite;}
+  @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .footnote{font-family:var(--mono);font-size:0.68rem;color:var(--fg);opacity:0.6;margin-top:1.5rem;line-height:1.6;}
+</style>
+</head>
+<body>
+${renderNav("billing")}
+<div class="billing-wrap">
+  <div class="billing-card">
+    <h1>save a <em>card</em></h1>
+    <p class="lede">one signup — agent pays per call</p>
+
+    <form id="payment-form">
+      <div id="payment-element"><div class="skeleton"></div></div>
+      <button id="submit" class="btn-submit" disabled>save card</button>
+      <div id="msg"></div>
+    </form>
+
+    <p class="footnote">
+      we store a payment method, not a charge. agent calls accrue against this card; sub-$5 totals are batched into one charge per hour. card data goes directly to stripe — never to invariant.
+    </p>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const msg = document.getElementById('msg');
+  const submitBtn = document.getElementById('submit');
+  const paymentEl = document.getElementById('payment-element');
+
+  function showError(text) {
+    msg.className = 'msg err';
+    msg.textContent = text;
+  }
+  function showOk(text) {
+    msg.className = 'msg ok';
+    msg.textContent = text;
+  }
+
+  // 1. Ask our server to mint a SetupIntent. Cookie auth carries the pl_key.
+  let setupRes;
+  try {
+    setupRes = await fetch('/api/setup-payment', { method: 'POST' });
+  } catch (e) {
+    showError('Network error reaching invariant');
+    return;
+  }
+  if (!setupRes.ok) {
+    showError('Could not create setup intent — ' + setupRes.status);
+    return;
+  }
+  const { client_secret, publishable_key } = await setupRes.json();
+  if (!publishable_key) {
+    showError('Server missing STRIPE_PUBLISHABLE_KEY');
+    return;
+  }
+
+  // 2. Hand the secret to Stripe Elements. PAN never touches us.
+  const stripe = Stripe(publishable_key);
+  const elements = stripe.elements({
+    clientSecret: client_secret,
+    appearance: {
+      theme: 'flat',
+      variables: {
+        colorPrimary: '#000',
+        colorBackground: '#fffaf2',
+        colorText: '#000',
+        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+        borderRadius: '0px',
+      },
+    },
+  });
+  const paymentElement = elements.create('payment');
+  paymentElement.mount('#payment-element');
+  paymentElement.on('ready', () => {
+    paymentEl.querySelector('.skeleton')?.remove();
+    submitBtn.disabled = false;
+  });
+
+  // 3. On submit, confirm client-side. Stripe redirects to return_url on
+  //    success (or the page rerenders with an error). The webhook does the
+  //    DB update — we just show UI.
+  document.getElementById('payment-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    submitBtn.disabled = true;
+    msg.textContent = '';
+    const { error } = await stripe.confirmSetup({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + '/billing/done',
+      },
+    });
+    if (error) {
+      showError(error.message || 'Setup failed');
+      submitBtn.disabled = false;
+    }
+    // Success path: Stripe redirects to return_url; we won't reach here.
+  });
+})();
+</script>
+</body>
+</html>`;
+}
+
+// Post-redirect landing. Stripe appends ?setup_intent=...&setup_intent_client_secret=...
+// We just confirm the status visually; webhook has already updated the account.
+function renderBillingDonePage(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Card saved | Invariant</title>
+<!-- See billing page: Stripe.js cannot use SRI per Stripe's docs. -->
+<script src="https://js.stripe.com/v3/" crossorigin="anonymous"></script>
+<style>
+${SHARED_STYLES}
+  .done-wrap{max-width:520px;margin:8rem auto;padding:0 1.5rem;text-align:center;}
+  .done-wrap h1{font-family:var(--serif);font-size:3rem;font-weight:400;margin-bottom:1rem;}
+  .done-wrap h1 em{font-style:italic;color:var(--amber);}
+  .done-wrap p{font-family:var(--mono);font-size:0.8rem;color:var(--fg);opacity:0.8;margin-bottom:2rem;}
+  .done-wrap a{font-family:var(--mono);font-size:0.72rem;color:var(--fg);text-decoration:none;border-bottom:2px solid var(--amber);text-transform:uppercase;letter-spacing:0.15em;}
+  .status-pending{color:#c97a00;}
+  .status-fail{color:#c33;}
+</style>
+</head>
+<body>
+${renderNav("billing")}
+<div class="done-wrap">
+  <!-- Title is pre-rendered as "<plain> <em>" so JS only touches textContent
+       on the two child nodes — no innerHTML, no XSS risk if these strings
+       ever become server-influenced. -->
+  <h1><span id="title-plain">checking</span> <em id="title-em">...</em></h1>
+  <p id="detail">verifying with stripe</p>
+  <a href="/dashboard">back to dashboard →</a>
+</div>
+<script>
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const clientSecret = params.get('setup_intent_client_secret');
+  const titlePlain = document.getElementById('title-plain');
+  const titleEm = document.getElementById('title-em');
+  const detailEl = document.getElementById('detail');
+
+  function setTitle(plain, em) {
+    titlePlain.textContent = plain;
+    titleEm.textContent = em;
+  }
+
+  // We need the publishable key — fetch it cheaply from the same endpoint
+  // (POST returns it alongside a new SetupIntent; we only use the key).
+  const r = await fetch('/api/setup-payment', { method: 'POST' });
+  const { publishable_key } = await r.json();
+  if (!publishable_key || !clientSecret) {
+    setTitle('', 'unknown');
+    detailEl.textContent = 'missing parameters';
+    return;
+  }
+
+  const stripe = Stripe(publishable_key);
+  const { setupIntent, error } = await stripe.retrieveSetupIntent(clientSecret);
+  if (error || !setupIntent) {
+    setTitle('', 'error');
+    detailEl.className = 'status-fail';
+    detailEl.textContent = error?.message || 'could not retrieve setup intent';
+    return;
+  }
+
+  switch (setupIntent.status) {
+    case 'succeeded':
+      setTitle('card', 'saved');
+      detailEl.textContent = 'agents can now charge per call';
+      break;
+    case 'processing':
+      setTitle('card', 'processing');
+      detailEl.className = 'status-pending';
+      detailEl.textContent = 'your bank is verifying — refresh in a moment';
+      break;
+    case 'requires_payment_method':
+      setTitle('', 'declined');
+      detailEl.className = 'status-fail';
+      detailEl.textContent = 'card was declined — try another';
+      break;
+    default:
+      setTitle('', 'pending');
+      detailEl.textContent = setupIntent.status;
+  }
+})();
+</script>
+</body>
+</html>`;
+}
+
 // ── Viz page ──────────────────────────────────────────────────────────────────
 function renderVizPage(plKey = ""): string {
   return `<!DOCTYPE html>
@@ -3150,6 +3371,32 @@ const server = http.createServer(async (req, res) => {
   if (path === "/dashboard") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderDashboard());
+  }
+
+  if (path === "/billing/done") {
+    // Post-Stripe-redirect landing. Auth required so a stranger with the
+    // setup_intent_client_secret query param can't snoop the page. The page
+    // itself just retrieves the SetupIntent status client-side and shows it.
+    const sessionKey = getCookieValue(req.headers.cookie, "pl_key");
+    if (!sessionKey) {
+      res.writeHead(302, { Location: "/login?next=/billing/done" });
+      return res.end();
+    }
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderBillingDonePage());
+  }
+
+  if (path === "/billing") {
+    // Pl_key cookie auth (same as /dashboard). The page itself JS-POSTs to
+    // /api/setup-payment to mint a SetupIntent, then hands the client_secret
+    // to Stripe Elements. Card data never hits our server.
+    const sessionKey = getCookieValue(req.headers.cookie, "pl_key");
+    if (!sessionKey) {
+      res.writeHead(302, { Location: "/login?next=/billing" });
+      return res.end();
+    }
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderBillingPage());
   }
 
   if (path === "/viz") {

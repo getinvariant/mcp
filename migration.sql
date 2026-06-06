@@ -71,3 +71,90 @@ ALTER TABLE routing_stats ADD PRIMARY KEY (account_id, task_type, provider, cont
 
 CREATE INDEX IF NOT EXISTS idx_routing_events_account_task_ctx
   ON routing_events(account_id, task_type, context, call_index);
+
+-- Card-on-file postpaid billing.
+-- payment_method_id: pm_... saved via SetupIntent at signup.
+-- card_validated_at: set by setup_intent.succeeded webhook; gates spend.
+-- spend_cap_cents_remaining: pre-capture trust limit, bumps after first capture clears.
+-- pending_cents: accrued, un-swept micro-charges. Hourly cron or threshold sweeps it.
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS payment_method_id text;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS card_validated_at timestamptz;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS spend_cap_cents_remaining int NOT NULL DEFAULT 200;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS pending_cents int NOT NULL DEFAULT 0;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_frozen boolean NOT NULL DEFAULT false;
+
+-- One row per provider call we owe money for. Sweeps roll many of these
+-- into one PaymentIntent. Kept after sweep for audit; charge_id links back.
+CREATE TABLE IF NOT EXISTS pending_charges (
+  id          bigserial primary key,
+  account_id  uuid not null references accounts(id) on delete cascade,
+  provider_id text not null,
+  amount_cents int not null,
+  charge_id   bigint,                    -- null until swept
+  created_at  timestamptz not null default now()
+);
+CREATE INDEX IF NOT EXISTS idx_pending_charges_unswept
+  ON pending_charges(account_id) WHERE charge_id IS NULL;
+
+-- One row per PaymentIntent. status mirrors Stripe.
+CREATE TABLE IF NOT EXISTS charges (
+  id                bigserial primary key,
+  account_id        uuid not null references accounts(id) on delete cascade,
+  amount_cents      int not null,
+  status            text not null,        -- 'requires_action' | 'succeeded' | 'failed'
+  stripe_intent_id  text unique,
+  idempotency_key   text unique not null,
+  failure_reason    text,
+  created_at        timestamptz not null default now(),
+  settled_at        timestamptz
+);
+CREATE INDEX IF NOT EXISTS idx_charges_account ON charges(account_id, created_at DESC);
+
+-- Atomic accrue. Decrements cap and bumps pending only if cap allows.
+-- Returns the new pending_cents so the caller can decide whether to sweep.
+CREATE OR REPLACE FUNCTION increment_pending_and_decrement_cap(
+  p_account_id uuid,
+  p_amount int
+) RETURNS TABLE(pending_cents int) AS $$
+  UPDATE accounts
+     SET pending_cents = pending_cents + p_amount,
+         spend_cap_cents_remaining = spend_cap_cents_remaining - p_amount
+   WHERE id = p_account_id
+     AND spend_cap_cents_remaining >= p_amount
+     AND billing_frozen = false
+  RETURNING pending_cents;
+$$ LANGUAGE sql;
+
+-- Settle side of the same counter. Called from sweepAccount after rows
+-- are claimed, so we subtract exactly what was claimed (not what we read
+-- before claiming).
+CREATE OR REPLACE FUNCTION decrement_pending(
+  p_account_id uuid,
+  p_amount int
+) RETURNS void AS $$
+  UPDATE accounts
+     SET pending_cents = greatest(0, pending_cents - p_amount)
+   WHERE id = p_account_id;
+$$ LANGUAGE sql;
+
+-- Refund half of the cap math. Used by refundAccrual when an LLM call
+-- consumed fewer tokens than the estimate. Always increments; not monotonic
+-- because real overcharges have to come back to the user.
+CREATE OR REPLACE FUNCTION credit_spend_cap(
+  p_account_id uuid,
+  p_amount int
+) RETURNS void AS $$
+  UPDATE accounts
+     SET spend_cap_cents_remaining = spend_cap_cents_remaining + p_amount
+   WHERE id = p_account_id;
+$$ LANGUAGE sql;
+
+-- Monotonic cap raise. Called from payment_intent.succeeded; never lowers.
+CREATE OR REPLACE FUNCTION bump_spend_cap_if_lower(
+  p_account_id uuid,
+  p_new_cap int
+) RETURNS void AS $$
+  UPDATE accounts
+     SET spend_cap_cents_remaining = greatest(spend_cap_cents_remaining, p_new_cap)
+   WHERE id = p_account_id;
+$$ LANGUAGE sql;

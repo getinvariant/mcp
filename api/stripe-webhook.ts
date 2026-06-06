@@ -14,8 +14,14 @@ import {
   getAccountByStripeCustomer,
   getAccountByEmail,
   updateAccountTier,
+  supabase,
 } from "../lib/db.js";
 import { tierByStripePriceId, tierDefaults } from "../lib/tiers.js";
+
+// After the first successful capture, bump the account's trust cap to
+// $50. New accounts start at $2 (see migration default) so a stolen-card
+// agent can burn at most $2 of upstream before the first auth fails.
+const POST_FIRST_CAPTURE_CAP_CENTS = 5_000;
 
 // Manual signature verification so we don't need the stripe SDK in deps.
 // Stripe signs with a comma-separated `Stripe-Signature` header containing
@@ -116,6 +122,64 @@ export default async function handler(req: any, res: any) {
             perMinuteRate: free.perMinuteRate,
           });
         }
+        break;
+      }
+
+      case "setup_intent.succeeded": {
+        // Card collected. Pull the pm_... off the intent, attach to the
+        // account, mark validated. This is what unlocks accrueCharge.
+        const intent = event.data.object;
+        const customerId: string | undefined = intent.customer;
+        const paymentMethodId: string | undefined = intent.payment_method;
+        if (!customerId || !paymentMethodId) break;
+        const acct = await getAccountByStripeCustomer(customerId);
+        if (!acct) break;
+        await supabase.from("accounts").update({
+          payment_method_id: paymentMethodId,
+          card_validated_at: new Date().toISOString(),
+          billing_frozen: false,        // clear any prior decline freeze
+        }).eq("id", acct.id);
+        break;
+      }
+
+      case "payment_intent.succeeded": {
+        // Sweep settled. Flip the charges row, bump trust cap on first win.
+        const intent = event.data.object;
+        const { data: charge } = await supabase
+          .from("charges")
+          .select("id, account_id")
+          .eq("stripe_intent_id", intent.id)
+          .single();
+        if (!charge) break;
+        await supabase.from("charges").update({
+          status: "succeeded",
+          settled_at: new Date().toISOString(),
+        }).eq("id", charge.id);
+        // Idempotent bump: only widen, never shrink. RPC handles the max().
+        await supabase.rpc("bump_spend_cap_if_lower", {
+          p_account_id: charge.account_id,
+          p_new_cap: POST_FIRST_CAPTURE_CAP_CENTS,
+        });
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const intent = event.data.object;
+        const reason = intent.last_payment_error?.message || "unknown";
+        const { data: charge } = await supabase
+          .from("charges")
+          .select("id, account_id")
+          .eq("stripe_intent_id", intent.id)
+          .single();
+        if (!charge) break;
+        await supabase.from("charges").update({
+          status: "failed",
+          failure_reason: reason,
+        }).eq("id", charge.id);
+        // Freeze: stop serving until user updates card via a new SetupIntent.
+        await supabase.from("accounts").update({
+          billing_frozen: true,
+        }).eq("id", charge.account_id);
         break;
       }
 
