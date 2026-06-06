@@ -10,6 +10,7 @@
 // and is told their tier + quota. No other endpoint accepts their token until
 // they've signed up (auth.ts returns 403 with a pointer here).
 
+import { randomBytes } from "node:crypto";
 import {
   getAccountByAuth0Sub,
   createAccount,
@@ -61,8 +62,14 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  // Synthetic pl_key derived from sub so older FK joins still work.
-  const plKey = `pl_jwt_${claims.sub.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 60)}`;
+  // Random pl_key — MUST NOT be derived from the Auth0 sub. sub is not a
+  // secret (it appears in JWT payloads, server logs, support tickets); a
+  // derived pl_key would let anyone who sees the sub forge a working
+  // x-pl-key header and bypass JWT auth entirely (lib/auth.ts accepts
+  // pl_key as a peer to Bearer). 24 bytes = 192 bits — way past brute-force.
+  // Lookup stability is provided by auth0_sub, which already has a unique
+  // index (migration.sql).
+  const plKey = `pl_jwt_${randomBytes(24).toString("hex")}`;
 
   const account = await createAccount({
     plKey,
