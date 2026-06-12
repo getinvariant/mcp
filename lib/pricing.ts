@@ -72,10 +72,15 @@ const PRICING: Record<string, number | PriceFn> = {
     return Math.ceil((maxTokens / 1_000_000) * 1000);
   },
 
-  // Paid flat-per-call. Fill in your wholesale cost + markup.
-  // mapbox: 1,
-  // geoapify: 1,
-  // finnhub: 2,
+  // Paid flat-per-call. REAL wholesale cost Invariant pays the vendor.
+  // Cents/call (file convention is cents).
+  //
+  // Google Maps Geocoding API: $5.00 per 1,000 calls (0.5 cents/call).
+  //   https://developers.google.com/maps/billing-and-pricing/pricing#geocoding
+  google_maps: (action) => (action === "geocode" ? 0.5 : 0),
+  // Mapbox Geocoding: $0.75 per 1,000 requests (0.075 cents/call).
+  //   https://www.mapbox.com/pricing#search
+  mapbox: (action) => (action === "geocode" ? 0.075 : 0),
 };
 
 const REFUNDERS: Record<string, Refunder> = {
