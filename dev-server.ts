@@ -1290,19 +1290,6 @@ function renderHomepage(): string {
   </div>
 
   <div class="hero-right">
-    <div class="ascii">
-      <div class="hd">ascii.terminal</div>
-<pre>         ┌─────────────────────────────────────────────┐
-         │                                             │
-         │   /\\           invariant            /\\      │
-         │  /  \\      ──────────────────      /  \\     │
-         │ /░░░░\\     the agentic api        /▒▒▒▒\\    │
-         │/______\\    layer that learns     /______\\   │
-         │            how you build                    │
-         │                                             │
-         └─────────────────────────────────────────────┘</pre>
-    </div>
-
     <div class="status">
       <span class="k">status</span>
       <span class="v"><span class="pulse">●</span> <span class="gold">gateway online</span></span>
