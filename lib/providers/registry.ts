@@ -15,6 +15,7 @@ import { FinnhubProvider } from "./finnhub.js";
 import { WorldBankProvider } from "./world-bank.js";
 import { CharityProvider } from "./charity.js";
 import { GeoapifyProvider } from "./geoapify.js";
+import { GoogleMapsProvider } from "./google-maps.js";
 import { MapboxProvider } from "./mapbox.js";
 import { OpenStreetMapProvider } from "./openstreetmap.js";
 import { AlphaVantageProvider } from "./alpha-vantage.js";
@@ -50,7 +51,8 @@ function ensureInitialized() {
     // Environment
     new EnvironmentProvider(),
     new OpenMeteoProvider(),
-    // Maps
+    // Maps — paid rivals (google_maps, mapbox) + free fallbacks
+    new GoogleMapsProvider(),
     new GeoapifyProvider(),
     new MapboxProvider(),
     new OpenStreetMapProvider(),

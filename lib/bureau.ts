@@ -59,5 +59,19 @@ export async function bureauRecommend(
       `($${runnerUp.avg_cost_usd.toFixed(4)}/call, score ${sig2(runnerUp.score)}).`;
   }
 
+  // Surface any leading signal (Airbyte status/pricing) that's docking a score.
+  const flagged = ranked.filter((p) => p.health < 1);
+  if (flagged.length) {
+    reason +=
+      " Leading signals: " +
+      flagged
+        .map(
+          (p) =>
+            `${p.provider} ${p.status || "degraded"} (health ${sig2(p.health)}, base ${sig2(p.base_score)}→${sig2(p.score)})`,
+        )
+        .join(", ") +
+      ".";
+  }
+
   return { category, configured: true, best, reason, ranked };
 }

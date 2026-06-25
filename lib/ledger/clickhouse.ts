@@ -23,6 +23,11 @@ function client(): ClickHouseClient {
     username: process.env.CLICKHOUSE_USER || "default",
     password: process.env.CLICKHOUSE_PASSWORD || "",
     database: process.env.CLICKHOUSE_DATABASE || "default",
+    // ClickHouse Cloud idles the service; the first call after a sleep can take
+    // 10s+ to wake. A short default timeout silently drops the row (recordCall
+    // is throw-safe), so give cold-starts room and keep the socket warm.
+    request_timeout: 30_000,
+    keep_alive: { enabled: true },
   });
   return _client;
 }
@@ -49,24 +54,45 @@ export interface ProviderScore {
   avg_accuracy: number;
   total_cost_usd: number;
   avg_cost_usd: number;
-  score: number;
+  base_score: number; // creditworthiness from our own calls only
+  health: number; // 0..1 leading signal (Airbyte: status/pricing). 1 = clear.
+  status: string; // latest external status, '' when none
+  score: number; // base_score × health — what actually routes the money
 }
 
-/** The rolling creditworthiness query, exposed for the disabled-branch validator. */
+// The rolling creditworthiness query. The score is our own value-per-dollar
+// (accuracy × success ÷ cost) MULTIPLIED by a leading-signal health factor that
+// Airbyte syncs into provider_context from each provider's status/pricing page.
+// An active incident or price hike (health < 1) docks the score BEFORE any of
+// our own calls fail. LEFT JOIN + coalesce → providers with no context score
+// exactly as before (health defaults to 1).
 export const SCORE_SQL = `
+  WITH ctx AS (
+    SELECT provider, argMax(health, ts) AS health, argMax(status, ts) AS status
+    FROM provider_context
+    GROUP BY provider
+  )
   SELECT
-    provider,
-    count()                                            AS calls,
-    sum(success) / count()                             AS success_rate,
-    avg(accuracy)                                      AS avg_accuracy,
-    sum(cost_usd)                                      AS total_cost_usd,
-    sum(cost_usd) / count()                            AS avg_cost_usd,
-    (avg(accuracy) * (sum(success) / count()))
-      / greatest(sum(cost_usd) / count(), 0.000001)    AS score
-  FROM api_calls
-  WHERE category = {category:String}
-  GROUP BY provider
+    a.provider                                           AS provider,
+    count()                                              AS calls,
+    sum(a.success) / count()                             AS success_rate,
+    avg(a.accuracy)                                      AS avg_accuracy,
+    sum(a.cost_usd)                                      AS total_cost_usd,
+    sum(a.cost_usd) / count()                            AS avg_cost_usd,
+    (avg(a.accuracy) * (sum(a.success) / count()))
+      / greatest(sum(a.cost_usd) / count(), 0.000001)    AS base_score,
+    coalesce(any(c.health), 1.0)                         AS health,
+    coalesce(any(c.status), '')                          AS status,
+    base_score * health                                  AS score
+  FROM api_calls AS a
+  LEFT JOIN ctx AS c ON a.provider = c.provider
+  WHERE a.category = {category:String}
+  GROUP BY a.provider
   ORDER BY score DESC
+  -- join_use_nulls so a provider with no context row yields NULL health (→
+  -- coalesce 1.0), not ClickHouse's Float64 default of 0 which would zero the
+  -- score of every provider we have no status signal for.
+  SETTINGS join_use_nulls = 1
 `;
 
 export async function initLedger(): Promise<void> {
@@ -92,6 +118,60 @@ export async function initLedger(): Promise<void> {
       ENGINE = MergeTree
       ORDER BY (category, provider, ts)
     `,
+  });
+  await ensureContextTable();
+}
+
+// provider_context holds Airbyte-synced LEADING signals: each provider's status
+// page / pricing page state, distilled to a health factor in [0,1]. Created
+// lazily so scoreProviders' LEFT JOIN never references a missing table.
+let _ctxEnsured = false;
+async function ensureContextTable(): Promise<void> {
+  if (_ctxEnsured || !ledgerEnabled()) return;
+  await client().command({
+    query: `
+      CREATE TABLE IF NOT EXISTS provider_context (
+        ts        DateTime64(3) DEFAULT now64(3),
+        provider  String,
+        source    String,
+        status    String,
+        health    Float64,
+        note      String
+      )
+      ENGINE = MergeTree
+      ORDER BY (provider, ts)
+    `,
+  });
+  _ctxEnsured = true;
+}
+
+export interface ContextSignal {
+  provider: string;
+  source: string; // 'statuspage' | 'pricing' | 'incident'
+  status: string; // e.g. 'operational', 'major_outage', 'price_hike'
+  health: number; // 0..1 — 1 clear, <1 docks the score as a leading signal
+  note?: string;
+}
+
+/** Write one leading-signal row (Airbyte sync or the incident simulator). */
+export async function recordContextSignal(sig: ContextSignal): Promise<void> {
+  if (!ledgerEnabled()) {
+    console.log("[ledger] disabled, skipping recordContextSignal");
+    return;
+  }
+  await ensureContextTable();
+  await client().insert({
+    table: "provider_context",
+    values: [
+      {
+        provider: sig.provider,
+        source: sig.source,
+        status: sig.status,
+        health: sig.health,
+        note: sig.note ?? "",
+      },
+    ],
+    format: "JSONEachRow",
   });
 }
 
@@ -127,6 +207,7 @@ export async function recordCall(rec: CallRecord): Promise<void> {
 
 export async function scoreProviders(category: string): Promise<ProviderScore[]> {
   if (!ledgerEnabled()) return [];
+  await ensureContextTable();
   const rs = await client().query({
     query: SCORE_SQL,
     query_params: { category },
@@ -140,6 +221,9 @@ export async function scoreProviders(category: string): Promise<ProviderScore[]>
     avg_accuracy: Number(r.avg_accuracy),
     total_cost_usd: Number(r.total_cost_usd),
     avg_cost_usd: Number(r.avg_cost_usd),
+    base_score: Number(r.base_score),
+    health: Number(r.health),
+    status: String(r.status ?? ""),
     score: Number(r.score),
   }));
 }
