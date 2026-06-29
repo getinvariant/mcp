@@ -158,3 +158,28 @@ CREATE OR REPLACE FUNCTION bump_spend_cap_if_lower(
      SET spend_cap_cents_remaining = greatest(spend_cap_cents_remaining, p_new_cap)
    WHERE id = p_account_id;
 $$ LANGUAGE sql;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- feat/routing: multi-account routing (Axis A) + cost capture (G6)
+-- ─────────────────────────────────────────────────────────────────────────
+
+-- G5: dynamic upstream-account inventory. One row per API account we own for a
+-- provider. lib/providers/accounts.ts reads this (env var stays the fallback),
+-- so we add/disable accounts without a redeploy. `weight` biases selection;
+-- `rpm_limit` sizes that account's token budget in the key pool.
+CREATE TABLE IF NOT EXISTS provider_accounts (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  env_var    text NOT NULL,            -- e.g. 'ANTHROPIC_API_KEY' — groups accounts per provider
+  api_key    text NOT NULL,
+  rpm_limit  int  NOT NULL DEFAULT 60, -- this account's sustained requests/minute
+  weight     int  NOT NULL DEFAULT 60, -- selection bias; default to rpm_limit
+  enabled    boolean NOT NULL DEFAULT true,
+  label      text,                     -- human note, e.g. 'mapbox acct #2'
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS provider_accounts_env_enabled_idx
+  ON provider_accounts (env_var) WHERE enabled;
+
+-- G6: capture the real per-call cost (cents Invariant pays the vendor) on every
+-- usage row so per-customer / per-provider spend is queryable from one place.
+ALTER TABLE usage_log ADD COLUMN IF NOT EXISTS cost_cents int NOT NULL DEFAULT 0;

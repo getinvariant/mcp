@@ -110,6 +110,7 @@ export async function logUsage(
   providerId: string,
   action: string,
   success: boolean,
+  costCents: number = 0,
 ): Promise<void> {
   const month = new Date().toISOString().slice(0, 7); // '2026-04'
 
@@ -120,6 +121,7 @@ export async function logUsage(
       provider_id: providerId,
       action,
       success,
+      cost_cents: Math.round(costCents),
     }),
     supabase.rpc("increment_monthly_usage", {
       p_account_id: accountId,

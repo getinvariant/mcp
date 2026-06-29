@@ -9,6 +9,8 @@ import { ledgerEnabled, recordCall } from "../lib/ledger/clickhouse.js";
 import { judgeAccuracy } from "../lib/inference/accuracy.js";
 import { startTrace } from "../lib/trace/langfuse.js";
 import { x402Enabled, buildRequirements, settlePayment } from "../lib/x402/server.js";
+import { checkCustomerProviderBudget } from "../lib/ratelimit/customer.js";
+import { selectProvider, recordOutcome } from "../lib/routing/router.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
@@ -40,10 +42,24 @@ export default async function handler(req: any, res: any) {
     return res.status(quota.status || 429).json({ error: quota.error });
   }
 
-  const { provider_id, action, params } = req.body;
+  let { provider_id } = req.body;
+  const { action, params, task_type } = req.body;
+
+  // G4 — single allocator. When the caller names a task_type instead of a
+  // provider, the router picks the highest-success-rate provider for it from
+  // real call history. recordOutcome (below) closes the loop so the choice
+  // improves over time.
+  if (!provider_id && task_type) {
+    try {
+      const sel = await selectProvider(auth.account!.id, String(task_type));
+      provider_id = sel.chosen;
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
+  }
 
   if (!provider_id || !action) {
-    return res.status(400).json({ error: "Missing provider_id or action" });
+    return res.status(400).json({ error: "Missing provider_id (or task_type) and action" });
   }
 
   const provider = getProvider(provider_id);
@@ -59,6 +75,18 @@ export default async function handler(req: any, res: any) {
       .json({
         error: `Provider '${provider.info.name}' is not configured on the server`,
       });
+  }
+
+  // Axis B — per-customer, per-provider fairness. Enforced before any upstream
+  // call so one customer can't drain a provider's shared key-pool capacity (or
+  // drive the volume that gets our upstream account flagged). They hit their own
+  // slice and 429 without touching the pool.
+  const customerBudget = await checkCustomerProviderBudget(auth.account!.id, provider_id);
+  if (!customerBudget.ok) {
+    res.setHeader("Retry-After", String(Math.ceil(customerBudget.retryAfterMs / 1000)));
+    return res.status(429).json({
+      error: `Per-provider rate limit for '${provider_id}' reached. Retry in ${Math.ceil(customerBudget.retryAfterMs / 1000)}s.`,
+    });
   }
 
   const callParams = params || {};
@@ -143,6 +171,18 @@ export default async function handler(req: any, res: any) {
   const result = await provider.query(action, callParams);
   const latencyMs = Date.now() - startedAt;
 
+  // Close the allocator loop: feed the outcome back so the router's success-rate
+  // ranking reflects reality on the next call for this task_type.
+  if (task_type) {
+    recordOutcome({
+      accountId: auth.account!.id,
+      taskType: String(task_type),
+      provider: provider_id,
+      success: result.success,
+      latencyMs,
+    }).catch(() => {});
+  }
+
   // True up estimated → actual for usage-based providers (LLMs). For flat-
   // priced providers trueUpCost returns 0 and refundAccrual is a no-op.
   // Only refund on success — a failed call still cost us the upstream attempt.
@@ -156,9 +196,15 @@ export default async function handler(req: any, res: any) {
   }
 
   // log async — don't block the response
-  logUsage(auth.account!.id, provider_id, action, result.success).catch(
-    () => {},
-  );
+  // Record the real per-call cost (cents we pay the vendor) so per-customer and
+  // per-provider spend is queryable from usage_log. Only paid calls cost us.
+  logUsage(
+    auth.account!.id,
+    provider_id,
+    action,
+    result.success,
+    isPaid && result.success ? estimatedCents : 0,
+  ).catch(() => {});
 
   // Credit-bureau ledger: every PAID call writes one row to ClickHouse with the
   // real cost, success, and a Pioneer-judged accuracy. This is the source of

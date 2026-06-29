@@ -11,6 +11,7 @@
 
 import type { Account } from "./db.js";
 import { getMonthlyUsageTotal } from "./db.js";
+import { consume } from "./ratelimit/token-bucket.js";
 
 export interface QuotaResult {
   ok: boolean;
@@ -25,53 +26,21 @@ export interface QuotaResult {
 
 // ─── Per-minute token bucket ─────────────────────────────────────────────
 //
-// One bucket per account_id. Refills at `per_minute_rate` tokens per minute,
-// burstable up to that same number. Lives in memory — fine for a single
-// serverless instance; on Vercel each lambda gets its own bucket which means
-// effective rate is per-instance × instances. For demo + early users that's
-// generous-but-not-broken; switch to Upstash Redis when scale matters.
+// One bucket per account_id, refilling at `per_minute_rate`/min, burstable to
+// the same. State lives in Upstash Redis (lib/ratelimit/token-bucket) so the
+// limit holds across Vercel instances instead of being per-lambda. Degrades to
+// an in-memory bucket automatically when Upstash isn't configured.
 
-interface Bucket {
-  tokens: number;
-  lastRefillMs: number;
-  capacity: number;
-  refillPerMs: number;
-}
-
-const buckets = new Map<string, Bucket>();
-
-function consumeToken(accountId: string, perMinuteRate: number): {
+async function consumeToken(accountId: string, perMinuteRate: number): Promise<{
   ok: boolean;
   retryAfterMs?: number;
-} {
-  const now = Date.now();
-  let bucket = buckets.get(accountId);
-  if (!bucket || bucket.capacity !== perMinuteRate) {
-    bucket = {
-      tokens: perMinuteRate,
-      lastRefillMs: now,
-      capacity: perMinuteRate,
-      refillPerMs: perMinuteRate / 60_000,
-    };
-    buckets.set(accountId, bucket);
-  } else {
-    // Drip-refill since the last call.
-    const elapsed = now - bucket.lastRefillMs;
-    bucket.tokens = Math.min(
-      bucket.capacity,
-      bucket.tokens + elapsed * bucket.refillPerMs,
-    );
-    bucket.lastRefillMs = now;
-  }
-
-  if (bucket.tokens >= 1) {
-    bucket.tokens -= 1;
-    return { ok: true };
-  }
-
-  const deficit = 1 - bucket.tokens;
-  const retryAfterMs = Math.ceil(deficit / bucket.refillPerMs);
-  return { ok: false, retryAfterMs };
+}> {
+  const res = await consume({
+    key: `q:${accountId}`,
+    capacity: perMinuteRate,
+    ratePerMinute: perMinuteRate,
+  });
+  return { ok: res.ok, retryAfterMs: res.retryAfterMs };
 }
 
 // ─── Combined check ──────────────────────────────────────────────────────
@@ -84,7 +53,7 @@ function consumeToken(accountId: string, perMinuteRate: number): {
  */
 export async function checkQuota(account: Account): Promise<QuotaResult> {
   // 1. Per-minute bucket
-  const ratePass = consumeToken(account.id, account.per_minute_rate);
+  const ratePass = await consumeToken(account.id, account.per_minute_rate);
   if (!ratePass.ok) {
     return {
       ok: false,
