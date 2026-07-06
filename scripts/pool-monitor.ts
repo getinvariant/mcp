@@ -13,6 +13,7 @@
 //   cb:<account>:<provider>  per-customer budget (Axis B)
 //   q:<account>       per-customer per-minute rate
 
+import "dotenv/config";
 import { Redis } from "@upstash/redis";
 
 const url = process.env.UPSTASH_REDIS_REST_URL;
