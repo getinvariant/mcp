@@ -11,8 +11,6 @@ import { fileURLToPath } from "node:url";
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
 import usageHandler from "./api/usage.js";
-import recommendHandler from "./api/recommend.js";
-import bureauHandler from "./api/bureau.js";
 import routeHandler, { handleRoute } from "./api/route.js";
 import routeFetchHandler from "./api/route-fetch.js";
 import routingStatusHandler, {
@@ -943,125 +941,6 @@ ${renderNav("install")}
     document.getElementById(app + '-card').classList.remove('ic-pending');
     document.getElementById(app + '-btn-label').textContent = RESET_LABELS[app] || 'Retry';
   }
-</script>
-</body>
-</html>`;
-}
-
-// Live credit-bureau dashboard. Generated from this OpenUI spec:
-//   "A dark brutalist credit-bureau dashboard. Top bar: 'INVARIANT CREDIT
-//    BUREAU' with a live pulse. For each category, a ranked list of paid API
-//    providers as horizontal bars sized by creditworthiness score; the top
-//    provider gets a 'MONEY ROUTES HERE' amber badge. Each row shows $ spent,
-//    success %, accuracy %, and $/call. A '$ flow' column shows total dollars
-//    routed to each provider. A live feed streams recent calls: green ✓ / red ✗,
-//    accuracy, cost, and a basescan link for the x402 settlement. Amber #ffb727
-//    on near-black #060606, cream #f2ede1 text, mono font. Polls /api/bureau
-//    every 3s and re-renders."
-function renderBureauDashboard(): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Invariant · Credit Bureau</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Instrument+Serif&display=swap" rel="stylesheet">
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  :root{--bg:#060606;--fg:#f2ede1;--muted:#6a6a66;--amber:#ffb727;--cyan:#5fd3ff;--red:#ff3b14;--green:#83c167;--line:rgba(242,237,225,0.12);--mono:'Geist Mono',monospace;--serif:'Instrument Serif',serif;}
-  body{background:var(--bg);color:var(--fg);font-family:var(--mono);min-height:100vh;padding:2rem;
-    background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:44px 44px;}
-  .wrap{max-width:1100px;margin:0 auto;}
-  header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--fg);padding-bottom:1rem;margin-bottom:2rem;}
-  h1{font-family:var(--serif);font-size:2rem;font-weight:400;letter-spacing:-.01em;}
-  h1 .sub{font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);display:block;margin-top:.2rem;}
-  .pulse{display:flex;align-items:center;gap:.5rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);}
-  .dot{width:9px;height:9px;background:var(--amber);border-radius:50%;animation:p 1.5s ease-in-out infinite;}
-  @keyframes p{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.7);}}
-  .cat{margin-bottom:2.5rem;}
-  .cat-h{display:flex;align-items:baseline;gap:.75rem;margin-bottom:1rem;}
-  .cat-h .name{font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
-  .cat-h .route{font-size:.72rem;color:var(--amber);}
-  .prov{border:1px solid var(--line);padding:1rem 1.25rem;margin-bottom:.75rem;position:relative;transition:border-color .2s;}
-  .prov.routed{border-color:var(--amber);box-shadow:4px 4px 0 rgba(255,183,39,.18);}
-  .prov-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;}
-  .prov-name{font-size:1rem;font-weight:700;}
-  .badge{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;background:var(--amber);color:#000;padding:.25rem .6rem;font-weight:700;}
-  .score{font-size:.78rem;color:var(--cyan);}
-  .bar{height:8px;background:rgba(242,237,225,.08);margin-bottom:.7rem;overflow:hidden;}
-  .bar > i{display:block;height:100%;background:var(--amber);transition:width .6s ease;}
-  .prov.dim .bar > i{background:var(--muted);}
-  .stats{display:flex;gap:1.5rem;font-size:.72rem;color:var(--muted);flex-wrap:wrap;}
-  .stats b{color:var(--fg);font-weight:500;}
-  .feed{border-top:2px solid var(--fg);padding-top:1.25rem;}
-  .feed-h{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
-  .row{display:grid;grid-template-columns:130px 90px 1fr 70px 70px 90px;gap:.75rem;font-size:.72rem;padding:.4rem 0;border-bottom:1px solid var(--line);align-items:center;}
-  .ok{color:var(--green);}.bad{color:var(--red);}
-  .row a{color:var(--cyan);text-decoration:none;}.row a:hover{text-decoration:underline;}
-  .muted{color:var(--muted);}
-  .empty{color:var(--muted);font-size:.8rem;padding:2rem 0;text-align:center;}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <h1>Credit Bureau<span class="sub">value delivered per dollar · live ledger</span></h1>
-    <div class="pulse"><span class="dot"></span><span id="status">connecting…</span></div>
-  </header>
-  <div id="root"><div class="empty">loading live scores…</div></div>
-</div>
-<script>
-  const money = (n) => '$' + Number(n).toFixed(5);
-  const pct = (n) => Math.round(Number(n) * 100) + '%';
-  function render(data){
-    const root = document.getElementById('root');
-    if(!data.configured){ root.innerHTML = '<div class="empty">ledger not configured (CLICKHOUSE_URL unset)</div>'; return; }
-    if(!data.categories.length){ root.innerHTML = '<div class="empty">no paid calls recorded yet</div>'; return; }
-    root.innerHTML = data.categories.map(cat => {
-      const max = Math.max(1, ...cat.providers.map(p => p.score));
-      const provs = cat.providers.map(p => \`
-        <div class="prov \${p.routed?'routed':'dim'}">
-          <div class="prov-top">
-            <span class="prov-name">\${p.provider} \${p.routed?'<span class="badge">money routes here</span>':''} \${p.health<1?'<span class="badge" style="background:var(--red);color:#fff">incident: '+(p.status||'degraded')+'</span>':''}</span>
-            <span class="score">creditworthiness \${Number(p.score.toPrecision(3))}\${p.health<1?' <span style="color:var(--red)">(base '+Number(p.base_score.toPrecision(3))+' × health '+p.health+')</span>':''}</span>
-          </div>
-          <div class="bar"><i style="width:\${Math.max(2,(p.score/max)*100)}%"></i></div>
-          <div class="stats">
-            <span>$ routed <b>\${money(p.total_cost_usd)}</b></span>
-            <span>calls <b>\${p.calls}</b></span>
-            <span>success <b>\${pct(p.success_rate)}</b></span>
-            <span>accuracy <b>\${pct(p.avg_accuracy)}</b></span>
-            <span>$/call <b>\${money(p.avg_cost_usd)}</b></span>
-          </div>
-        </div>\`).join('');
-      const feed = cat.feed.map(f => {
-        const tx = f.x402_tx ? \`<a href="https://sepolia.basescan.org/tx/\${f.x402_tx}" target="_blank">\${f.x402_tx.slice(0,10)}…</a>\` : '<span class="muted">card</span>';
-        return \`<div class="row">
-          <span class="muted">\${String(f.ts).replace('T',' ').slice(5,19)}</span>
-          <span>\${f.provider}</span>
-          <span class="\${f.success?'ok':'bad'}">\${f.success?'✓ delivered':'✗ outage'}</span>
-          <span>acc \${f.accuracy.toFixed(2)}</span>
-          <span>\${money(f.cost_usd)}</span>
-          <span>\${tx}</span>
-        </div>\`;
-      }).join('');
-      return \`<div class="cat">
-        <div class="cat-h"><span class="name">category: \${cat.category}</span><span class="route">→ money routes to \${cat.best||'—'}</span></div>
-        \${provs}
-        <div class="feed"><div class="feed-h">live call feed · downgrade signal</div>\${feed||'<div class="empty">no calls</div>'}</div>
-      </div>\`;
-    }).join('');
-  }
-  async function tick(){
-    try{
-      const r = await fetch('/api/bureau');
-      const data = await r.json();
-      render(data);
-      document.getElementById('status').textContent = 'live · ' + new Date().toLocaleTimeString();
-    }catch(e){ document.getElementById('status').textContent = 'reconnecting…'; }
-  }
-  tick(); setInterval(tick, 3000);
 </script>
 </body>
 </html>`;
@@ -2215,7 +2094,6 @@ ${renderNav("dashboard")}
       <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/query</span><span class="endpoint-desc">execute a provider action</span></div>
       <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/mcp</span><span class="endpoint-desc">MCP protocol (JSON-RPC)</span></div>
       <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/usage</span><span class="endpoint-desc">check quota and usage breakdown</span></div>
-      <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/recommend</span><span class="endpoint-desc">AI-powered provider recommendations</span></div>
     </div>
 
     ${categoryCards}
@@ -3609,12 +3487,6 @@ const server = http.createServer(async (req, res) => {
     return res.end(renderDashboard());
   }
 
-  if (path === "/bureau") {
-    // Live credit-bureau dashboard — public, polls /api/bureau.
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.end(renderBureauDashboard());
-  }
-
   if (path === "/billing/done") {
     // Post-Stripe-redirect landing. Auth required so a stranger with the
     // setup_intent_client_secret query param can't snoop the page. The page
@@ -3725,8 +3597,6 @@ const server = http.createServer(async (req, res) => {
 
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
-  if (path === "/api/recommend") return recommendHandler(fakeReq, fakeRes);
-  if (path === "/api/bureau") return bureauHandler(fakeReq, fakeRes);
   if (path === "/api/route") return routeHandler(fakeReq, fakeRes);
   if (path === "/api/route-fetch") return routeFetchHandler(fakeReq, fakeRes);
   if (path === "/api/routing-status")
