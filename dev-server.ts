@@ -585,16 +585,23 @@ const SHARED_HEAD = `<meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script><script>(function(){var sp;function mk(){sp=document.createElement('div');sp.id='inv-spark';sp.innerHTML='<svg width="58" height="58" viewBox="0 0 58 58" fill="none"><g stroke-width="1.5" stroke-linecap="round"><line x1="29" y1="3" x2="29" y2="55" stroke="#ffb727"/><line x1="3" y1="29" x2="55" y2="29" stroke="#5fd3ff"/><line x1="11" y1="11" x2="47" y2="47" stroke="#ffb727" opacity="0.85"/><line x1="47" y1="11" x2="11" y2="47" stroke="#5fd3ff" opacity="0.85"/><line x1="29" y1="7" x2="29" y2="51" stroke="#ff3b14" opacity="0.55" transform="rotate(20 29 29)"/><line x1="7" y1="29" x2="51" y2="29" stroke="#ff3b14" opacity="0.55" transform="rotate(20 29 29)"/></g></svg>';document.body.appendChild(sp);}document.addEventListener('mousemove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');if(!sp)mk();sp.style.transform='translate('+e.clientX+'px,'+e.clientY+'px)';},{passive:true});})();</script>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script><script>(function(){
+  if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)return;
+  var cv=document.createElement('canvas');cv.id='inv-trail';var ctx=cv.getContext('2d');
+  var W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2),CELL=26;
+  var cells=new Map();var palette=['#ffb727','#5fd3ff','#ff3b14','#f2ede1'];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+  var lastT=0;
+  function loop(t){var dt=lastT?(t-lastT)/1000:0.016;lastT=t;if(dt>0.1)dt=0.1;ctx.clearRect(0,0,W,H);cells.forEach(function(c,k){c.life-=dt/0.85;if(c.life<=0){cells.delete(k);return;}ctx.globalAlpha=c.life*c.life*0.55;ctx.fillStyle=c.color;ctx.fillRect(c.x*CELL+1,c.y*CELL+1,CELL-2,CELL-2);});ctx.globalAlpha=1;requestAnimationFrame(loop);}
+  function touch(px,py){var cx=Math.floor(px/CELL),cy=Math.floor(py/CELL);for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){if(Math.abs(dx)+Math.abs(dy)>1&&Math.random()>0.4)continue;var x=cx+dx,y=cy+dy,k=x+','+y,life=(dx===0&&dy===0)?1:0.7;var col=palette[((x*7+y*13)%palette.length+palette.length)%palette.length];var ex=cells.get(k);if(!ex||ex.life<life)cells.set(k,{x:x,y:y,life:life,color:col});}}
+  function start(){document.body.appendChild(cv);resize();window.addEventListener('resize',resize);window.addEventListener('pointermove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');touch(e.clientX,e.clientY);},{passive:true});requestAnimationFrame(loop);}
+  if(document.body)start();else window.addEventListener('DOMContentLoaded',start);
+})();</script>
 `;
 
 const SHARED_STYLES = `
   *{margin:0;padding:0;box-sizing:border-box;border-radius:0 !important;}
-  html,body{cursor:none;}
-  input,textarea,select,[contenteditable]{cursor:text;}
-  #inv-spark{position:fixed;left:0;top:0;width:58px;height:58px;margin:-29px 0 0 -29px;pointer-events:none;z-index:99999;mix-blend-mode:screen;}
-  #inv-spark svg{display:block;animation:inv-spin 9s linear infinite;filter:drop-shadow(0 0 5px rgba(255,183,39,.55));}
-  @keyframes inv-spin{to{transform:rotate(360deg)}}
+  #inv-trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;mix-blend-mode:screen;}
 
   :root{
     --bg:#060606;
@@ -680,6 +687,7 @@ function renderNav(active?: string): string {
     </div>
     <div class="nav-right">
       <div class="links">
+        <a href="/roster">Roster</a>
       </div>
       <a href="/login" class="nav-cta${active === "login" || active === "install" ? " nav-cta-active" : ""}">Sign Up / Log In →</a>
     </div>
@@ -946,105 +954,7 @@ ${renderNav("install")}
 </html>`;
 }
 
-function renderHomepage(): string {
-  // Origin redesign — mirrors design_handoff_invariant_redesign/direction-origin.jsx.
-  const marqueePhrases = [
-    "one key · every api",
-    "the api layer, subtracted",
-    "zero .env files on your machine",
-    "zero provider accounts",
-    "built for agents, not humans",
-    "21 providers · 9 categories",
-  ];
-  // Duplicate the track so the -50% translate loops seamlessly.
-  const marqueeHtml = [...marqueePhrases, ...marqueePhrases]
-    .map((p) => `<span><i class="di">◆</i> ${p}</span>`)
-    .join("");
-
-  type Prov = {
-    ix: string;
-    live: boolean;
-    nm: string;
-    slug: string;
-    actions: number;
-    desc: string;
-  };
-  const catalog: { id: string; label: string; short: string; providers: Prov[] }[] = [
-    { id: "health", label: "Health", short: "H", providers: [
-      { ix: "01", live: true,  nm: "OpenFDA",            slug: "openfda",     actions: 3, desc: "FDA data on drugs, adverse events, and recalls. Powered by the U.S. Food &amp; Drug Administration." },
-      { ix: "02", live: true,  nm: "NPPES NPI Registry", slug: "nppes",       actions: 1, desc: "Search the CMS National Plan and Provider Enumeration System for healthcare providers." },
-    ]},
-    { id: "mental", label: "Mental Health", short: "M", providers: [
-      { ix: "03", live: true,  nm: "Mental Health Crisis Resources", slug: "mental_health", actions: 2, desc: "Curated database of mental health crisis hotlines, text lines, and resources across the US." },
-    ]},
-    { id: "ai", label: "AI", short: "A", providers: [
-      { ix: "04", live: false, nm: "Anthropic Claude",     slug: "claude",      actions: 1, desc: "Access Claude AI models for text generation, analysis, summarization, and reasoning." },
-      { ix: "05", live: false, nm: "Google Gemini",        slug: "gemini",      actions: 1, desc: "Access Google Gemini AI models for text generation, analysis, and multimodal tasks." },
-      { ix: "06", live: false, nm: "HuggingFace Inference", slug: "huggingface", actions: 2, desc: "Run open-source AI models via HuggingFace Inference API — text generation, classification, and more." },
-    ]},
-    { id: "finance", label: "Finance", short: "F", providers: [
-      { ix: "07", live: true,  nm: "CoinGecko",     slug: "coingecko",     actions: 4, desc: "Real-time and historical cryptocurrency prices, market data, and trending coins. No API key required." },
-      { ix: "08", live: true,  nm: "Finnhub",       slug: "finnhub",       actions: 4, desc: "Real-time stock quotes, forex rates, company news, and earnings data. 60 calls/min free." },
-      { ix: "09", live: true,  nm: "Binance Public", slug: "binance",      actions: 1, desc: "Real-time crypto prices via Binance public API. No API key required." },
-      { ix: "10", live: false, nm: "Alpha Vantage", slug: "alpha_vantage", actions: 3, desc: "Real-time and historical stock quotes, forex rates, and financial data." },
-      { ix: "11", live: true,  nm: "World Bank",    slug: "world_bank",    actions: 3, desc: "World Bank development indicators, GDP, population, poverty, education, and health metrics for 300+ economies." },
-    ]},
-    { id: "social", label: "Social Impact", short: "S", providers: [
-      { ix: "12", live: false, nm: "Every.org Nonprofit Search", slug: "charity", actions: 1, desc: "Search and discover nonprofits and charities. Powered by Every.org&apos;s nonprofit database." },
-    ]},
-    { id: "env", label: "Environment", short: "E", providers: [
-      { ix: "13", live: true, nm: "OpenWeatherMap", slug: "environment", actions: 2, desc: "Current weather conditions and air quality data for any location worldwide." },
-      { ix: "14", live: true, nm: "Open-Meteo",     slug: "open_meteo",  actions: 1, desc: "Free weather forecast API. No API key required. Lat/lon based current conditions." },
-    ]},
-    { id: "maps", label: "Maps", short: "G", providers: [
-      { ix: "15", live: true, nm: "Geoapify",       slug: "geoapify",      actions: 3, desc: "Geocoding, reverse geocoding, and routing. 3,000 requests/day free, no credit card required." },
-      { ix: "16", live: true, nm: "Mapbox",         slug: "mapbox",        actions: 1, desc: "Maps + geocoding from Mapbox." },
-      { ix: "17", live: true, nm: "OpenStreetMap",  slug: "openstreetmap", actions: 2, desc: "Free geocoding and reverse geocoding using OpenStreetMap data via the Nominatim API. No API key required." },
-    ]},
-    { id: "edu", label: "Education", short: "E", providers: [
-      { ix: "18", live: true, nm: "Open Library", slug: "open_library", actions: 3, desc: "Search millions of books, get detailed editions, and access author info via the Internet Archive&apos;s Open Library." },
-      { ix: "19", live: true, nm: "Khan Academy", slug: "khan_academy", actions: 1, desc: "Browse Khan Academy&apos;s free educational content tree — subjects, courses, units, and lessons." },
-    ]},
-    { id: "creative", label: "Creative", short: "C", providers: [
-      { ix: "20", live: false, nm: "Unsplash",                slug: "unsplash",      actions: 3, desc: "Search and discover high-quality, royalty-free photos from Unsplash&apos;s library of 3M+ images." },
-      { ix: "21", live: true,  nm: "Art Institute of Chicago", slug: "art_institute", actions: 3, desc: "Search the Art Institute of Chicago&apos;s collection of 120,000+ artworks. No API key required." },
-    ]},
-  ];
-
-  const categoriesHtml = catalog
-    .map((c) => {
-      const cards = c.providers
-        .map(
-          (p) => `
-          <div class="prov-card">
-            <div class="hd">
-              <span class="status-pill ${p.live ? "live" : "key"}">${p.live ? "live" : "key needed"}</span>
-            </div>
-            <h4>${p.nm}</h4>
-            <p>${p.desc}</p>
-            <div class="foot">
-              <span class="slug">${p.slug}</span>
-              <span>${p.actions} action${p.actions === 1 ? "" : "s"}</span>
-            </div>
-          </div>`,
-        )
-        .join("");
-      return `
-        <div class="roster-cat">
-          <div class="cat-hd">
-            <div class="cat-letter">${c.short}</div>
-            <div class="cat-name">${c.label}</div>
-            <div class="cat-count"><span class="n">${c.providers.length}</span></div>
-          </div>
-          <div class="roster-grid">${cards}</div>
-        </div>`;
-    })
-    .join("");
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+const HOME_HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a0807">
 <meta name="description" content="Invariant — the agentic api layer that learns how you build.">
@@ -1055,8 +965,9 @@ function renderHomepage(): string {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>
-<style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>`;
+
+const HOME_STYLES = `<style>
   *,*::before,*::after{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   a{text-decoration:none;color:inherit;}
@@ -1088,11 +999,7 @@ function renderHomepage(): string {
     background:radial-gradient(closest-side at 58% 42%, rgba(255,183,39,.20), transparent 72%),radial-gradient(closest-side at 74% 30%, rgba(255,59,20,.17), transparent 66%),radial-gradient(closest-side at 46% 64%, rgba(95,211,255,.15), transparent 72%);
     filter:blur(34px);opacity:.92;
   }
-  html,body{cursor:none;}
-  input,textarea,select,[contenteditable]{cursor:text;}
-  #inv-spark{position:fixed;left:0;top:0;width:58px;height:58px;margin:-29px 0 0 -29px;pointer-events:none;z-index:99999;mix-blend-mode:screen;}
-  #inv-spark svg{display:block;animation:inv-spin 9s linear infinite;filter:drop-shadow(0 0 5px rgba(255,183,39,.55));}
-  @keyframes inv-spin{to{transform:rotate(360deg)}}
+  #inv-trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;mix-blend-mode:screen;}
 
   body > *{position:relative;z-index:1;}
   .mono{font-family:'Inter','Helvetica Neue',sans-serif;}
@@ -1254,7 +1161,82 @@ function renderHomepage(): string {
   .faq-list summary .mk::after{top:0;left:7px;width:2px;height:16px;}
   .faq-list details[open] summary .mk::after{transform:rotate(90deg);opacity:0;}
   .faq-list details p{margin:-2px 0 26px;font-size:16px;line-height:1.6;color:var(--ink-dim);max-width:72ch;}
-</style>
+</style>`;
+
+const ROSTER_CATS: { cat: string; label: string; short: string }[] = [
+  { cat: "physical_health", label: "health",        short: "H" },
+  { cat: "mental_health",   label: "mental health", short: "M" },
+  { cat: "ai",              label: "ai",            short: "A" },
+  { cat: "financial",       label: "finance",       short: "F" },
+  { cat: "social_impact",   label: "social impact", short: "S" },
+  { cat: "environment",     label: "environment",   short: "E" },
+  { cat: "maps",            label: "maps",          short: "G" },
+  { cat: "cloud",           label: "cloud",         short: "C" },
+  { cat: "education",       label: "education",     short: "D" },
+  { cat: "creative",        label: "creative",      short: "R" },
+];
+
+function buildRoster(): { catHtml: string; countsHtml: string; totalProviders: number; totalCats: number } {
+  const all = getAllProviders();
+  const groups = ROSTER_CATS
+    .map((c) => ({ ...c, providers: all.filter((p) => String(p.info.category) === c.cat) }))
+    .filter((g) => g.providers.length > 0);
+  const totalProviders = groups.reduce((n, g) => n + g.providers.length, 0);
+  const totalCats = groups.length;
+  const countsHtml = groups
+    .map((g) => `<span class="pill">${g.label} (<span class="n">${g.providers.length}</span>)</span>`)
+    .join("\n    ") + `\n    <span class="pill upcoming">more coming fast</span>`;
+  const catHtml = groups.map((g) => {
+    const cards = g.providers.map((p) => {
+      const live = p.isAvailable();
+      const actions = p.info.availableActions.length;
+      return `
+        <div class="prov-card">
+          <div class="hd">
+            <span class="status-pill ${live ? "live" : "key"}">${live ? "live" : "key needed"}</span>
+          </div>
+          <h4>${escapeHtml(p.info.name)}</h4>
+          <p>${escapeHtml(p.info.description)}</p>
+          <div class="foot">
+            <span class="slug">${escapeHtml(p.info.id)}</span>
+            <span>${actions} action${actions === 1 ? "" : "s"}</span>
+          </div>
+        </div>`;
+    }).join("");
+    return `
+      <div class="roster-cat">
+        <div class="cat-hd">
+          <div class="cat-letter">${g.short}</div>
+          <div class="cat-name">${g.label}</div>
+          <div class="cat-count"><span class="n">${g.providers.length}</span></div>
+        </div>
+        <div class="roster-grid">${cards}</div>
+      </div>`;
+  }).join("");
+  return { catHtml, countsHtml, totalProviders, totalCats };
+}
+
+function renderHomepage(): string {
+  // Origin redesign — mirrors design_handoff_invariant_redesign/direction-origin.jsx.
+  const { totalProviders, totalCats } = buildRoster();
+  const marqueePhrases = [
+    "one key · every api",
+    "the api layer, subtracted",
+    "zero .env files on your machine",
+    "zero provider accounts",
+    "built for agents, not humans",
+    `${totalProviders} providers · ${totalCats} categories`,
+  ];
+  // Duplicate the track so the -50% translate loops seamlessly.
+  const marqueeHtml = [...marqueePhrases, ...marqueePhrases]
+    .map((p) => `<span><i class="di">◆</i> ${p}</span>`)
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${HOME_HEAD}
+${HOME_STYLES}
 </head>
 <body>
 
@@ -1271,6 +1253,7 @@ function renderHomepage(): string {
     </a>
   </div>
   <div class="nav-r">
+    <a class="link" href="/roster">the roster</a>
     <a class="link" href="#loop">how it works</a>
     <a class="cta" href="/login">sign up / log in →</a>
   </div>
@@ -1305,7 +1288,7 @@ function renderHomepage(): string {
       <span class="k">status</span>
       <span class="v"><span class="pulse">●</span> <span class="gold">gateway online</span></span>
       <span class="k">providers</span>
-      <span class="v"><span class="gold">21</span> wired across 9 categories</span>
+      <span class="v"><span class="gold">${totalProviders}</span> wired across ${totalCats} categories</span>
       <span class="k">transport</span>
       <span class="v">mcp · http</span>
       <span class="k">overhead</span>
@@ -1343,34 +1326,6 @@ function renderHomepage(): string {
       <p>"your geocoding queries succeed 23% more when routed to geoapify for the sf area, so we made it your default." that.</p>
     </div>
   </div>
-</section>
-
-<section class="section">
-  <div class="sec-hd">
-    <div class="ix">the roster</div>
-    <h2>the full <em>roster.</em></h2>
-  </div>
-
-  <div class="roster-intro">
-    <div class="lbl">online today <b>· every api, one key.</b></div>
-    <p><b>21 providers</b> across <b>9 categories</b>. every one of these is callable from your agent with a single key, zero vendor accounts needed. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
-  </div>
-
-  <div class="roster-counts">
-    <span class="pill">health (<span class="n">2</span>)</span>
-    <span class="pill">mental health (<span class="n">1</span>)</span>
-    <span class="pill">ai (<span class="n">3</span>)</span>
-    <span class="pill">finance (<span class="n">5</span>)</span>
-    <span class="pill">social impact (<span class="n">1</span>)</span>
-    <span class="pill">environment (<span class="n">2</span>)</span>
-    <span class="pill">maps (<span class="n">3</span>)</span>
-    <span class="pill upcoming">cloud (<span class="n">0</span>)</span>
-    <span class="pill">education (<span class="n">2</span>)</span>
-    <span class="pill">creative (<span class="n">2</span>)</span>
-    <span class="pill upcoming">more coming fast</span>
-  </div>
-
-  ${categoriesHtml}
 </section>
 
 <section class="section statement">
@@ -1414,7 +1369,7 @@ function renderHomepage(): string {
 
 <footer class="foot">
   <div>invariant · 2026</div>
-  <div>21 providers · 9 categories</div>
+  <div>${totalProviders} providers · ${totalCats} categories</div>
 </footer>
 
 <script>
@@ -1440,10 +1395,80 @@ function renderHomepage(): string {
   })();
 </script>
 
-<script>(function(){var sp;function mk(){sp=document.createElement('div');sp.id='inv-spark';sp.innerHTML='<svg width="58" height="58" viewBox="0 0 58 58" fill="none"><g stroke-width="1.5" stroke-linecap="round"><line x1="29" y1="3" x2="29" y2="55" stroke="#ffb727"/><line x1="3" y1="29" x2="55" y2="29" stroke="#5fd3ff"/><line x1="11" y1="11" x2="47" y2="47" stroke="#ffb727" opacity="0.85"/><line x1="47" y1="11" x2="11" y2="47" stroke="#5fd3ff" opacity="0.85"/><line x1="29" y1="7" x2="29" y2="51" stroke="#ff3b14" opacity="0.55" transform="rotate(20 29 29)"/><line x1="7" y1="29" x2="51" y2="29" stroke="#ff3b14" opacity="0.55" transform="rotate(20 29 29)"/></g></svg>';document.body.appendChild(sp);}document.addEventListener('mousemove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');if(!sp)mk();sp.style.transform='translate('+e.clientX+'px,'+e.clientY+'px)';},{passive:true});})();</script>
+<script>(function(){
+  if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)return;
+  var cv=document.createElement('canvas');cv.id='inv-trail';var ctx=cv.getContext('2d');
+  var W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2),CELL=26;
+  var cells=new Map();var palette=['#ffb727','#5fd3ff','#ff3b14','#f2ede1'];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+  var lastT=0;
+  function loop(t){var dt=lastT?(t-lastT)/1000:0.016;lastT=t;if(dt>0.1)dt=0.1;ctx.clearRect(0,0,W,H);cells.forEach(function(c,k){c.life-=dt/0.85;if(c.life<=0){cells.delete(k);return;}ctx.globalAlpha=c.life*c.life*0.55;ctx.fillStyle=c.color;ctx.fillRect(c.x*CELL+1,c.y*CELL+1,CELL-2,CELL-2);});ctx.globalAlpha=1;requestAnimationFrame(loop);}
+  function touch(px,py){var cx=Math.floor(px/CELL),cy=Math.floor(py/CELL);for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){if(Math.abs(dx)+Math.abs(dy)>1&&Math.random()>0.4)continue;var x=cx+dx,y=cy+dy,k=x+','+y,life=(dx===0&&dy===0)?1:0.7;var col=palette[((x*7+y*13)%palette.length+palette.length)%palette.length];var ex=cells.get(k);if(!ex||ex.life<life)cells.set(k,{x:x,y:y,life:life,color:col});}}
+  function start(){document.body.appendChild(cv);resize();window.addEventListener('resize',resize);window.addEventListener('pointermove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');touch(e.clientX,e.clientY);},{passive:true});requestAnimationFrame(loop);}
+  if(document.body)start();else window.addEventListener('DOMContentLoaded',start);
+})();</script>
 
 </body>
 </html>`;
+}
+
+
+function renderRoster(): string {
+  const { catHtml, countsHtml, totalProviders, totalCats } = buildRoster();
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+${HOME_HEAD}
+${HOME_STYLES}
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-l">
+    <span class="sq"></span>
+    <span>INVARIANT</span>
+    <span class="sep">|</span>
+    <a href="https://www.linkedin.com/company/getinvariant" target="_blank" rel="noopener" aria-label="LinkedIn">
+      <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="9" width="4" height="12"/><rect x="3" y="3" width="4" height="4"/><path d="M9 9h4v2h.1c.6-1 1.9-2.1 3.9-2.1 4.2 0 5 2.7 5 6.3V21h-4v-5.6c0-1.3 0-3-1.8-3-1.9 0-2.2 1.4-2.2 2.9V21H9V9z"/></svg>
+    </a>
+    <a href="https://github.com/getinvariant/mcp" target="_blank" rel="noopener" aria-label="GitHub">
+      <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.6 2 12.3c0 4.5 2.9 8.3 6.8 9.7.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.4 1.1 3 .8.1-.7.4-1.1.7-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1 .8-.2 1.7-.3 2.5-.3s1.7.1 2.5.3c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V22c0 .3.2.6.7.5C19.1 20.6 22 16.7 22 12.3 22 6.6 17.5 2 12 2z"/></svg>
+    </a>
+  </div>
+  <div class="nav-r">
+    <a class="link" href="/">home</a>
+    <a class="cta" href="/login">sign up / log in →</a>
+  </div>
+</nav>
+<section class="section" style="border-top:0;">
+  <div class="sec-hd">
+    <div class="ix">the roster</div>
+    <h2>the full <em>roster.</em></h2>
+  </div>
+  <div class="roster-intro">
+    <div class="lbl">online today <b>· every api, one key.</b></div>
+    <p><b>${totalProviders} providers</b> across <b>${totalCats} categories</b>. every one of these is callable from your agent with a single key, zero vendor accounts needed. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
+  </div>
+  <div class="roster-counts">
+    ${countsHtml}
+  </div>
+  ${catHtml}
+</section>
+<footer class="foot">
+  <div>invariant · 2026</div>
+  <div>${totalProviders} providers · ${totalCats} categories</div>
+</footer>
+<script>(function(){
+  if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)return;
+  var cv=document.createElement('canvas');cv.id='inv-trail';var ctx=cv.getContext('2d');
+  var W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2),CELL=26;
+  var cells=new Map();var palette=['#ffb727','#5fd3ff','#ff3b14','#f2ede1'];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+  var lastT=0;
+  function loop(t){var dt=lastT?(t-lastT)/1000:0.016;lastT=t;if(dt>0.1)dt=0.1;ctx.clearRect(0,0,W,H);cells.forEach(function(c,k){c.life-=dt/0.85;if(c.life<=0){cells.delete(k);return;}ctx.globalAlpha=c.life*c.life*0.55;ctx.fillStyle=c.color;ctx.fillRect(c.x*CELL+1,c.y*CELL+1,CELL-2,CELL-2);});ctx.globalAlpha=1;requestAnimationFrame(loop);}
+  function touch(px,py){var cx=Math.floor(px/CELL),cy=Math.floor(py/CELL);for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){if(Math.abs(dx)+Math.abs(dy)>1&&Math.random()>0.4)continue;var x=cx+dx,y=cy+dy,k=x+','+y,life=(dx===0&&dy===0)?1:0.7;var col=palette[((x*7+y*13)%palette.length+palette.length)%palette.length];var ex=cells.get(k);if(!ex||ex.life<life)cells.set(k,{x:x,y:y,life:life,color:col});}}
+  function start(){document.body.appendChild(cv);resize();window.addEventListener('resize',resize);window.addEventListener('pointermove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');touch(e.clientX,e.clientY);},{passive:true});requestAnimationFrame(loop);}
+  if(document.body)start();else window.addEventListener('DOMContentLoaded',start);
+})();</script>
+</body></html>`;
 }
 
 function renderLogin(): string {
@@ -3427,6 +3452,11 @@ const server = http.createServer(async (req, res) => {
   if (path === "/") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderHomepage());
+  }
+
+  if (path === "/roster") {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderRoster());
   }
 
   if (path === "/install") {
