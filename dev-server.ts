@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
 import usageHandler from "./api/usage.js";
+import provisionHandler from "./api/provision.js";
 import routeHandler, { handleRoute } from "./api/route.js";
 import routeFetchHandler from "./api/route-fetch.js";
 import routingStatusHandler, {
@@ -3696,6 +3697,7 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ error: "Method not allowed" }));
   }
   if (path === "/api/usage") return usageHandler(fakeReq, fakeRes);
+  if (path === "/api/provision") return provisionHandler(fakeReq, fakeRes);
 
   // ── Admin API ────────────────────────────────────────────────────────────
   const adminPass = process.env.ADMIN_PASSWORD;
