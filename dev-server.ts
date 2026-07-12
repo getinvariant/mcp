@@ -995,20 +995,19 @@ const HOME_STYLES = `<style>
     content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 50% 35% at 50% -5%, rgba(245,200,80,.12), transparent 70%);
   }
-  body::after{
-    content:'';position:fixed;top:-12%;right:-8%;width:65vw;height:78vh;pointer-events:none;z-index:0;
-    background:radial-gradient(closest-side at 58% 42%, rgba(255,183,39,.20), transparent 72%),radial-gradient(closest-side at 74% 30%, rgba(255,59,20,.17), transparent 66%),radial-gradient(closest-side at 46% 64%, rgba(95,211,255,.15), transparent 72%);
-    filter:blur(34px);opacity:.92;
-    will-change:transform,opacity;animation:auroraDrift 26s ease-in-out infinite;
-  }
-  @keyframes auroraDrift{
-    0%{transform:translate3d(0,0,0) scale(1) rotate(0deg);opacity:.9;}
-    25%{transform:translate3d(-3.5%,2.5%,0) scale(1.07) rotate(-1.5deg);opacity:1;}
-    50%{transform:translate3d(2.5%,4.5%,0) scale(1.03) rotate(1deg);opacity:.82;}
-    75%{transform:translate3d(-2%,-2.5%,0) scale(1.09) rotate(-1deg);opacity:.98;}
-    100%{transform:translate3d(0,0,0) scale(1) rotate(0deg);opacity:.9;}
-  }
-  @media (prefers-reduced-motion:reduce){body::after{animation:none;}}
+  /* Ambient glow field: independent color blobs drifting on their own timing
+     so the light weaves and recombines instead of sitting as one static patch.
+     Screen-blend makes overlaps brighten organically; motion is transform-only
+     (GPU) so the blur layer never re-rasterizes. */
+  .ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .ambient .blob{position:absolute;filter:blur(64px);mix-blend-mode:screen;will-change:transform;}
+  .ambient .b1{width:54vw;height:54vw;top:-18vw;right:-10vw;background:radial-gradient(closest-side, rgba(255,183,39,.55), transparent 70%);animation:drift1 30s ease-in-out infinite;}
+  .ambient .b2{width:42vw;height:42vw;top:-6vw;right:4vw;background:radial-gradient(closest-side, rgba(255,90,31,.5), transparent 68%);animation:drift2 39s ease-in-out infinite;}
+  .ambient .b3{width:58vw;height:58vw;top:20vh;left:24vw;background:radial-gradient(closest-side, rgba(95,211,255,.34), transparent 72%);animation:drift3 47s ease-in-out infinite;}
+  @keyframes drift1{0%,100%{transform:translate3d(0,0,0) scale(1);}33%{transform:translate3d(-4vw,3vh,0) scale(1.08);}66%{transform:translate3d(3vw,-2vh,0) scale(.95);}}
+  @keyframes drift2{0%,100%{transform:translate3d(0,0,0) scale(1);}40%{transform:translate3d(3vw,4vh,0) scale(1.1);}72%{transform:translate3d(-3vw,1vh,0) scale(.93);}}
+  @keyframes drift3{0%,100%{transform:translate3d(0,0,0) scale(1);}30%{transform:translate3d(5vw,-3vh,0) scale(1.06);}62%{transform:translate3d(-5vw,2vh,0) scale(1.03);}}
+  @media (prefers-reduced-motion:reduce){.ambient .blob{animation:none;}}
   #inv-trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;mix-blend-mode:screen;}
 
   body > *{position:relative;z-index:1;}
@@ -1122,6 +1121,25 @@ const HOME_STYLES = `<style>
   .prov-card p{font-size:14px;line-height:1.5;color:var(--ink-dim);margin:0;}
   .prov-card .foot{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11.5px;letter-spacing:.04em;color:var(--ink-mute);}
   .prov-card .foot .slug{color:var(--gold);}
+  .prov-card .hd .cat-tag{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute);}
+
+  .roster-tools{display:flex;gap:18px 24px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:30px;}
+  .roster-search{position:relative;flex:1;min-width:280px;max-width:440px;display:flex;align-items:center;}
+  .roster-search svg{position:absolute;left:16px;width:16px;height:16px;color:var(--ink-mute);pointer-events:none;}
+  .roster-search input{width:100%;background:rgba(255,255,255,.022);border:1px solid var(--line);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;padding:13px 16px 13px 44px;outline:none;transition:border-color .2s,background .2s;}
+  .roster-search input::placeholder{color:var(--ink-faint);}
+  .roster-search input:focus{border-color:var(--gold-faint);background:rgba(245,200,80,.04);}
+  .filter-chips{display:flex;gap:9px;flex-wrap:wrap;}
+  .chip{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.05em;color:var(--ink-dim);background:none;border:1px solid var(--line);padding:8px 14px;cursor:pointer;transition:border-color .16s,color .16s,background .16s;display:inline-flex;align-items:center;gap:7px;}
+  .chip .n{color:var(--ink-faint);font-weight:600;font-size:11px;}
+  .chip:hover{border-color:var(--gold-faint);color:var(--ink);}
+  .chip.active{background:var(--gold);border-color:var(--gold);color:#0a0807;}
+  .chip.active .n{color:#0a0807;opacity:.65;}
+  .explore-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .explore-grid .prov-card.hidden{display:none;}
+  .empty-msg{padding:56px 0;text-align:center;color:var(--ink-mute);font-family:'Inter',sans-serif;font-size:15px;}
+  @media(max-width:900px){.explore-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:700px){.explore-grid{grid-template-columns:1fr;}.roster-tools{flex-direction:column;align-items:stretch;}.roster-search{max-width:100%;}}
 
   .agg-band{margin:4px 0 68px;}
   .agg-band .agg-hd{display:flex;align-items:baseline;gap:8px 18px;margin-bottom:24px;flex-wrap:wrap;}
@@ -1204,23 +1222,34 @@ const ROSTER_CATS: { cat: string; label: string; short: string }[] = [
   { cat: "creative",        label: "creative",      short: "R" },
 ];
 
-function buildRoster(): { catHtml: string; countsHtml: string; totalProviders: number; totalCats: number } {
+function buildRoster(): { explorerHtml: string; totalProviders: number; totalCats: number } {
   const all = getAllProviders();
   const groups = ROSTER_CATS
     .map((c) => ({ ...c, providers: all.filter((p) => String(p.info.category) === c.cat) }))
     .filter((g) => g.providers.length > 0);
   const totalProviders = groups.reduce((n, g) => n + g.providers.length, 0);
   const totalCats = groups.length;
-  const countsHtml = groups
-    .map((g) => `<span class="pill">${g.label} (<span class="n">${g.providers.length}</span>)</span>`)
-    .join("\n    ") + `\n    <span class="pill upcoming">more coming fast</span>`;
-  const catHtml = groups.map((g) => {
-    const cards = g.providers.map((p) => {
-      const live = p.isAvailable();
-      const actions = p.info.availableActions.length;
-      return `
-        <div class="prov-card">
+
+  const chips =
+    `<button class="chip active" data-cat="all">all <span class="n">${totalProviders}</span></button>` +
+    groups
+      .map(
+        (g) =>
+          `<button class="chip" data-cat="${g.cat}">${escapeHtml(g.label)} <span class="n">${g.providers.length}</span></button>`,
+      )
+      .join("");
+
+  const cards = groups
+    .flatMap((g) =>
+      g.providers.map((p) => {
+        const live = p.isAvailable();
+        const actions = p.info.availableActions.length;
+        const q = `${p.info.name} ${p.info.description} ${p.info.id} ${g.label}`
+          .toLowerCase();
+        return `
+        <div class="prov-card" data-cat="${g.cat}" data-q="${escapeHtml(q)}">
           <div class="hd">
+            <span class="cat-tag">${escapeHtml(g.label)}</span>
             <span class="status-pill ${live ? "live" : "key"}">${live ? "live" : "key needed"}</span>
           </div>
           <h4>${escapeHtml(p.info.name)}</h4>
@@ -1230,18 +1259,33 @@ function buildRoster(): { catHtml: string; countsHtml: string; totalProviders: n
             <span>${actions} action${actions === 1 ? "" : "s"}</span>
           </div>
         </div>`;
-    }).join("");
-    return `
-      <div class="roster-cat">
-        <div class="cat-hd">
-          <div class="cat-letter">${g.short}</div>
-          <div class="cat-name">${g.label}</div>
-          <div class="cat-count"><span class="n">${g.providers.length}</span></div>
-        </div>
-        <div class="roster-grid">${cards}</div>
-      </div>`;
-  }).join("");
-  return { catHtml, countsHtml, totalProviders, totalCats };
+      }),
+    )
+    .join("");
+
+  const explorerHtml = `
+  <div class="roster-tools">
+    <div class="roster-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="rosterSearch" type="text" placeholder="search ${totalProviders} apis by name, category or capability" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="filter-chips" id="rosterChips">${chips}</div>
+  </div>
+  <div class="explore-grid" id="exploreGrid">${cards}</div>
+  <div class="empty-msg" id="rosterEmpty" hidden>no apis match. try another term.</div>
+  <script>(function(){
+    var grid=document.getElementById('exploreGrid');if(!grid)return;
+    var cards=[].slice.call(grid.querySelectorAll('.prov-card'));
+    var input=document.getElementById('rosterSearch');
+    var chips=[].slice.call(document.querySelectorAll('#rosterChips .chip'));
+    var empty=document.getElementById('rosterEmpty');
+    var cat='all',q='';
+    function apply(){var shown=0;cards.forEach(function(c){var okCat=cat==='all'||c.getAttribute('data-cat')===cat;var okQ=!q||c.getAttribute('data-q').indexOf(q)!==-1;var vis=okCat&&okQ;c.classList.toggle('hidden',!vis);if(vis)shown++;});empty.hidden=shown>0;}
+    input.addEventListener('input',function(){q=this.value.trim().toLowerCase();apply();});
+    chips.forEach(function(ch){ch.addEventListener('click',function(){chips.forEach(function(x){x.classList.remove('active');});ch.classList.add('active');cat=ch.getAttribute('data-cat');apply();});});
+  })();</script>`;
+
+  return { explorerHtml, totalProviders, totalCats };
 }
 
 // Aggregator-fronted reach. Each of these is one signup + one key that unlocks
@@ -1309,6 +1353,7 @@ ${HOME_HEAD}
 ${HOME_STYLES}
 </head>
 <body>
+<div class="ambient" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
 
 <nav class="nav">
   <div class="nav-l">
@@ -1484,7 +1529,7 @@ ${HOME_STYLES}
 
 
 function renderRoster(): string {
-  const { catHtml, countsHtml, totalProviders, totalCats } = buildRoster();
+  const { explorerHtml, totalProviders, totalCats } = buildRoster();
   const { bandHtml, count: aggCount } = buildAggregators();
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -1492,6 +1537,7 @@ ${HOME_HEAD}
 ${HOME_STYLES}
 </head>
 <body>
+<div class="ambient" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
 <nav class="nav">
   <div class="nav-l">
     <span class="sq"></span>
@@ -1519,10 +1565,7 @@ ${HOME_STYLES}
     <p><b>${totalProviders} providers wired directly</b>, plus <b>${aggCount} aggregators unlocking 1,000+ more models and APIs</b>. every one is callable from your agent with a single key, zero vendor accounts needed. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
   </div>
   ${bandHtml}
-  <div class="roster-counts">
-    ${countsHtml}
-  </div>
-  ${catHtml}
+  ${explorerHtml}
 </section>
 <footer class="foot">
   <div>invariant · 2026</div>
