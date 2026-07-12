@@ -999,7 +999,16 @@ const HOME_STYLES = `<style>
     content:'';position:fixed;top:-12%;right:-8%;width:65vw;height:78vh;pointer-events:none;z-index:0;
     background:radial-gradient(closest-side at 58% 42%, rgba(255,183,39,.20), transparent 72%),radial-gradient(closest-side at 74% 30%, rgba(255,59,20,.17), transparent 66%),radial-gradient(closest-side at 46% 64%, rgba(95,211,255,.15), transparent 72%);
     filter:blur(34px);opacity:.92;
+    will-change:transform,opacity;animation:auroraDrift 26s ease-in-out infinite;
   }
+  @keyframes auroraDrift{
+    0%{transform:translate3d(0,0,0) scale(1) rotate(0deg);opacity:.9;}
+    25%{transform:translate3d(-3.5%,2.5%,0) scale(1.07) rotate(-1.5deg);opacity:1;}
+    50%{transform:translate3d(2.5%,4.5%,0) scale(1.03) rotate(1deg);opacity:.82;}
+    75%{transform:translate3d(-2%,-2.5%,0) scale(1.09) rotate(-1deg);opacity:.98;}
+    100%{transform:translate3d(0,0,0) scale(1) rotate(0deg);opacity:.9;}
+  }
+  @media (prefers-reduced-motion:reduce){body::after{animation:none;}}
   #inv-trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;mix-blend-mode:screen;}
 
   body > *{position:relative;z-index:1;}
