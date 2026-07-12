@@ -11,6 +11,8 @@ export interface Account {
   email: string | null;
   /** Auth0 `sub` claim — null for legacy pl_key-only accounts. */
   auth0_sub: string | null;
+  /** Stable external user id from an embedding product (machine provisioning). */
+  external_id: string | null;
   tier: string;
   monthly_quota: number;
   per_minute_rate: number;
@@ -51,6 +53,20 @@ export async function getAccountByAuth0Sub(
     .from("accounts")
     .select("*")
     .eq("auth0_sub", sub)
+    .single();
+  if (error || !data) return null;
+  return data as Account;
+}
+
+export async function getAccountByExternalId(
+  externalId: string,
+): Promise<Account | null> {
+  // external_id has a unique index; .single() is safe. Returns null when no
+  // account has been provisioned for this external user yet.
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("external_id", externalId)
     .single();
   if (error || !data) return null;
   return data as Account;
@@ -143,6 +159,7 @@ export async function createAccount(opts: {
   plKey: string;
   email?: string;
   auth0Sub?: string;
+  externalId?: string;
   tier?: string;
   monthlyQuota?: number;
   perMinuteRate?: number;
@@ -154,6 +171,7 @@ export async function createAccount(opts: {
       pl_key: opts.plKey,
       email: opts.email || null,
       auth0_sub: opts.auth0Sub || null,
+      external_id: opts.externalId || null,
       tier: opts.tier || "free",
       monthly_quota: opts.monthlyQuota ?? 500,
       per_minute_rate: opts.perMinuteRate ?? 10,

@@ -15,6 +15,15 @@ ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_customer_id text;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_auth0_sub ON accounts(auth0_sub) WHERE auth0_sub IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_stripe_customer ON accounts(stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
 
+-- Machine-to-machine provisioning (/api/provision): a trusted embedding product
+-- (e.g. Freebuff) provisions an account for one of ITS users, keyed on that
+-- user's STABLE external id — never on email. Keying on email would let anyone
+-- who knows an address retrieve that user's pl_key; external_id is opaque and
+-- authenticated by the caller's service credential. Unique so retries/concurrent
+-- provisions for the same user converge on one account.
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS external_id text;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_external_id ON accounts(external_id) WHERE external_id IS NOT NULL;
+
 create table usage_log (
   id bigint generated always as identity primary key,
   account_id uuid references accounts(id),
