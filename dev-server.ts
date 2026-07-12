@@ -1123,6 +1123,24 @@ const HOME_STYLES = `<style>
   .prov-card .foot{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11.5px;letter-spacing:.04em;color:var(--ink-mute);}
   .prov-card .foot .slug{color:var(--gold);}
 
+  .agg-band{margin:4px 0 68px;}
+  .agg-band .agg-hd{display:flex;align-items:baseline;gap:8px 18px;margin-bottom:24px;flex-wrap:wrap;}
+  .agg-band .agg-hd .lbl{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;display:flex;align-items:center;gap:14px;}
+  .agg-band .agg-hd .lbl::before{content:'';width:32px;height:1px;background:var(--gold);}
+  .agg-band .agg-hd .sub{font-size:16px;line-height:1.5;color:var(--ink-dim);max-width:60ch;}
+  .agg-band .agg-hd .sub b{color:var(--ink);font-weight:600;}
+  .agg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .agg-card{position:relative;background:rgba(245,200,80,.03);border:1px solid var(--gold-faint);padding:24px 26px;display:flex;flex-direction:column;gap:8px;min-height:172px;transition:transform .2s,background .2s,border-color .2s;overflow:hidden;}
+  .agg-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%, rgba(245,200,80,.09), transparent 55%);pointer-events:none;}
+  .agg-card:hover{transform:translateY(-4px);background:rgba(245,200,80,.06);border-color:var(--gold);}
+  .agg-card .unlocks{font-family:'Fraunces',serif;font-weight:300;font-size:34px;letter-spacing:-.02em;color:var(--gold);line-height:1;font-variation-settings:'opsz' 72;}
+  .agg-card h4{font-family:'Inter',sans-serif;font-weight:600;font-size:18px;margin:0;color:var(--ink);letter-spacing:-.01em;}
+  .agg-card p{font-size:14px;line-height:1.5;color:var(--ink-dim);margin:0;}
+  .agg-card .foot{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);}
+  .agg-card .foot .tag{color:var(--gold);}
+  @media(max-width:900px){.agg-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:700px){.agg-grid{grid-template-columns:1fr;}}
+
   .final{padding:120px 56px;text-align:center;border-top:1px solid var(--line);position:relative;overflow:hidden;}
   .final::before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 70% at 50% 100%, rgba(245,200,80,.14), transparent 70%);}
   .final h2{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(64px, 8vw, 144px);line-height:.92;letter-spacing:-.04em;margin:0 0 32px;font-variation-settings:'opsz' 144;}
@@ -1224,6 +1242,48 @@ function buildRoster(): { catHtml: string; countsHtml: string; totalProviders: n
       </div>`;
   }).join("");
   return { catHtml, countsHtml, totalProviders, totalCats };
+}
+
+// Aggregator-fronted reach. Each of these is one signup + one key that unlocks
+// N downstream models/APIs, enumerated by scripts/signup/enumerators/*. Sourced
+// from scripts/signup/recipes/aggregators.ts — kept as documented reach, not
+// live registry cards (the enumerated catalog is provisioned separately).
+const AGGREGATORS: {
+  name: string;
+  unlocks: string;
+  note: string;
+  tag: string;
+}[] = [
+  { name: "OpenRouter", unlocks: "300+ LLMs", note: "every routed language model behind one sk-or key, priced per token.", tag: "ai" },
+  { name: "Hugging Face", unlocks: "1,000s of models", note: "the inference API across text, vision and audio through one token.", tag: "ai" },
+  { name: "Replicate", unlocks: "1,000+ models", note: "run any published model on demand with a single r8 token.", tag: "ai" },
+  { name: "Fal.ai", unlocks: "100s of models", note: "fast generative image, video and audio endpoints, one key.", tag: "ai" },
+  { name: "Together AI", unlocks: "200+ open models", note: "open-weight chat, code and embedding models, one key.", tag: "ai" },
+  { name: "APILayer", unlocks: "80+ REST APIs", note: "currency, weather, geo, scraping and more utility APIs.", tag: "utility" },
+];
+
+function buildAggregators(): { bandHtml: string; count: number } {
+  const cards = AGGREGATORS.map(
+    (a) => `
+        <div class="agg-card">
+          <div class="unlocks">${escapeHtml(a.unlocks)}</div>
+          <h4>${escapeHtml(a.name)}</h4>
+          <p>${escapeHtml(a.note)}</p>
+          <div class="foot">
+            <span>one key</span>
+            <span class="tag">${escapeHtml(a.tag)}</span>
+          </div>
+        </div>`,
+  ).join("");
+  const bandHtml = `
+  <div class="agg-band">
+    <div class="agg-hd">
+      <span class="lbl">aggregator-fronted</span>
+      <span class="sub"><b>${AGGREGATORS.length} gateways, one key each, 1,000+ models and APIs.</b> we sign up once, enumerate everything behind them, and route your calls to the best value. you never touch a vendor dashboard.</span>
+    </div>
+    <div class="agg-grid">${cards}</div>
+  </div>`;
+  return { bandHtml, count: AGGREGATORS.length };
 }
 
 function renderHomepage(): string {
@@ -1425,6 +1485,7 @@ ${HOME_STYLES}
 
 function renderRoster(): string {
   const { catHtml, countsHtml, totalProviders, totalCats } = buildRoster();
+  const { bandHtml, count: aggCount } = buildAggregators();
   return `<!DOCTYPE html>
 <html lang="en"><head>
 ${HOME_HEAD}
@@ -1455,8 +1516,9 @@ ${HOME_STYLES}
   </div>
   <div class="roster-intro">
     <div class="lbl">online today <b>· every api, one key.</b></div>
-    <p><b>${totalProviders} providers</b> across <b>${totalCats} categories</b>. every one of these is callable from your agent with a single key, zero vendor accounts needed. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
+    <p><b>${totalProviders} providers wired directly</b>, plus <b>${aggCount} aggregators unlocking 1,000+ more models and APIs</b>. every one is callable from your agent with a single key, zero vendor accounts needed. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
   </div>
+  ${bandHtml}
   <div class="roster-counts">
     ${countsHtml}
   </div>
