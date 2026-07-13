@@ -1000,13 +1000,13 @@ const HOME_STYLES = `<style>
      Screen-blend makes overlaps brighten organically; motion is transform-only
      (GPU) so the blur layer never re-rasterizes. */
   .ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
-  .ambient .blob{position:absolute;filter:blur(64px);mix-blend-mode:screen;will-change:transform;}
-  .ambient .b1{width:54vw;height:54vw;top:-18vw;right:-10vw;background:radial-gradient(closest-side, rgba(255,183,39,.55), transparent 70%);animation:drift1 30s ease-in-out infinite;}
-  .ambient .b2{width:42vw;height:42vw;top:-6vw;right:4vw;background:radial-gradient(closest-side, rgba(255,90,31,.5), transparent 68%);animation:drift2 39s ease-in-out infinite;}
-  .ambient .b3{width:58vw;height:58vw;top:20vh;left:24vw;background:radial-gradient(closest-side, rgba(95,211,255,.34), transparent 72%);animation:drift3 47s ease-in-out infinite;}
-  @keyframes drift1{0%,100%{transform:translate3d(0,0,0) scale(1);}33%{transform:translate3d(-4vw,3vh,0) scale(1.08);}66%{transform:translate3d(3vw,-2vh,0) scale(.95);}}
-  @keyframes drift2{0%,100%{transform:translate3d(0,0,0) scale(1);}40%{transform:translate3d(3vw,4vh,0) scale(1.1);}72%{transform:translate3d(-3vw,1vh,0) scale(.93);}}
-  @keyframes drift3{0%,100%{transform:translate3d(0,0,0) scale(1);}30%{transform:translate3d(5vw,-3vh,0) scale(1.06);}62%{transform:translate3d(-5vw,2vh,0) scale(1.03);}}
+  .ambient .blob{position:absolute;filter:blur(60px);mix-blend-mode:screen;will-change:transform,opacity;}
+  .ambient .b1{width:48vw;height:48vw;top:-14vw;right:-6vw;background:radial-gradient(closest-side, rgba(255,183,39,.55), transparent 70%);animation:drift1 24s ease-in-out infinite;}
+  .ambient .b2{width:38vw;height:38vw;top:-4vw;right:8vw;background:radial-gradient(closest-side, rgba(255,90,31,.5), transparent 68%);animation:drift2 30s ease-in-out infinite;}
+  .ambient .b3{width:50vw;height:50vw;top:22vh;left:20vw;background:radial-gradient(closest-side, rgba(95,211,255,.34), transparent 72%);animation:drift3 37s ease-in-out infinite;}
+  @keyframes drift1{0%{transform:translate3d(0,0,0) scale(1);opacity:.9;}20%{transform:translate3d(-26vw,18vh,0) scale(1.15);opacity:1;}45%{transform:translate3d(-40vw,4vh,0) scale(.9);opacity:.72;}70%{transform:translate3d(-12vw,30vh,0) scale(1.08);opacity:.96;}100%{transform:translate3d(0,0,0) scale(1);opacity:.9;}}
+  @keyframes drift2{0%{transform:translate3d(0,0,0) scale(1);opacity:.85;}25%{transform:translate3d(10vw,26vh,0) scale(1.2);opacity:1;}55%{transform:translate3d(-24vw,14vh,0) scale(.88);opacity:.66;}80%{transform:translate3d(-6vw,-10vh,0) scale(1.06);opacity:.95;}100%{transform:translate3d(0,0,0) scale(1);opacity:.85;}}
+  @keyframes drift3{0%{transform:translate3d(0,0,0) scale(1);opacity:.8;}30%{transform:translate3d(32vw,-20vh,0) scale(1.1);opacity:.96;}55%{transform:translate3d(48vw,10vh,0) scale(.92);opacity:.64;}80%{transform:translate3d(16vw,-30vh,0) scale(1.14);opacity:.9;}100%{transform:translate3d(0,0,0) scale(1);opacity:.8;}}
   @media (prefers-reduced-motion:reduce){.ambient .blob{animation:none;}}
   #inv-trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;mix-blend-mode:screen;}
 
@@ -1094,21 +1094,6 @@ const HOME_STYLES = `<style>
   .roster-intro p{font-size:19px;line-height:1.5;color:var(--ink-dim);margin:0;max-width:60ch;}
   .roster-intro p b{color:var(--ink);font-weight:600;}
 
-  .roster-counts{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;font-family:'Inter','Helvetica Neue',sans-serif;margin-bottom:64px;}
-  .roster-counts .pill{display:inline-flex;align-items:baseline;gap:8px;padding:11px 18px;border:1px solid var(--line);border-radius:0;font-size:13px;letter-spacing:.04em;color:var(--ink-dim);transition:background .15s,color .15s,border-color .15s;}
-  .roster-counts .pill:hover{background:rgba(245,200,80,.06);color:var(--ink);}
-  .roster-counts .pill .n{color:var(--gold);font-weight:700;margin-left:2px;}
-  .roster-counts .pill.upcoming{color:var(--ink-faint);}
-  .roster-counts .pill.upcoming .n{color:var(--ink-faint);}
-
-  .roster-cat{margin-bottom:48px;}
-  .roster-cat .cat-hd{display:flex;align-items:center;gap:18px;padding:18px 0;border-bottom:1px solid var(--line);margin-bottom:24px;}
-  .roster-cat .cat-letter{width:38px;height:38px;background:linear-gradient(135deg,var(--gold),#f0954a);color:#1a1408;font-family:'Inter','Helvetica Neue',sans-serif;font-weight:700;font-size:16px;line-height:38px;text-align:center;letter-spacing:.04em;flex-shrink:0;border-radius:0;}
-  .roster-cat .cat-name{font-family:'Fraunces',serif;font-weight:300;font-size:32px;letter-spacing:-.02em;line-height:1;font-variation-settings:'opsz' 60;flex:1;}
-  .roster-cat .cat-count{font-family:'Inter','Helvetica Neue',sans-serif;font-size:14px;color:var(--ink-dim);}
-  .roster-cat .cat-count .n{color:var(--gold);font-weight:700;}
-
-  .roster-grid{display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;}
   .prov-card{background:rgba(255,255,255,.022);padding:24px 26px;display:flex;flex-direction:column;gap:10px;transition:transform .2s,background .2s,border-color .2s;min-height:190px;border:1px solid var(--line);border-radius:0;}
   .prov-card:hover{background:rgba(245,200,80,.05);transform:translateY(-4px);border-color:var(--gold-faint);}
   .prov-card .hd{display:flex;align-items:center;justify-content:space-between;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
@@ -1116,7 +1101,6 @@ const HOME_STYLES = `<style>
   .prov-card .hd .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.18em;}
   .prov-card .hd .status-pill.live{color:var(--gold);}
   .prov-card .hd .status-pill.live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold);animation:pulse 1.6s ease-in-out infinite;}
-  .prov-card .hd .status-pill.key{color:var(--ink-mute);padding:3px 10px;border:1px solid var(--line);border-radius:0;}
   .prov-card h4{font-family:'Inter',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.01em;margin:0;line-height:1.15;color:var(--ink);}
   .prov-card p{font-size:14px;line-height:1.5;color:var(--ink-dim);margin:0;}
   .prov-card .foot{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11.5px;letter-spacing:.04em;color:var(--ink-mute);}
@@ -1184,7 +1168,6 @@ const HOME_STYLES = `<style>
     .section{padding:64px 24px;}
     .negatives{gap:24px;}
     .marquee-track{font-size:11px;}
-    .roster-grid{grid-template-columns:1fr;}
     .foot{padding:24px;flex-direction:column;gap:12px;text-align:center;}
   }
   @media(max-width:600px){
@@ -1250,7 +1233,7 @@ function buildRoster(): { explorerHtml: string; totalProviders: number; totalCat
         <div class="prov-card" data-cat="${g.cat}" data-q="${escapeHtml(q)}">
           <div class="hd">
             <span class="cat-tag">${escapeHtml(g.label)}</span>
-            <span class="status-pill ${live ? "live" : "key"}">${live ? "live" : "key needed"}</span>
+            ${live ? '<span class="status-pill live">live</span>' : ""}
           </div>
           <h4>${escapeHtml(p.info.name)}</h4>
           <p>${escapeHtml(p.info.description)}</p>
