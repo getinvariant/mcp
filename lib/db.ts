@@ -9,9 +9,15 @@ export interface Account {
   id: string;
   pl_key: string;
   email: string | null;
+  /** Auth0 `sub` claim — null for legacy pl_key-only accounts. */
+  auth0_sub: string | null;
+  /** Stable external user id from an embedding product (machine provisioning). */
+  external_id: string | null;
   tier: string;
   monthly_quota: number;
   per_minute_rate: number;
+  /** Stripe customer id, for billing-portal links + webhook reconciliation. */
+  stripe_customer_id: string | null;
   created_at: string;
 }
 
@@ -40,11 +46,87 @@ export async function getAccountByEmail(
   return data[0] as Account;
 }
 
+export async function getAccountByAuth0Sub(
+  sub: string,
+): Promise<Account | null> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("auth0_sub", sub)
+    .single();
+  if (error || !data) return null;
+  return data as Account;
+}
+
+export async function getAccountByExternalId(
+  externalId: string,
+): Promise<Account | null> {
+  // external_id has a unique index; .single() is safe. Returns null when no
+  // account has been provisioned for this external user yet.
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("external_id", externalId)
+    .single();
+  if (error || !data) return null;
+  return data as Account;
+}
+
+export async function getAccountByStripeCustomer(
+  customerId: string,
+): Promise<Account | null> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("stripe_customer_id", customerId)
+    .single();
+  if (error || !data) return null;
+  return data as Account;
+}
+
+/**
+ * Sum every successful provider call for an account in the current month.
+ * Reads from monthly_usage which is incremented in logUsage(). One row per
+ * (account, provider, month) — we just sum the count column.
+ */
+export async function getMonthlyUsageTotal(
+  accountId: string,
+  month?: string,
+): Promise<number> {
+  const m = month || new Date().toISOString().slice(0, 7);
+  const { data } = await supabase
+    .from("monthly_usage")
+    .select("count")
+    .eq("account_id", accountId)
+    .eq("month", m);
+  if (!data) return 0;
+  return (data as { count: number }[]).reduce((sum, r) => sum + r.count, 0);
+}
+
+export async function updateAccountTier(
+  accountId: string,
+  patch: {
+    tier?: string;
+    monthlyQuota?: number;
+    perMinuteRate?: number;
+    stripeCustomerId?: string;
+  },
+): Promise<void> {
+  const update: Record<string, unknown> = {};
+  if (patch.tier !== undefined) update.tier = patch.tier;
+  if (patch.monthlyQuota !== undefined) update.monthly_quota = patch.monthlyQuota;
+  if (patch.perMinuteRate !== undefined) update.per_minute_rate = patch.perMinuteRate;
+  if (patch.stripeCustomerId !== undefined) update.stripe_customer_id = patch.stripeCustomerId;
+  if (Object.keys(update).length === 0) return;
+  await supabase.from("accounts").update(update).eq("id", accountId);
+}
+
 export async function logUsage(
   accountId: string,
   providerId: string,
   action: string,
   success: boolean,
+  costCents: number = 0,
 ): Promise<void> {
   const month = new Date().toISOString().slice(0, 7); // '2026-04'
 
@@ -55,6 +137,7 @@ export async function logUsage(
       provider_id: providerId,
       action,
       success,
+      cost_cents: Math.round(costCents),
     }),
     supabase.rpc("increment_monthly_usage", {
       p_account_id: accountId,
@@ -75,18 +158,24 @@ export async function getAllAccounts(): Promise<Account[]> {
 export async function createAccount(opts: {
   plKey: string;
   email?: string;
+  auth0Sub?: string;
+  externalId?: string;
   tier?: string;
   monthlyQuota?: number;
   perMinuteRate?: number;
+  stripeCustomerId?: string;
 }): Promise<Account | null> {
   const { data, error } = await supabase
     .from("accounts")
     .insert({
       pl_key: opts.plKey,
       email: opts.email || null,
+      auth0_sub: opts.auth0Sub || null,
+      external_id: opts.externalId || null,
       tier: opts.tier || "free",
       monthly_quota: opts.monthlyQuota ?? 500,
       per_minute_rate: opts.perMinuteRate ?? 10,
+      stripe_customer_id: opts.stripeCustomerId || null,
     })
     .select("*")
     .single();

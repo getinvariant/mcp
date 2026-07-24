@@ -1,4 +1,5 @@
 import { authenticateRequest } from "../lib/auth.js";
+import { checkQuota } from "../lib/quota.js";
 import { getProvider } from "../lib/providers/registry.js";
 import { selectProvider, recordOutcome } from "../lib/routing/router.js";
 import { transformPlacesResponse } from "../lib/transforms/places.js";
@@ -174,9 +175,19 @@ export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  const auth = await authenticateRequest(req.headers["x-pl-key"] as string);
+  const auth = await authenticateRequest(
+    req.headers["x-pl-key"] as string,
+    req.headers["authorization"] as string | undefined,
+  );
   if (!auth.ok) {
     return res.status(auth.status || 401).json({ error: auth.error });
+  }
+  const quota = await checkQuota(auth.account!);
+  if (!quota.ok) {
+    if (quota.retryAfterMs) {
+      res.setHeader("Retry-After", String(Math.ceil(quota.retryAfterMs / 1000)));
+    }
+    return res.status(quota.status || 429).json({ error: quota.error });
   }
   const body = req.body ?? {};
   const { source, task_type, params } = body;

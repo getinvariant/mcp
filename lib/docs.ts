@@ -1,3 +1,88 @@
+import { getAllProviders } from "./providers/registry.js";
+
+/**
+ * Group providers by category + source for the catalog section. We collapse
+ * aggregator-sourced providers (OpenRouter, HuggingFace, Replicate, Fal,
+ * Together, APILayer) into a per-source line item so the doc doesn't dump
+ * 1,600 model names. Hand-written providers are listed individually because
+ * each has distinct actions worth knowing.
+ */
+function buildProvidersSection(): string {
+  const all = getAllProviders();
+  const ready = all.filter((p) => p.isAvailable());
+
+  // Bucket: aggregator-sourced grouped by source, others individually by category.
+  const aggregatorCounts: Record<string, { total: number; ready: number; sample: string[] }> = {};
+  const individual: { category: string; line: string; ready: boolean }[] = [];
+
+  for (const p of all) {
+    const isAggregator = /^(openrouter|hf|replicate|fal|together|apilayer)_/.test(p.info.id);
+    if (isAggregator) {
+      const source = p.info.id.split("_")[0];
+      if (!aggregatorCounts[source]) aggregatorCounts[source] = { total: 0, ready: 0, sample: [] };
+      aggregatorCounts[source].total++;
+      if (p.isAvailable()) aggregatorCounts[source].ready++;
+      if (aggregatorCounts[source].sample.length < 4) {
+        aggregatorCounts[source].sample.push(p.info.name);
+      }
+    } else {
+      individual.push({
+        category: p.info.category,
+        line: `- **${p.info.id}** (${p.isAvailable() ? "ready" : "needs key"}) — ${p.info.description}`,
+        ready: p.isAvailable(),
+      });
+    }
+  }
+
+  const byCategory = individual.reduce<Record<string, string[]>>((acc, p) => {
+    (acc[p.category] ||= []).push(p.line);
+    return acc;
+  }, {});
+
+  const categoryBlocks = Object.entries(byCategory)
+    .map(([cat, lines]) => `## ${cat}\n${lines.join("\n")}`)
+    .join("\n\n");
+
+  const aggregatorBlock = Object.entries(aggregatorCounts).length
+    ? `\n\n## ai (aggregator-fronted)\n` +
+      Object.entries(aggregatorCounts)
+        .map(
+          ([source, { total, ready, sample }]) =>
+            `- **${source}** — ${ready}/${total} providers ready. Examples: ${sample.join(", ")}.\n  Provider ids: \`${source}_*\` (e.g. \`${source}_${sample[0]?.replace(/[\/:.]/g, "_").toLowerCase().slice(0, 40)}\`)`,
+        )
+        .join("\n")
+    : "";
+
+  const supportedCategories = [
+    "Text generation: OpenRouter, HuggingFace, Together, Anthropic, Gemini",
+    "Image generation: Fal (FLUX, SDXL, Recraft, Ideogram), Replicate (community models)",
+    "Video generation: Fal (Luma, Kling, Runway, Mochi, HunyuanVideo)",
+    "Audio / speech: Fal (Whisper, ElevenLabs, Cartesia), Replicate (Whisper, MusicGen)",
+    "Embeddings: Together, HuggingFace",
+    "Geocoding + maps: openstreetmap, geoapify, mapbox",
+    "Stock / crypto: finnhub, coingecko, binance, alpha_vantage",
+    "Weather: open_meteo, environment",
+    "News + sentiment + currency + scraping: apilayer_*",
+    "Health + government data: openfda, nppes, world_bank",
+    "Education + creative: open_library, khan_academy, unsplash, art_institute",
+  ];
+
+  return [
+    `# Provider Catalog`,
+    ``,
+    `**${ready.length} of ${all.length} providers ready** (have keys configured). Call via \`POST /api/query\` or MCP \`list_providers\`.`,
+    ``,
+    `## What Invariant CAN do`,
+    supportedCategories.map((s) => `- ${s}`).join("\n"),
+    ``,
+    `## Individual providers (hand-written)`,
+    categoryBlocks,
+    aggregatorBlock,
+    ``,
+    `Tip: use \`list_providers\` for the full live catalog with action signatures.`,
+  ].join("\n");
+}
+
 export function buildApiDocs(section?: string): string {
   const overview = `# Invariant — Overview
 
@@ -9,7 +94,7 @@ Invariant is a unified API gateway that gives you access to 15+ external APIs th
 - Provider recommendations and comparison tooling
 - Works with Claude, Cursor, Windsurf, or any MCP-compatible client
 
-**Base URL:** \`https://pclabs.dev\`
+**Base URL:** \`https://getinvariant.com\`
 **Authentication:** Every request requires an \`x-pl-key\` header (or env var \`PL_API_KEY\` for MCP).`;
 
   const authentication = `# Authentication
@@ -117,45 +202,7 @@ Check your account quota, usage breakdown by provider, and renewal date.
 }
 \`\`\``;
 
-  const providers = `# Provider Catalog
-
-All providers below are registered and callable via \`POST /api/query\` or the MCP \`list_providers\` tool.
-
-## physical_health
-- **openfda** — FDA drug adverse events, recalls, and labeling data. No API key required (optional key increases rate limits).
-- **nppes** — CMS NPI Registry: search healthcare providers by name, specialty, NPI, or location. No API key required.
-
-## mental_health
-- **mental_health** — Curated database of US mental health crisis hotlines, text lines, and resources. No API key required.
-
-## financial
-- **finnhub** — Real-time stock quotes, forex rates, company news. 60 calls/min free.
-- **coingecko** — Cryptocurrency prices, market cap, trending coins. Works without key; optional key boosts limits.
-- **world_bank** — World Bank development indicators (GDP, population, poverty) for 300+ economies. No API key required.
-
-## social_impact
-- **charity** — Search nonprofits and charities via Every.org.
-
-## environment
-- **environment** — Current weather and air quality via OpenWeather.
-
-## ai
-- **claude** — Anthropic Claude chat and text generation.
-- **gemini** — Google Gemini chat and text generation.
-- **huggingface** — Open-source model inference via HuggingFace.
-
-## maps
-- **geoapify** — Geocoding, reverse geocoding, and routing. 3,000 req/day free.
-
-## education
-- **open_library** — Search millions of books by title, author, ISBN, or subject via the Internet Archive. No API key required.
-- **khan_academy** — Browse Khan Academy's free educational content tree (subjects, courses, units). No API key required.
-
-## creative
-- **unsplash** — Search 3M+ royalty-free photos.
-- **art_institute** — Search 120,000+ artworks from the Art Institute of Chicago. No API key required.
-
-Use \`list_providers\` to see live availability (whether the server has each provider's key configured).`;
+  const providers = buildProvidersSection();
 
   const multiKey = `# Multi-Key & Rate Limit Routing
 

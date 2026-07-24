@@ -29,3 +29,11 @@ hackathon_keys.csv
 
 # Demo files
 demo/
+
+# Local scratch / research notes (never commit — may contain keys)
+bureau-implementation.txt
+hyperspell-ui.txt
+invariant-payment-research.txt
+coder.md
+schedueled_tasks.lock
+CLAUDE.md

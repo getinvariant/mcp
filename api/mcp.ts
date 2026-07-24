@@ -8,7 +8,10 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const auth = await authenticateRequest(req.headers["x-pl-key"] as string);
+  const auth = await authenticateRequest(
+    req.headers["x-pl-key"] as string,
+    req.headers["authorization"] as string | undefined,
+  );
   if (!auth.ok) {
     return res.status(auth.status || 401).json({ error: auth.error });
   }

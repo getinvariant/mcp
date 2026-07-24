@@ -5,6 +5,12 @@ import {
   QueryResult,
 } from "./types.js";
 
+// Mapbox's official env var is MAPBOX_ACCESS_TOKEN; keep MAPBOX_API_KEY as a
+// fallback so older deploys that set it still work.
+function mapboxKey(): string | undefined {
+  return process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_API_KEY;
+}
+
 export class MapboxProvider implements Provider {
   info: ProviderInfo = {
     id: "mapbox",
@@ -28,7 +34,7 @@ export class MapboxProvider implements Provider {
   };
 
   isAvailable(): boolean {
-    return !!process.env.MAPBOX_API_KEY;
+    return !!mapboxKey();
   }
 
   async query(
@@ -48,8 +54,8 @@ export class MapboxProvider implements Provider {
     if (action !== "geocode") {
       return { success: false, error: `mapbox: unknown action ${action}` };
     }
-    const key = process.env.MAPBOX_API_KEY;
-    if (!key) return { success: false, error: "MAPBOX_API_KEY not set" };
+    const key = mapboxKey();
+    if (!key) return { success: false, error: "MAPBOX_ACCESS_TOKEN not set" };
     const text = String((params as any)?.text ?? "");
     if (!text) return { success: false, error: "params.text required" };
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(text)}.json?access_token=${key}`;

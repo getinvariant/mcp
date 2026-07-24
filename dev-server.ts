@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import providersHandler from "./api/providers.js";
 import queryHandler from "./api/query.js";
 import usageHandler from "./api/usage.js";
-import recommendHandler from "./api/recommend.js";
+import provisionHandler from "./api/provision.js";
 import routeHandler, { handleRoute } from "./api/route.js";
 import routeFetchHandler from "./api/route-fetch.js";
 import routingStatusHandler, {
@@ -467,7 +467,7 @@ function renderAuthorizeForm(opts: {
   h1{font-size:1.1rem;font-weight:600;color:#fff;margin-bottom:.25rem}
   .sub{font-size:.85rem;color:#737373;margin-bottom:1.5rem}
   .error{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#f87171;font-size:.8rem;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem}
-  input{width:100%;background:#111;border:1px solid #262626;border-radius:.5rem;padding:.75rem 1rem;color:#e5e5e5;font-size:.9rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;margin-bottom:.75rem}
+  input{width:100%;background:#111;border:1px solid #262626;border-radius:.5rem;padding:.75rem 1rem;color:#e5e5e5;font-size:.9rem;font-family:'Inter','Helvetica Neue',sans-serif;outline:none;transition:border-color .15s;margin-bottom:.75rem}
   input:focus{border-color:#525252}
   input::placeholder{color:#404040}
   button{width:100%;background:#e5e5e5;color:#0a0a0a;border:none;border-radius:.5rem;padding:.75rem;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s}
@@ -579,17 +579,31 @@ const SHARED_HEAD = `<meta charset="utf-8">
 <meta property="og:site_name" content="Invariant">
 <meta property="og:title" content="Invariant">
 <meta property="og:description" content="One key unlocks every API your agent needs.">
-<meta property="og:url" content="https://pclabs.dev">
+<meta property="og:url" content="https://getinvariant.com">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Invariant">
 <meta name="twitter:description" content="One key unlocks every API your agent needs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>`;
+<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script><script>(function(){
+  if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)return;
+  var cv=document.createElement('canvas');cv.id='inv-trail';var ctx=cv.getContext('2d');
+  var W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2),CELL=26;
+  var cells=new Map();var palette=['#ffb727','#f5c850','#f0954a','#ff5a1f'];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+  var lastT=0;
+  function loop(t){var dt=lastT?(t-lastT)/1000:0.016;lastT=t;if(dt>0.1)dt=0.1;ctx.clearRect(0,0,W,H);cells.forEach(function(c,k){c.life-=dt/0.85;if(c.life<=0){cells.delete(k);return;}ctx.globalAlpha=c.life*c.life*0.72;ctx.fillStyle=c.color;ctx.fillRect(c.x*CELL+1,c.y*CELL+1,CELL-2,CELL-2);});ctx.globalAlpha=1;requestAnimationFrame(loop);}
+  function touch(px,py){var cx=Math.floor(px/CELL),cy=Math.floor(py/CELL);for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){if(Math.abs(dx)+Math.abs(dy)>1&&Math.random()>0.4)continue;var x=cx+dx,y=cy+dy,k=x+','+y,life=(dx===0&&dy===0)?1:0.7;var col=palette[((x*7+y*13)%palette.length+palette.length)%palette.length];var ex=cells.get(k);if(!ex||ex.life<life)cells.set(k,{x:x,y:y,life:life,color:col});}}
+  function start(){document.body.appendChild(cv);resize();window.addEventListener('resize',resize);window.addEventListener('pointermove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');touch(e.clientX,e.clientY);},{passive:true});requestAnimationFrame(loop);}
+  if(document.body)start();else window.addEventListener('DOMContentLoaded',start);
+})();</script>
+`;
 
 const SHARED_STYLES = `
   *{margin:0;padding:0;box-sizing:border-box;border-radius:0 !important;}
+  #inv-trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;mix-blend-mode:screen;}
+
   :root{
     --bg:#060606;
     --fg:#f2ede1;
@@ -602,17 +616,16 @@ const SHARED_STYLES = `
     --line:rgba(242,237,225,0.12);
     --line-strong:rgba(242,237,225,0.28);
     --serif:'Instrument Serif','Times New Roman',serif;
-    --mono:'Geist Mono','JetBrains Mono','Courier New',monospace;
+    --mono:'Space Grotesk','Helvetica Neue',sans-serif;
     --sans:'Space Grotesk','Helvetica Neue',sans-serif;
   }
   html,body{overflow-x:hidden;}
   body{font-family:var(--mono);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
     background-image:
-      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
-      radial-gradient(circle at 80% -10%, rgba(255,183,39,0.06), transparent 45%),
+      radial-gradient(900px circle at 86% -8%, rgba(255,183,39,0.14), transparent 62%),
       radial-gradient(circle at 0% 110%, rgba(95,211,255,0.05), transparent 45%);
-    background-size:48px 48px,48px 48px,100% 100%,100% 100%;
+    background-attachment:fixed;
+    background-size:100% 100%,100% 100%;
   }
   ::selection{background:var(--amber);color:#000;}
   a{color:var(--fg);text-decoration:none;transition:color .18s ease, background .18s ease}
@@ -675,6 +688,7 @@ function renderNav(active?: string): string {
     </div>
     <div class="nav-right">
       <div class="links">
+        <a href="/roster">Roster</a>
       </div>
       <a href="/login" class="nav-cta${active === "login" || active === "install" ? " nav-cta-active" : ""}">Sign Up / Log In →</a>
     </div>
@@ -764,6 +778,14 @@ ${SHARED_STYLES}
   .vstep{display:flex;gap:0.85rem;align-items:flex-start;margin-bottom:0.7rem;font-size:0.82rem;color:var(--fg);line-height:1.5;}
   .vstep-n{flex-shrink:0;width:1.4rem;height:1.4rem;background:var(--amber);color:#000;font-size:0.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
   .vstep code{color:var(--amber);font-family:var(--mono);}
+
+  /* hyperspell skin: soft / rounded / gradient */
+  .ic{border:1px solid var(--line)!important;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;}
+  .ic:hover:not(.ic-pending){border-color:var(--line-strong)!important;transform:translateY(-4px)!important;box-shadow:0 26px 60px -16px rgba(0,0,0,.6)!important;}
+  .ic.ic-pending{border-color:var(--amber)!important;}
+  .ic-btn{background:linear-gradient(135deg,#ffb727 0%,#f0954a 58%,#ff3b14 135%)!important;border:none!important;color:#1a1408!important;}
+  .ic:hover:not(.ic-pending) .ic-btn{filter:brightness(1.06);background:linear-gradient(135deg,#ffb727 0%,#f0954a 58%,#ff3b14 135%)!important;}
+  .ic-yes,.ic-no{}
 </style>
 </head>
 <body>
@@ -933,105 +955,7 @@ ${renderNav("install")}
 </html>`;
 }
 
-function renderHomepage(): string {
-  // Origin redesign — mirrors design_handoff_invariant_redesign/direction-origin.jsx.
-  const marqueePhrases = [
-    "one key · every api",
-    "the api layer, subtracted",
-    "zero .env files on your machine",
-    "zero provider accounts",
-    "built for agents, not humans",
-    "21 providers · 9 categories",
-  ];
-  // Duplicate the track so the -50% translate loops seamlessly.
-  const marqueeHtml = [...marqueePhrases, ...marqueePhrases]
-    .map((p) => `<span><i class="di">◆</i> ${p}</span>`)
-    .join("");
-
-  type Prov = {
-    ix: string;
-    live: boolean;
-    nm: string;
-    slug: string;
-    actions: number;
-    desc: string;
-  };
-  const catalog: { id: string; label: string; short: string; providers: Prov[] }[] = [
-    { id: "health", label: "Health", short: "H", providers: [
-      { ix: "01", live: true,  nm: "OpenFDA",            slug: "openfda",     actions: 3, desc: "FDA data on drugs, adverse events, and recalls. Powered by the U.S. Food &amp; Drug Administration." },
-      { ix: "02", live: true,  nm: "NPPES NPI Registry", slug: "nppes",       actions: 1, desc: "Search the CMS National Plan and Provider Enumeration System for healthcare providers." },
-    ]},
-    { id: "mental", label: "Mental Health", short: "M", providers: [
-      { ix: "03", live: true,  nm: "Mental Health Crisis Resources", slug: "mental_health", actions: 2, desc: "Curated database of mental health crisis hotlines, text lines, and resources across the US." },
-    ]},
-    { id: "ai", label: "AI", short: "A", providers: [
-      { ix: "04", live: false, nm: "Anthropic Claude",     slug: "claude",      actions: 1, desc: "Access Claude AI models for text generation, analysis, summarization, and reasoning." },
-      { ix: "05", live: false, nm: "Google Gemini",        slug: "gemini",      actions: 1, desc: "Access Google Gemini AI models for text generation, analysis, and multimodal tasks." },
-      { ix: "06", live: false, nm: "HuggingFace Inference", slug: "huggingface", actions: 2, desc: "Run open-source AI models via HuggingFace Inference API — text generation, classification, and more." },
-    ]},
-    { id: "finance", label: "Finance", short: "F", providers: [
-      { ix: "07", live: true,  nm: "CoinGecko",     slug: "coingecko",     actions: 4, desc: "Real-time and historical cryptocurrency prices, market data, and trending coins. No API key required." },
-      { ix: "08", live: true,  nm: "Finnhub",       slug: "finnhub",       actions: 4, desc: "Real-time stock quotes, forex rates, company news, and earnings data. 60 calls/min free." },
-      { ix: "09", live: true,  nm: "Binance Public", slug: "binance",      actions: 1, desc: "Real-time crypto prices via Binance public API. No API key required." },
-      { ix: "10", live: false, nm: "Alpha Vantage", slug: "alpha_vantage", actions: 3, desc: "Real-time and historical stock quotes, forex rates, and financial data." },
-      { ix: "11", live: true,  nm: "World Bank",    slug: "world_bank",    actions: 3, desc: "World Bank development indicators, GDP, population, poverty, education, and health metrics for 300+ economies." },
-    ]},
-    { id: "social", label: "Social Impact", short: "S", providers: [
-      { ix: "12", live: false, nm: "Every.org Nonprofit Search", slug: "charity", actions: 1, desc: "Search and discover nonprofits and charities. Powered by Every.org&apos;s nonprofit database." },
-    ]},
-    { id: "env", label: "Environment", short: "E", providers: [
-      { ix: "13", live: true, nm: "OpenWeatherMap", slug: "environment", actions: 2, desc: "Current weather conditions and air quality data for any location worldwide." },
-      { ix: "14", live: true, nm: "Open-Meteo",     slug: "open_meteo",  actions: 1, desc: "Free weather forecast API. No API key required. Lat/lon based current conditions." },
-    ]},
-    { id: "maps", label: "Maps", short: "G", providers: [
-      { ix: "15", live: true, nm: "Geoapify",       slug: "geoapify",      actions: 3, desc: "Geocoding, reverse geocoding, and routing. 3,000 requests/day free, no credit card required." },
-      { ix: "16", live: true, nm: "Mapbox",         slug: "mapbox",        actions: 1, desc: "Maps + geocoding from Mapbox." },
-      { ix: "17", live: true, nm: "OpenStreetMap",  slug: "openstreetmap", actions: 2, desc: "Free geocoding and reverse geocoding using OpenStreetMap data via the Nominatim API. No API key required." },
-    ]},
-    { id: "edu", label: "Education", short: "E", providers: [
-      { ix: "18", live: true, nm: "Open Library", slug: "open_library", actions: 3, desc: "Search millions of books, get detailed editions, and access author info via the Internet Archive&apos;s Open Library." },
-      { ix: "19", live: true, nm: "Khan Academy", slug: "khan_academy", actions: 1, desc: "Browse Khan Academy&apos;s free educational content tree — subjects, courses, units, and lessons." },
-    ]},
-    { id: "creative", label: "Creative", short: "C", providers: [
-      { ix: "20", live: false, nm: "Unsplash",                slug: "unsplash",      actions: 3, desc: "Search and discover high-quality, royalty-free photos from Unsplash&apos;s library of 3M+ images." },
-      { ix: "21", live: true,  nm: "Art Institute of Chicago", slug: "art_institute", actions: 3, desc: "Search the Art Institute of Chicago&apos;s collection of 120,000+ artworks. No API key required." },
-    ]},
-  ];
-
-  const categoriesHtml = catalog
-    .map((c) => {
-      const cards = c.providers
-        .map(
-          (p) => `
-          <div class="prov-card">
-            <div class="hd">
-              <span class="status-pill ${p.live ? "live" : "key"}">${p.live ? "live" : "key needed"}</span>
-            </div>
-            <h4>${p.nm}</h4>
-            <p>${p.desc}</p>
-            <div class="foot">
-              <span class="slug">${p.slug}</span>
-              <span>${p.actions} action${p.actions === 1 ? "" : "s"}</span>
-            </div>
-          </div>`,
-        )
-        .join("");
-      return `
-        <div class="roster-cat">
-          <div class="cat-hd">
-            <div class="cat-letter">${c.short}</div>
-            <div class="cat-name">${c.label}</div>
-            <div class="cat-count"><span class="n">${c.providers.length}</span></div>
-          </div>
-          <div class="roster-grid">${cards}</div>
-        </div>`;
-    })
-    .join("");
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+const HOME_HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a0807">
 <meta name="description" content="Invariant — the agentic api layer that learns how you build.">
@@ -1042,8 +966,9 @@ function renderHomepage(): string {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,300;9..144,300i;9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>
-<style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="b04b189e-eb99-4c94-a910-fbdb093f591d"></script>`;
+
+const HOME_STYLES = `<style>
   *,*::before,*::after{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   a{text-decoration:none;color:inherit;}
@@ -1070,33 +995,41 @@ function renderHomepage(): string {
     content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 50% 35% at 50% -5%, rgba(245,200,80,.12), transparent 70%);
   }
-  body::after{
-    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-    background-image:
-      linear-gradient(to right, rgba(245,200,80,.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(245,200,80,.04) 1px, transparent 1px);
-    background-size:56px 56px;
-  }
+  /* Ambient glow field: independent color blobs drifting on their own timing
+     so the light weaves and recombines instead of sitting as one static patch.
+     Screen-blend makes overlaps brighten organically; motion is transform-only
+     (GPU) so the blur layer never re-rasterizes. */
+  .ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .ambient .blob{position:absolute;filter:blur(60px);mix-blend-mode:screen;will-change:transform,opacity;}
+  .ambient .b1{width:48vw;height:48vw;top:-14vw;right:-6vw;background:radial-gradient(closest-side, rgba(255,183,39,.55), transparent 70%);animation:drift1 24s ease-in-out infinite;}
+  .ambient .b2{width:38vw;height:38vw;top:-4vw;right:8vw;background:radial-gradient(closest-side, rgba(255,90,31,.5), transparent 68%);animation:drift2 30s ease-in-out infinite;}
+  .ambient .b3{width:50vw;height:50vw;top:22vh;left:20vw;background:radial-gradient(closest-side, rgba(95,211,255,.34), transparent 72%);animation:drift3 37s ease-in-out infinite;}
+  @keyframes drift1{0%{transform:translate3d(0,0,0) scale(1);opacity:.9;}20%{transform:translate3d(-26vw,18vh,0) scale(1.15);opacity:1;}45%{transform:translate3d(-40vw,4vh,0) scale(.9);opacity:.72;}70%{transform:translate3d(-12vw,30vh,0) scale(1.08);opacity:.96;}100%{transform:translate3d(0,0,0) scale(1);opacity:.9;}}
+  @keyframes drift2{0%{transform:translate3d(0,0,0) scale(1);opacity:.85;}25%{transform:translate3d(10vw,26vh,0) scale(1.2);opacity:1;}55%{transform:translate3d(-24vw,14vh,0) scale(.88);opacity:.66;}80%{transform:translate3d(-6vw,-10vh,0) scale(1.06);opacity:.95;}100%{transform:translate3d(0,0,0) scale(1);opacity:.85;}}
+  @keyframes drift3{0%{transform:translate3d(0,0,0) scale(1);opacity:.8;}30%{transform:translate3d(32vw,-20vh,0) scale(1.1);opacity:.96;}55%{transform:translate3d(48vw,10vh,0) scale(.92);opacity:.64;}80%{transform:translate3d(16vw,-30vh,0) scale(1.14);opacity:.9;}100%{transform:translate3d(0,0,0) scale(1);opacity:.8;}}
+  @media (prefers-reduced-motion:reduce){.ambient .blob{animation:none;}}
+  #inv-trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998;mix-blend-mode:screen;}
+
   body > *{position:relative;z-index:1;}
-  .mono{font-family:'JetBrains Mono',monospace;}
+  .mono{font-family:'Inter','Helvetica Neue',sans-serif;}
   .serif{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;}
 
   .nav{display:flex;align-items:center;justify-content:space-between;padding:28px 56px;}
-  .nav-l{display:flex;align-items:center;gap:14px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;letter-spacing:.14em;color:var(--ink);text-transform:uppercase;}
+  .nav-l{display:flex;align-items:center;gap:14px;font-family:'Inter','Helvetica Neue',sans-serif;font-weight:700;font-size:16px;letter-spacing:.14em;color:var(--ink);text-transform:uppercase;}
   .nav-l .sq{width:16px;height:16px;background:var(--gold);}
   .nav-l .sep{color:var(--ink-faint);padding:0 12px;font-weight:300;font-size:22px;}
   .nav-l .ic{width:20px;height:20px;opacity:.55;transition:opacity .15s;color:var(--ink);display:inline-block;}
   .nav-l .ic:hover{opacity:1;}
   .nav-r{display:flex;align-items:center;gap:36px;}
-  .nav-r a.link{color:var(--ink-dim);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;}
+  .nav-r a.link{color:var(--ink-dim);font-family:'Inter','Helvetica Neue',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;}
   .nav-r a.link:hover{color:var(--ink);}
-  .cta{display:inline-block;background:var(--ink);color:var(--bg);padding:14px 22px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;transition:filter .15s,transform .15s;}
+  .cta{display:inline-block;background:var(--ink);color:var(--bg);padding:14px 24px;border-radius:0;font-family:'Inter','Helvetica Neue',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;transition:filter .15s,transform .15s,box-shadow .15s;}
   .cta:hover{filter:brightness(.92);transform:translateY(-1px);}
-  .cta.gold{background:var(--gold);color:#1a1408;}
-  .cta.gold:hover{filter:brightness(1.08);}
+  .cta.gold{background:linear-gradient(135deg,var(--gold) 0%,#f0954a 58%,var(--red) 135%);color:#1a1408;box-shadow:0 10px 34px rgba(245,200,80,.20);}
+  .cta.gold:hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 44px rgba(245,200,80,.28);}
 
   .marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:14px 0;-webkit-mask-image:linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);mask-image:linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);}
-  .marquee-track{display:flex;gap:56px;white-space:nowrap;animation:marquee 50s linear infinite;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);}
+  .marquee-track{display:flex;gap:56px;white-space:nowrap;animation:marquee 50s linear infinite;font-family:'Inter','Helvetica Neue',sans-serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);}
   .marquee-track > span{display:inline-flex;align-items:center;gap:18px;}
   .marquee-track .di{color:var(--gold);font-size:11px;font-style:normal;}
   @keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
@@ -1105,7 +1038,7 @@ function renderHomepage(): string {
   .h1{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(72px, 9vw, 168px);line-height:.92;letter-spacing:-.04em;margin:0;font-variation-settings:'opsz' 144;color:var(--ink);}
   .h1 .line{display:block;}
   .h1 .strike{position:relative;color:var(--ink-mute);font-weight:300;}
-  .h1 .strike::after{content:'';position:absolute;left:-1%;right:-2%;top:50%;height:8px;background:var(--red);transform:rotate(-2deg);border-radius:4px;animation:strike .8s cubic-bezier(.2,.7,.2,1) .3s both;transform-origin:left;}
+  .h1 .strike::after{content:'';position:absolute;left:-1%;right:-2%;top:50%;height:8px;background:var(--red);transform:rotate(-2deg);border-radius:0;animation:strike .8s cubic-bezier(.2,.7,.2,1) .3s both;transform-origin:left;}
   @keyframes strike{from{transform:rotate(-2deg) scaleX(0);}to{transform:rotate(-2deg) scaleX(1);}}
   .h1 .italic{font-style:italic;color:var(--gold);font-weight:300;font-variation-settings:'opsz' 144;position:relative;display:inline-block;}
   .h1 .italic::after{content:'';position:absolute;left:-1%;right:-1%;bottom:18%;height:16px;background:var(--gold-faint);z-index:-1;transform:skewX(-6deg);animation:highlight .7s cubic-bezier(.2,1.2,.4,1) .6s both;transform-origin:left;}
@@ -1117,18 +1050,18 @@ function renderHomepage(): string {
 
   .cta-row{margin-top:56px;display:flex;flex-direction:column;gap:18px;align-items:flex-start;}
   .cta-row .cta.gold{padding:22px 32px;font-size:14px;letter-spacing:.14em;}
-  .trust{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);}
+  .trust{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);}
   .trust b{color:var(--gold);font-weight:500;}
 
-  .negatives{display:flex;gap:56px;margin-top:80px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);flex-wrap:wrap;}
+  .negatives{display:flex;gap:56px;margin-top:80px;font-family:'Inter','Helvetica Neue',sans-serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);flex-wrap:wrap;}
   .negatives span::before{content:'> ';color:var(--ink-faint);}
 
   .hero-right{display:flex;flex-direction:column;gap:24px;max-width:660px;margin-left:auto;width:100%;}
-  .ascii{position:relative;border:1px solid var(--ink);background:var(--bg);padding:22px 28px 28px;box-shadow:14px 14px 0 var(--gold);}
-  .ascii .hd{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;}
-  .ascii pre{margin:0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.35;color:var(--ink);white-space:pre;letter-spacing:.02em;}
+  .ascii{position:relative;border:1px solid var(--line);background:rgba(255,255,255,.025);padding:24px 30px 30px;border-radius:0;box-shadow:0 28px 70px rgba(0,0,0,.5);}
+  .ascii .hd{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;}
+  .ascii pre{margin:0;font-family:'Inter','Helvetica Neue',sans-serif;font-size:13px;line-height:1.35;color:var(--ink);white-space:pre;letter-spacing:.02em;}
 
-  .status{position:relative;border:1px solid var(--ink);background:var(--bg);padding:24px 30px;box-shadow:14px 14px 0 var(--blue);display:grid;grid-template-columns:max-content 1fr;column-gap:36px;row-gap:18px;font-family:'JetBrains Mono',monospace;font-size:14px;}
+  .status{position:relative;border:1px solid var(--line);background:rgba(255,255,255,.025);padding:26px 32px;border-radius:0;box-shadow:0 28px 70px rgba(0,0,0,.5);display:grid;grid-template-columns:max-content 1fr;column-gap:36px;row-gap:18px;font-family:'Inter','Helvetica Neue',sans-serif;font-size:14px;}
   .status .k{color:var(--ink-mute);letter-spacing:.14em;text-transform:uppercase;font-size:12px;align-self:center;}
   .status .v{color:var(--ink);}
   .status .v .gold{color:var(--gold);}
@@ -1138,15 +1071,14 @@ function renderHomepage(): string {
 
   .section{max-width:1640px;margin:0 auto;padding:96px 56px;border-top:1px solid var(--line);}
   .sec-hd{margin-bottom:64px;}
-  .sec-hd .ix{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
+  .sec-hd .ix{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
   .sec-hd h2{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(44px, 5vw, 76px);line-height:1;letter-spacing:-.03em;margin:0;font-variation-settings:'opsz' 144;color:var(--ink);}
   .sec-hd h2 em{font-style:italic;color:var(--gold);font-weight:300;font-variation-settings:'opsz' 144;}
 
-  .steps{display:grid;grid-template-columns:repeat(4, 1fr);border:1px solid var(--line);}
-  .step{padding:36px 28px;border-right:1px solid var(--line);min-height:280px;display:flex;flex-direction:column;transition:background .2s;}
-  .step:last-child{border-right:0;}
-  .step:hover{background:rgba(245,200,80,.03);}
-  .step .n{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;}
+  .steps{display:grid;grid-template-columns:repeat(4, 1fr);gap:18px;}
+  .step{padding:32px 28px;border:1px solid var(--line);border-radius:0;background:rgba(255,255,255,.022);min-height:260px;display:flex;flex-direction:column;transition:transform .2s,background .2s,border-color .2s;}
+  .step:hover{background:rgba(245,200,80,.05);transform:translateY(-4px);border-color:var(--gold-faint);}
+  .step .n{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;}
   .step h3{font-family:'Fraunces',serif;font-weight:300;font-size:30px;letter-spacing:-.02em;line-height:1.05;margin:0 0 14px;font-variation-settings:'opsz' 60;}
   .step h3 em{font-style:italic;color:var(--gold);}
   .step p{font-size:15px;line-height:1.55;color:var(--ink-dim);margin:0;}
@@ -1156,48 +1088,69 @@ function renderHomepage(): string {
   .pitch p b{color:var(--ink);font-weight:600;}
 
   .roster-intro{max-width:880px;margin-bottom:56px;}
-  .roster-intro .lbl{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:14px;display:flex;align-items:center;gap:16px;}
+  .roster-intro .lbl{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:14px;display:flex;align-items:center;gap:16px;}
   .roster-intro .lbl::before{content:'';width:32px;height:1px;background:var(--gold);}
   .roster-intro .lbl b{color:var(--gold);font-weight:700;}
   .roster-intro p{font-size:19px;line-height:1.5;color:var(--ink-dim);margin:0;max-width:60ch;}
   .roster-intro p b{color:var(--ink);font-weight:600;}
 
-  .roster-counts{display:flex;flex-wrap:wrap;gap:0;align-items:baseline;font-family:'JetBrains Mono',monospace;margin-bottom:64px;border-top:1px solid var(--line);border-left:1px solid var(--line);}
-  .roster-counts .pill{display:inline-flex;align-items:baseline;gap:8px;padding:14px 22px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px;letter-spacing:.04em;color:var(--ink-dim);transition:background .15s,color .15s;}
-  .roster-counts .pill:hover{background:rgba(245,200,80,.06);color:var(--ink);}
-  .roster-counts .pill .n{color:var(--gold);font-weight:700;margin-left:2px;}
-  .roster-counts .pill.upcoming{color:var(--ink-faint);}
-  .roster-counts .pill.upcoming .n{color:var(--ink-faint);}
-
-  .roster-cat{margin-bottom:48px;}
-  .roster-cat .cat-hd{display:flex;align-items:center;gap:18px;padding:18px 0;border-bottom:1px solid var(--line);margin-bottom:24px;}
-  .roster-cat .cat-letter{width:36px;height:36px;background:var(--gold);color:#1a1408;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;line-height:36px;text-align:center;letter-spacing:.04em;flex-shrink:0;}
-  .roster-cat .cat-name{font-family:'Fraunces',serif;font-weight:300;font-size:32px;letter-spacing:-.02em;line-height:1;font-variation-settings:'opsz' 60;flex:1;}
-  .roster-cat .cat-count{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink-dim);}
-  .roster-cat .cat-count .n{color:var(--gold);font-weight:700;}
-
-  .roster-grid{display:grid;grid-template-columns:repeat(2, 1fr);border-top:1px solid var(--line);border-left:1px solid var(--line);}
-  .prov-card{background:var(--bg);padding:24px 26px;display:flex;flex-direction:column;gap:10px;transition:background .2s;min-height:200px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
-  .prov-card:hover{background:rgba(245,200,80,.04);}
-  .prov-card .hd{display:flex;align-items:center;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
+  .prov-card{background:rgba(255,255,255,.022);padding:24px 26px;display:flex;flex-direction:column;gap:10px;transition:transform .2s,background .2s,border-color .2s;min-height:190px;border:1px solid var(--line);border-radius:0;}
+  .prov-card:hover{background:rgba(245,200,80,.05);transform:translateY(-4px);border-color:var(--gold-faint);}
+  .prov-card .hd{display:flex;align-items:center;justify-content:space-between;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
   .prov-card .hd .ix{color:var(--ink-faint);font-weight:600;}
   .prov-card .hd .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.18em;}
   .prov-card .hd .status-pill.live{color:var(--gold);}
   .prov-card .hd .status-pill.live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold);animation:pulse 1.6s ease-in-out infinite;}
-  .prov-card .hd .status-pill.key{color:var(--ink-mute);padding:2px 8px;border:1px solid var(--line);}
   .prov-card h4{font-family:'Inter',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.01em;margin:0;line-height:1.15;color:var(--ink);}
   .prov-card p{font-size:14px;line-height:1.5;color:var(--ink-dim);margin:0;}
-  .prov-card .foot{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.04em;color:var(--ink-mute);}
+  .prov-card .foot{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11.5px;letter-spacing:.04em;color:var(--ink-mute);}
   .prov-card .foot .slug{color:var(--gold);}
+  .prov-card .hd .cat-tag{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute);}
+
+  .roster-tools{display:flex;gap:18px 24px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:30px;}
+  .roster-search{position:relative;flex:1;min-width:280px;max-width:440px;display:flex;align-items:center;}
+  .roster-search svg{position:absolute;left:16px;width:16px;height:16px;color:var(--ink-mute);pointer-events:none;}
+  .roster-search input{width:100%;background:rgba(255,255,255,.022);border:1px solid var(--line);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;padding:13px 16px 13px 44px;outline:none;transition:border-color .2s,background .2s;}
+  .roster-search input::placeholder{color:var(--ink-faint);}
+  .roster-search input:focus{border-color:var(--gold-faint);background:rgba(245,200,80,.04);}
+  .filter-chips{display:flex;gap:9px;flex-wrap:wrap;}
+  .chip{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.05em;color:var(--ink-dim);background:none;border:1px solid var(--line);padding:8px 14px;cursor:pointer;transition:border-color .16s,color .16s,background .16s;display:inline-flex;align-items:center;gap:7px;}
+  .chip .n{color:var(--ink-faint);font-weight:600;font-size:11px;}
+  .chip:hover{border-color:var(--gold-faint);color:var(--ink);}
+  .chip.active{background:var(--gold);border-color:var(--gold);color:#0a0807;}
+  .chip.active .n{color:#0a0807;opacity:.65;}
+  .explore-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .explore-grid .prov-card.hidden{display:none;}
+  .empty-msg{padding:56px 0;text-align:center;color:var(--ink-mute);font-family:'Inter',sans-serif;font-size:15px;}
+  @media(max-width:900px){.explore-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:700px){.explore-grid{grid-template-columns:1fr;}.roster-tools{flex-direction:column;align-items:stretch;}.roster-search{max-width:100%;}}
+
+  .agg-band{margin:4px 0 68px;}
+  .agg-band .agg-hd{display:flex;align-items:baseline;gap:8px 18px;margin-bottom:24px;flex-wrap:wrap;}
+  .agg-band .agg-hd .lbl{font-family:'Inter','Helvetica Neue',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;display:flex;align-items:center;gap:14px;}
+  .agg-band .agg-hd .lbl::before{content:'';width:32px;height:1px;background:var(--gold);}
+  .agg-band .agg-hd .sub{font-size:16px;line-height:1.5;color:var(--ink-dim);max-width:60ch;}
+  .agg-band .agg-hd .sub b{color:var(--ink);font-weight:600;}
+  .agg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .agg-card{position:relative;background:rgba(245,200,80,.03);border:1px solid var(--gold-faint);padding:24px 26px;display:flex;flex-direction:column;gap:8px;min-height:172px;transition:transform .2s,background .2s,border-color .2s;overflow:hidden;}
+  .agg-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%, rgba(245,200,80,.09), transparent 55%);pointer-events:none;}
+  .agg-card:hover{transform:translateY(-4px);background:rgba(245,200,80,.06);border-color:var(--gold);}
+  .agg-card .unlocks{font-family:'Fraunces',serif;font-weight:300;font-size:34px;letter-spacing:-.02em;color:var(--gold);line-height:1;font-variation-settings:'opsz' 72;}
+  .agg-card h4{font-family:'Inter',sans-serif;font-weight:600;font-size:18px;margin:0;color:var(--ink);letter-spacing:-.01em;}
+  .agg-card p{font-size:14px;line-height:1.5;color:var(--ink-dim);margin:0;}
+  .agg-card .foot{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);}
+  .agg-card .foot .tag{color:var(--gold);}
+  @media(max-width:900px){.agg-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:700px){.agg-grid{grid-template-columns:1fr;}}
 
   .final{padding:120px 56px;text-align:center;border-top:1px solid var(--line);position:relative;overflow:hidden;}
   .final::before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 70% at 50% 100%, rgba(245,200,80,.14), transparent 70%);}
   .final h2{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(64px, 8vw, 144px);line-height:.92;letter-spacing:-.04em;margin:0 0 32px;font-variation-settings:'opsz' 144;}
   .final h2 em{font-style:italic;color:var(--gold);font-variation-settings:'opsz' 144;font-weight:300;}
   .final .cta.gold{padding:22px 36px;font-size:14px;}
-  .final .sub-cta{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);margin:28px 0 0;}
+  .final .sub-cta{font-family:'Inter','Helvetica Neue',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);margin:28px 0 0;}
 
-  .foot{padding:32px 56px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);}
+  .foot{padding:32px 56px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);}
 
   @media(max-width:1100px){
     .hero{grid-template-columns:1fr;}
@@ -1215,7 +1168,6 @@ function renderHomepage(): string {
     .section{padding:64px 24px;}
     .negatives{gap:24px;}
     .marquee-track{font-size:11px;}
-    .roster-grid{grid-template-columns:1fr;}
     .foot{padding:24px;flex-direction:column;gap:12px;text-align:center;}
   }
   @media(max-width:600px){
@@ -1223,9 +1175,168 @@ function renderHomepage(): string {
     .step{border-right:0;border-bottom:1px solid var(--line);}
     .step:last-child{border-bottom:0;}
   }
-</style>
+
+  .statement{}
+  .statement .lead{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(32px,3.6vw,56px);line-height:1.16;letter-spacing:-.02em;color:var(--ink-dim);max-width:24ch;margin:0;font-variation-settings:'opsz' 144;}
+  .statement .lead em{font-style:italic;color:var(--gold);font-variation-settings:'opsz' 144;}
+  .faq-list{display:flex;flex-direction:column;gap:14px;max-width:940px;}
+  .faq-list details{border:1px solid var(--line);border-radius:0;background:rgba(255,255,255,.022);padding:2px 28px;transition:border-color .2s,background .2s;}
+  .faq-list details[open]{border-color:var(--gold-faint);background:rgba(245,200,80,.04);}
+  .faq-list summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 0;font-family:'Inter',sans-serif;font-weight:600;font-size:18px;color:var(--ink);}
+  .faq-list summary::-webkit-details-marker{display:none;}
+  .faq-list summary .mk{position:relative;width:16px;height:16px;flex-shrink:0;}
+  .faq-list summary .mk::before,.faq-list summary .mk::after{content:'';position:absolute;background:var(--gold);transition:transform .2s,opacity .2s;}
+  .faq-list summary .mk::before{top:7px;left:0;width:16px;height:2px;}
+  .faq-list summary .mk::after{top:0;left:7px;width:2px;height:16px;}
+  .faq-list details[open] summary .mk::after{transform:rotate(90deg);opacity:0;}
+  .faq-list details p{margin:-2px 0 26px;font-size:16px;line-height:1.6;color:var(--ink-dim);max-width:72ch;}
+</style>`;
+
+const ROSTER_CATS: { cat: string; label: string; short: string }[] = [
+  { cat: "physical_health", label: "health",        short: "H" },
+  { cat: "mental_health",   label: "mental health", short: "M" },
+  { cat: "ai",              label: "ai",            short: "A" },
+  { cat: "financial",       label: "finance",       short: "F" },
+  { cat: "social_impact",   label: "social impact", short: "S" },
+  { cat: "environment",     label: "environment",   short: "E" },
+  { cat: "maps",            label: "maps",          short: "G" },
+  { cat: "cloud",           label: "cloud",         short: "C" },
+  { cat: "education",       label: "education",     short: "D" },
+  { cat: "creative",        label: "creative",      short: "R" },
+];
+
+function buildRoster(): { explorerHtml: string; totalProviders: number; totalCats: number } {
+  const all = getAllProviders();
+  const groups = ROSTER_CATS
+    .map((c) => ({ ...c, providers: all.filter((p) => String(p.info.category) === c.cat) }))
+    .filter((g) => g.providers.length > 0);
+  const totalProviders = groups.reduce((n, g) => n + g.providers.length, 0);
+  const totalCats = groups.length;
+
+  const chips =
+    `<button class="chip active" data-cat="all">all <span class="n">${totalProviders}</span></button>` +
+    groups
+      .map(
+        (g) =>
+          `<button class="chip" data-cat="${g.cat}">${escapeHtml(g.label)} <span class="n">${g.providers.length}</span></button>`,
+      )
+      .join("");
+
+  const cards = groups
+    .flatMap((g) =>
+      g.providers.map((p) => {
+        const live = p.isAvailable();
+        const actions = p.info.availableActions.length;
+        const q = `${p.info.name} ${p.info.description} ${p.info.id} ${g.label}`
+          .toLowerCase();
+        return `
+        <div class="prov-card" data-cat="${g.cat}" data-q="${escapeHtml(q)}">
+          <div class="hd">
+            <span class="cat-tag">${escapeHtml(g.label)}</span>
+            ${live ? '<span class="status-pill live">live</span>' : ""}
+          </div>
+          <h4>${escapeHtml(p.info.name)}</h4>
+          <p>${escapeHtml(p.info.description)}</p>
+          <div class="foot">
+            <span class="slug">${escapeHtml(p.info.id)}</span>
+            <span>${actions} action${actions === 1 ? "" : "s"}</span>
+          </div>
+        </div>`;
+      }),
+    )
+    .join("");
+
+  const explorerHtml = `
+  <div class="roster-tools">
+    <div class="roster-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="rosterSearch" type="text" placeholder="search ${totalProviders} apis by name, category or capability" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="filter-chips" id="rosterChips">${chips}</div>
+  </div>
+  <div class="explore-grid" id="exploreGrid">${cards}</div>
+  <div class="empty-msg" id="rosterEmpty" hidden>no apis match. try another term.</div>
+  <script>(function(){
+    var grid=document.getElementById('exploreGrid');if(!grid)return;
+    var cards=[].slice.call(grid.querySelectorAll('.prov-card'));
+    var input=document.getElementById('rosterSearch');
+    var chips=[].slice.call(document.querySelectorAll('#rosterChips .chip'));
+    var empty=document.getElementById('rosterEmpty');
+    var cat='all',q='';
+    function apply(){var shown=0;cards.forEach(function(c){var okCat=cat==='all'||c.getAttribute('data-cat')===cat;var okQ=!q||c.getAttribute('data-q').indexOf(q)!==-1;var vis=okCat&&okQ;c.classList.toggle('hidden',!vis);if(vis)shown++;});empty.hidden=shown>0;}
+    input.addEventListener('input',function(){q=this.value.trim().toLowerCase();apply();});
+    chips.forEach(function(ch){ch.addEventListener('click',function(){chips.forEach(function(x){x.classList.remove('active');});ch.classList.add('active');cat=ch.getAttribute('data-cat');apply();});});
+  })();</script>`;
+
+  return { explorerHtml, totalProviders, totalCats };
+}
+
+// Aggregator-fronted reach. Each of these is one signup + one key that unlocks
+// N downstream models/APIs, enumerated by scripts/signup/enumerators/*. Sourced
+// from scripts/signup/recipes/aggregators.ts — kept as documented reach, not
+// live registry cards (the enumerated catalog is provisioned separately).
+const AGGREGATORS: {
+  name: string;
+  unlocks: string;
+  note: string;
+  tag: string;
+}[] = [
+  { name: "OpenRouter", unlocks: "300+ LLMs", note: "every routed language model behind one sk-or key, priced per token.", tag: "ai" },
+  { name: "Hugging Face", unlocks: "1,000s of models", note: "the inference API across text, vision and audio through one token.", tag: "ai" },
+  { name: "Replicate", unlocks: "1,000+ models", note: "run any published model on demand with a single r8 token.", tag: "ai" },
+  { name: "Fal.ai", unlocks: "100s of models", note: "fast generative image, video and audio endpoints, one key.", tag: "ai" },
+  { name: "Together AI", unlocks: "200+ open models", note: "open-weight chat, code and embedding models, one key.", tag: "ai" },
+  { name: "APILayer", unlocks: "80+ REST APIs", note: "currency, weather, geo, scraping and more utility APIs.", tag: "utility" },
+];
+
+function buildAggregators(): { bandHtml: string; count: number } {
+  const cards = AGGREGATORS.map(
+    (a) => `
+        <div class="agg-card">
+          <div class="unlocks">${escapeHtml(a.unlocks)}</div>
+          <h4>${escapeHtml(a.name)}</h4>
+          <p>${escapeHtml(a.note)}</p>
+          <div class="foot">
+            <span>one key</span>
+            <span class="tag">${escapeHtml(a.tag)}</span>
+          </div>
+        </div>`,
+  ).join("");
+  const bandHtml = `
+  <div class="agg-band">
+    <div class="agg-hd">
+      <span class="lbl">aggregator-fronted</span>
+      <span class="sub"><b>${AGGREGATORS.length} gateways, one key each, 1,000+ models and APIs.</b> we sign up once, enumerate everything behind them, and route your calls to the best value. you never touch a vendor dashboard.</span>
+    </div>
+    <div class="agg-grid">${cards}</div>
+  </div>`;
+  return { bandHtml, count: AGGREGATORS.length };
+}
+
+function renderHomepage(): string {
+  // Origin redesign — mirrors design_handoff_invariant_redesign/direction-origin.jsx.
+  const { totalProviders, totalCats } = buildRoster();
+  const marqueePhrases = [
+    "one key · every api",
+    "the api layer, subtracted",
+    "zero .env files on your machine",
+    "zero provider accounts",
+    "built for agents, not humans",
+    `${totalProviders} providers · ${totalCats} categories`,
+  ];
+  // Duplicate the track so the -50% translate loops seamlessly.
+  const marqueeHtml = [...marqueePhrases, ...marqueePhrases]
+    .map((p) => `<span><i class="di">◆</i> ${p}</span>`)
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${HOME_HEAD}
+${HOME_STYLES}
 </head>
 <body>
+<div class="ambient" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
 
 <nav class="nav">
   <div class="nav-l">
@@ -1240,6 +1351,7 @@ function renderHomepage(): string {
     </a>
   </div>
   <div class="nav-r">
+    <a class="link" href="/roster">the roster</a>
     <a class="link" href="#loop">how it works</a>
     <a class="cta" href="/login">sign up / log in →</a>
   </div>
@@ -1270,24 +1382,11 @@ function renderHomepage(): string {
   </div>
 
   <div class="hero-right">
-    <div class="ascii">
-      <div class="hd">ascii.terminal</div>
-<pre>         ┌─────────────────────────────────────────────┐
-         │                                             │
-         │   /\\           invariant            /\\      │
-         │  /  \\      ──────────────────      /  \\     │
-         │ /░░░░\\     the agentic api        /▒▒▒▒\\    │
-         │/______\\    layer that learns     /______\\   │
-         │            how you build                    │
-         │                                             │
-         └─────────────────────────────────────────────┘</pre>
-    </div>
-
     <div class="status">
       <span class="k">status</span>
       <span class="v"><span class="pulse">●</span> <span class="gold">gateway online</span></span>
       <span class="k">providers</span>
-      <span class="v"><span class="gold">21</span> wired across 9 categories</span>
+      <span class="v"><span class="gold">${totalProviders}</span> wired across ${totalCats} categories</span>
       <span class="k">transport</span>
       <span class="v">mcp · http</span>
       <span class="k">overhead</span>
@@ -1300,6 +1399,7 @@ function renderHomepage(): string {
 
 <section class="section" id="loop">
   <div class="sec-hd">
+    <div class="ix">how it works</div>
     <h2>four steps. <em>your stack tunes itself.</em></h2>
   </div>
   <div class="steps">
@@ -1326,31 +1426,38 @@ function renderHomepage(): string {
   </div>
 </section>
 
-<section class="section">
+<section class="section statement">
+  <div class="sec-hd"><div class="ix">why invariant</div></div>
+  <p class="lead serif">your agent is brilliant and <em>blind.</em> it reasons about anything, but it can't see which api is fastest in your region or which key hasn't rate-limited today. invariant is the routing and memory layer that closes the gap.</p>
+</section>
+
+<section class="section faq">
   <div class="sec-hd">
-    <h2>the full <em>roster.</em></h2>
+    <div class="ix">faq</div>
+    <h2>frequently asked <em>questions.</em></h2>
   </div>
-
-  <div class="roster-intro">
-    <div class="lbl">online today <b>· every api, one key.</b></div>
-    <p><b>21 providers</b> across <b>9 categories</b>. every one of these is callable from your agent with a single key, zero vendor accounts needed. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
+  <div class="faq-list">
+    <details open>
+      <summary>do i need an account with each provider?<span class="mk"></span></summary>
+      <p>no. invariant fronts a single key. we hold the provider accounts, absorb the rate limits, and rotate keys for you. you never touch a .env file or sign up for a vendor.</p>
+    </details>
+    <details>
+      <summary>how do you pick which api to call?<span class="mk"></span></summary>
+      <p>routing is scored from real usage history: accuracy, success rate, latency, and cost for this kind of task in your region. the best-value provider wins the call, and the decision re-tunes as new results come in.</p>
+    </details>
+    <details>
+      <summary>what happens when a provider degrades?<span class="mk"></span></summary>
+      <p>its score drops automatically. we cut its traffic, reroute your calls to the rival, and re-provision keys. zero manual steps on your side.</p>
+    </details>
+    <details>
+      <summary>how does my agent connect?<span class="mk"></span></summary>
+      <p>over mcp or plain http. point your coding agent at one endpoint, authenticate once, and every wired provider is callable through the same key.</p>
+    </details>
+    <details>
+      <summary>what does it cost?<span class="mk"></span></summary>
+      <p>you pay for what your agents actually use. invariant fronts the real per-call vendor cost and meters it back transparently. no per-seat lock-in.</p>
+    </details>
   </div>
-
-  <div class="roster-counts">
-    <span class="pill">health (<span class="n">2</span>)</span>
-    <span class="pill">mental health (<span class="n">1</span>)</span>
-    <span class="pill">ai (<span class="n">3</span>)</span>
-    <span class="pill">finance (<span class="n">5</span>)</span>
-    <span class="pill">social impact (<span class="n">1</span>)</span>
-    <span class="pill">environment (<span class="n">2</span>)</span>
-    <span class="pill">maps (<span class="n">3</span>)</span>
-    <span class="pill upcoming">cloud (<span class="n">0</span>)</span>
-    <span class="pill">education (<span class="n">2</span>)</span>
-    <span class="pill">creative (<span class="n">2</span>)</span>
-    <span class="pill upcoming">more coming fast</span>
-  </div>
-
-  ${categoriesHtml}
 </section>
 
 <section class="final">
@@ -1359,8 +1466,8 @@ function renderHomepage(): string {
 </section>
 
 <footer class="foot">
-  <div>invariant · 2026 · made in sf</div>
-  <div>21 providers · 9 categories</div>
+  <div>invariant · 2026</div>
+  <div>${totalProviders} providers · ${totalCats} categories</div>
 </footer>
 
 <script>
@@ -1386,8 +1493,80 @@ function renderHomepage(): string {
   })();
 </script>
 
+<script>(function(){
+  if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)return;
+  var cv=document.createElement('canvas');cv.id='inv-trail';var ctx=cv.getContext('2d');
+  var W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2),CELL=26;
+  var cells=new Map();var palette=['#ffb727','#f5c850','#f0954a','#ff5a1f'];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+  var lastT=0;
+  function loop(t){var dt=lastT?(t-lastT)/1000:0.016;lastT=t;if(dt>0.1)dt=0.1;ctx.clearRect(0,0,W,H);cells.forEach(function(c,k){c.life-=dt/0.85;if(c.life<=0){cells.delete(k);return;}ctx.globalAlpha=c.life*c.life*0.72;ctx.fillStyle=c.color;ctx.fillRect(c.x*CELL+1,c.y*CELL+1,CELL-2,CELL-2);});ctx.globalAlpha=1;requestAnimationFrame(loop);}
+  function touch(px,py){var cx=Math.floor(px/CELL),cy=Math.floor(py/CELL);for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){if(Math.abs(dx)+Math.abs(dy)>1&&Math.random()>0.4)continue;var x=cx+dx,y=cy+dy,k=x+','+y,life=(dx===0&&dy===0)?1:0.7;var col=palette[((x*7+y*13)%palette.length+palette.length)%palette.length];var ex=cells.get(k);if(!ex||ex.life<life)cells.set(k,{x:x,y:y,life:life,color:col});}}
+  function start(){document.body.appendChild(cv);resize();window.addEventListener('resize',resize);window.addEventListener('pointermove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');touch(e.clientX,e.clientY);},{passive:true});requestAnimationFrame(loop);}
+  if(document.body)start();else window.addEventListener('DOMContentLoaded',start);
+})();</script>
+
 </body>
 </html>`;
+}
+
+
+function renderRoster(): string {
+  const { explorerHtml, totalProviders, totalCats } = buildRoster();
+  const { bandHtml, count: aggCount } = buildAggregators();
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+${HOME_HEAD}
+${HOME_STYLES}
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+<nav class="nav">
+  <div class="nav-l">
+    <span class="sq"></span>
+    <span>INVARIANT</span>
+    <span class="sep">|</span>
+    <a href="https://www.linkedin.com/company/getinvariant" target="_blank" rel="noopener" aria-label="LinkedIn">
+      <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="9" width="4" height="12"/><rect x="3" y="3" width="4" height="4"/><path d="M9 9h4v2h.1c.6-1 1.9-2.1 3.9-2.1 4.2 0 5 2.7 5 6.3V21h-4v-5.6c0-1.3 0-3-1.8-3-1.9 0-2.2 1.4-2.2 2.9V21H9V9z"/></svg>
+    </a>
+    <a href="https://github.com/getinvariant/mcp" target="_blank" rel="noopener" aria-label="GitHub">
+      <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.6 2 12.3c0 4.5 2.9 8.3 6.8 9.7.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.4 1.1 3 .8.1-.7.4-1.1.7-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1 .8-.2 1.7-.3 2.5-.3s1.7.1 2.5.3c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V22c0 .3.2.6.7.5C19.1 20.6 22 16.7 22 12.3 22 6.6 17.5 2 12 2z"/></svg>
+    </a>
+  </div>
+  <div class="nav-r">
+    <a class="link" href="/">home</a>
+    <a class="cta" href="/login">sign up / log in →</a>
+  </div>
+</nav>
+<section class="section" style="border-top:0;">
+  <div class="sec-hd">
+    <div class="ix">the roster</div>
+    <h2>the full <em>roster.</em></h2>
+  </div>
+  <div class="roster-intro">
+    <div class="lbl">online today <b>· every api, one key.</b></div>
+    <p><b>${totalProviders} providers wired directly</b>, plus <b>${aggCount} aggregators unlocking 1,000+ more models and APIs</b>. every one is callable from your agent with a single key, zero vendor accounts needed. we maintain the keys, we eat the rate limits, we deal with the vendor outages.</p>
+  </div>
+  ${bandHtml}
+  ${explorerHtml}
+</section>
+<footer class="foot">
+  <div>invariant · 2026</div>
+  <div>${totalProviders} providers · ${totalCats} categories</div>
+</footer>
+<script>(function(){
+  if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)return;
+  var cv=document.createElement('canvas');cv.id='inv-trail';var ctx=cv.getContext('2d');
+  var W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2),CELL=26;
+  var cells=new Map();var palette=['#ffb727','#f5c850','#f0954a','#ff5a1f'];
+  function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+  var lastT=0;
+  function loop(t){var dt=lastT?(t-lastT)/1000:0.016;lastT=t;if(dt>0.1)dt=0.1;ctx.clearRect(0,0,W,H);cells.forEach(function(c,k){c.life-=dt/0.85;if(c.life<=0){cells.delete(k);return;}ctx.globalAlpha=c.life*c.life*0.72;ctx.fillStyle=c.color;ctx.fillRect(c.x*CELL+1,c.y*CELL+1,CELL-2,CELL-2);});ctx.globalAlpha=1;requestAnimationFrame(loop);}
+  function touch(px,py){var cx=Math.floor(px/CELL),cy=Math.floor(py/CELL);for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){if(Math.abs(dx)+Math.abs(dy)>1&&Math.random()>0.4)continue;var x=cx+dx,y=cy+dy,k=x+','+y,life=(dx===0&&dy===0)?1:0.7;var col=palette[((x*7+y*13)%palette.length+palette.length)%palette.length];var ex=cells.get(k);if(!ex||ex.life<life)cells.set(k,{x:x,y:y,life:life,color:col});}}
+  function start(){document.body.appendChild(cv);resize();window.addEventListener('resize',resize);window.addEventListener('pointermove',function(e){var r=document.documentElement;r.style.setProperty('--mx',e.clientX+'px');r.style.setProperty('--my',e.clientY+'px');touch(e.clientX,e.clientY);},{passive:true});requestAnimationFrame(loop);}
+  if(document.body)start();else window.addEventListener('DOMContentLoaded',start);
+})();</script>
+</body></html>`;
 }
 
 function renderLogin(): string {
@@ -1449,6 +1628,17 @@ ${SHARED_STYLES}
   @media(max-width:640px){
     .login-page{padding:3rem 0 2rem;}
   }
+
+  /* hyperspell skin: soft / rounded / gradient */
+  .login-panel,.flash,.signed-in-banner{border:1px solid var(--line)!important;box-shadow:0 24px 60px -18px rgba(0,0,0,.55)!important;}
+  .login-panel:hover,.login-panel:nth-of-type(2):hover{transform:translateY(-3px);box-shadow:0 26px 60px -16px rgba(0,0,0,.6)!important;}
+  .login-panel input{border:1px solid var(--line)!important;}
+  .login-panel input:focus{border-color:var(--amber)!important;box-shadow:0 0 0 3px rgba(255,183,39,.15)!important;}
+  .login-panel .btn{background:linear-gradient(135deg,#ffb727 0%,#f0954a 58%,#ff3b14 135%)!important;border:none!important;color:#1a1408!important;}
+  .login-kicker{border-width:1.5px;}
+  .or-divider::before,.or-divider::after{height:1px;}
+  .toggle-mode a{border-bottom:none;}
+  .copied-toast{border:none!important;box-shadow:0 16px 40px -10px rgba(0,0,0,.6)!important;}
 </style>
 </head>
 <body>
@@ -1880,6 +2070,54 @@ ${SHARED_STYLES}
     .accounts-table{font-size:0.68rem;}
     .tabs{overflow-x:auto;}
   }
+
+  /* ── hyperspell skin: soft / rounded / gradient override ──────────────
+     Re-declared selectors win on source order (borders, shadows, backgrounds).
+     border-radius needs !important to beat the global *{border-radius:0
+     !important} reset in SHARED_STYLES. No class names change, so the
+     dashboard's inline JS (#usage-logged-in, accounts table, tabs ...) is
+     untouched. */
+  .stats,.usage-panel,.endpoints,.routing-stats,.provider,.admin-login,
+  .create-key,.flash,.accounts-table,.action{}
+  .dash-hero .kicker,.category-count,.badge,.tier-badge,.param,.method,
+  .usage-chip,.usage-key-btn,.usage-signout,.tab{}
+  .quota-bar-outer,.quota-bar-inner,.routing-provider .bar,
+  .routing-provider .bar-fill,.mini-bar,.mini-bar-inner{}
+  .category-icon{}
+  .admin-login input,.form-field input,.form-field select,.create-btn,
+  .admin-login button,.copied-toast{}
+
+  /* thin borders + soft depth instead of 2px borders & hard offset shadows */
+  .stats{border:1px solid var(--line);box-shadow:0 24px 60px -18px rgba(0,0,0,.6);overflow:hidden;}
+  .stat{border-right:1px solid var(--line);}
+  .usage-panel,.endpoints,.admin-login,.create-key,.flash{
+    border:1px solid var(--line);box-shadow:0 24px 60px -18px rgba(0,0,0,.55);}
+  .routing-stats{border:1px solid var(--line);overflow:hidden;}
+  .routing-stat{border-right:1px solid var(--line);}
+  .provider{border:1px solid var(--line);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+  .provider:hover{border-color:var(--line-strong);transform:translateY(-3px);box-shadow:0 20px 50px -16px rgba(0,0,0,.6);}
+  .tabs{border-bottom:1px solid var(--line);}
+  .category-header{border-bottom:1px solid var(--line);}
+  .accounts-table{border:1px solid var(--line);overflow:hidden;box-shadow:0 24px 60px -18px rgba(0,0,0,.5);}
+  .accounts-table th{border-bottom:1px solid var(--line);}
+  .quota-bar-outer,.routing-provider .bar,.mini-bar{border:none;}
+  .method{border-width:1px;}
+  .badge,.category-count{border-width:1.5px;}
+  .copied-toast{border:none;box-shadow:0 16px 40px -10px rgba(0,0,0,.6);}
+
+  /* warm gold→coral gradient on primary actions (hyperspell signature) */
+  .create-btn,.admin-login button{
+    background:linear-gradient(135deg,#ffb727 0%,#f0954a 58%,#ff3b14 135%) !important;
+    border:none !important;color:#1a1408 !important;
+    box-shadow:0 10px 30px -8px rgba(255,140,40,.4);}
+  .create-btn:hover,.admin-login button:hover{filter:brightness(1.06);background:linear-gradient(135deg,#ffb727 0%,#f0954a 58%,#ff3b14 135%) !important;}
+  .tab.active{background:linear-gradient(135deg,#ffb727 0%,#f0954a 58%,#ff3b14 135%);border-color:transparent;color:#1a1408;}
+  .category-icon{background:linear-gradient(135deg,#ffb727 0%,#ff3b14 120%);border:none;color:#1a1408;}
+
+  @media(max-width:900px){
+    .stat:nth-child(1),.stat:nth-child(2){border-bottom:1px solid var(--line);}
+    .routing-stat{border-bottom:1px solid var(--line);}
+  }
 </style>
 </head>
 <body>
@@ -1979,7 +2217,6 @@ ${renderNav("dashboard")}
       <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/query</span><span class="endpoint-desc">execute a provider action</span></div>
       <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/mcp</span><span class="endpoint-desc">MCP protocol (JSON-RPC)</span></div>
       <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/usage</span><span class="endpoint-desc">check quota and usage breakdown</span></div>
-      <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/recommend</span><span class="endpoint-desc">AI-powered provider recommendations</span></div>
     </div>
 
     ${categoryCards}
@@ -2264,6 +2501,227 @@ ${renderNav("dashboard")}
     } catch (e) { alert('Error: ' + e.message); }
     finally { btn.disabled = false; btn.textContent = 'Create'; }
   });
+})();
+</script>
+</body>
+</html>`;
+}
+
+// ── Billing page ──────────────────────────────────────────────────────────────
+// One-time "save a card" flow. Mints a SetupIntent on load, mounts Stripe
+// Payment Element, confirms client-side. Webhook (api/stripe-webhook.ts)
+// flips card_validated_at on setup_intent.succeeded; this page only shows
+// success/failure UI.
+function renderBillingPage(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Billing | Invariant</title>
+<!-- Stripe.js cannot use SRI: the script is versioned by Stripe at runtime
+     and the hash changes without notice. Stripe's docs explicitly say "do
+     not add integrity=" to this tag. crossorigin is fine. -->
+<script src="https://js.stripe.com/v3/" crossorigin="anonymous"></script>
+<style>
+${SHARED_STYLES}
+  .billing-wrap{max-width:520px;margin:5rem auto;padding:0 1.5rem;}
+  .billing-card{border:2px solid var(--fg);padding:2.5rem;background:var(--bg);}
+  .billing-card h1{font-family:var(--serif);font-size:2.5rem;font-weight:400;letter-spacing:-0.02em;margin:0 0 0.5rem;}
+  .billing-card h1 em{font-style:italic;color:var(--amber);}
+  .billing-card .lede{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--fg);opacity:0.7;margin-bottom:2rem;}
+  #payment-element{margin:1.5rem 0;}
+  .btn-submit{width:100%;padding:1rem;background:var(--fg);color:var(--bg);border:none;font-family:var(--mono);font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;}
+  .btn-submit:hover{opacity:0.85;}
+  .btn-submit:disabled{opacity:0.4;cursor:not-allowed;}
+  .msg{font-family:var(--mono);font-size:0.72rem;margin-top:1rem;padding:0.75rem;border:1px solid;}
+  .msg.err{border-color:#c33;color:#c33;}
+  .msg.ok{border-color:var(--amber);color:var(--amber);}
+  .skeleton{height:120px;background:linear-gradient(90deg, rgba(0,0,0,0.05), rgba(0,0,0,0.1), rgba(0,0,0,0.05));background-size:200% 100%;animation:shimmer 1.5s infinite;}
+  @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .footnote{font-family:var(--mono);font-size:0.68rem;color:var(--fg);opacity:0.6;margin-top:1.5rem;line-height:1.6;}
+</style>
+</head>
+<body>
+${renderNav("billing")}
+<div class="billing-wrap">
+  <div class="billing-card">
+    <h1>save a <em>card</em></h1>
+    <p class="lede">one signup — agent pays per call</p>
+
+    <form id="payment-form">
+      <div id="payment-element"><div class="skeleton"></div></div>
+      <button id="submit" class="btn-submit" disabled>save card</button>
+      <div id="msg"></div>
+    </form>
+
+    <p class="footnote">
+      we store a payment method, not a charge. agent calls accrue against this card; sub-$5 totals are batched into one charge per hour. card data goes directly to stripe — never to invariant.
+    </p>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const msg = document.getElementById('msg');
+  const submitBtn = document.getElementById('submit');
+  const paymentEl = document.getElementById('payment-element');
+
+  function showError(text) {
+    msg.className = 'msg err';
+    msg.textContent = text;
+  }
+  function showOk(text) {
+    msg.className = 'msg ok';
+    msg.textContent = text;
+  }
+
+  // 1. Ask our server to mint a SetupIntent. Cookie auth carries the pl_key.
+  let setupRes;
+  try {
+    setupRes = await fetch('/api/setup-payment', { method: 'POST' });
+  } catch (e) {
+    showError('Network error reaching invariant');
+    return;
+  }
+  if (!setupRes.ok) {
+    showError('Could not create setup intent — ' + setupRes.status);
+    return;
+  }
+  const { client_secret, publishable_key } = await setupRes.json();
+  if (!publishable_key) {
+    showError('Server missing STRIPE_PUBLISHABLE_KEY');
+    return;
+  }
+
+  // 2. Hand the secret to Stripe Elements. PAN never touches us.
+  const stripe = Stripe(publishable_key);
+  const elements = stripe.elements({
+    clientSecret: client_secret,
+    appearance: {
+      theme: 'flat',
+      variables: {
+        colorPrimary: '#000',
+        colorBackground: '#fffaf2',
+        colorText: '#000',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        borderRadius: '0px',
+      },
+    },
+  });
+  const paymentElement = elements.create('payment');
+  paymentElement.mount('#payment-element');
+  paymentElement.on('ready', () => {
+    paymentEl.querySelector('.skeleton')?.remove();
+    submitBtn.disabled = false;
+  });
+
+  // 3. On submit, confirm client-side. Stripe redirects to return_url on
+  //    success (or the page rerenders with an error). The webhook does the
+  //    DB update — we just show UI.
+  document.getElementById('payment-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    submitBtn.disabled = true;
+    msg.textContent = '';
+    const { error } = await stripe.confirmSetup({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + '/billing/done',
+      },
+    });
+    if (error) {
+      showError(error.message || 'Setup failed');
+      submitBtn.disabled = false;
+    }
+    // Success path: Stripe redirects to return_url; we won't reach here.
+  });
+})();
+</script>
+</body>
+</html>`;
+}
+
+// Post-redirect landing. Stripe appends ?setup_intent=...&setup_intent_client_secret=...
+// We just confirm the status visually; webhook has already updated the account.
+function renderBillingDonePage(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${SHARED_HEAD}
+<title>Card saved | Invariant</title>
+<!-- See billing page: Stripe.js cannot use SRI per Stripe's docs. -->
+<script src="https://js.stripe.com/v3/" crossorigin="anonymous"></script>
+<style>
+${SHARED_STYLES}
+  .done-wrap{max-width:520px;margin:8rem auto;padding:0 1.5rem;text-align:center;}
+  .done-wrap h1{font-family:var(--serif);font-size:3rem;font-weight:400;margin-bottom:1rem;}
+  .done-wrap h1 em{font-style:italic;color:var(--amber);}
+  .done-wrap p{font-family:var(--mono);font-size:0.8rem;color:var(--fg);opacity:0.8;margin-bottom:2rem;}
+  .done-wrap a{font-family:var(--mono);font-size:0.72rem;color:var(--fg);text-decoration:none;border-bottom:2px solid var(--amber);text-transform:uppercase;letter-spacing:0.15em;}
+  .status-pending{color:#c97a00;}
+  .status-fail{color:#c33;}
+</style>
+</head>
+<body>
+${renderNav("billing")}
+<div class="done-wrap">
+  <!-- Title is pre-rendered as "<plain> <em>" so JS only touches textContent
+       on the two child nodes — no innerHTML, no XSS risk if these strings
+       ever become server-influenced. -->
+  <h1><span id="title-plain">checking</span> <em id="title-em">...</em></h1>
+  <p id="detail">verifying with stripe</p>
+  <a href="/dashboard">back to dashboard →</a>
+</div>
+<script>
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const clientSecret = params.get('setup_intent_client_secret');
+  const titlePlain = document.getElementById('title-plain');
+  const titleEm = document.getElementById('title-em');
+  const detailEl = document.getElementById('detail');
+
+  function setTitle(plain, em) {
+    titlePlain.textContent = plain;
+    titleEm.textContent = em;
+  }
+
+  // We need the publishable key — fetch it cheaply from the same endpoint
+  // (POST returns it alongside a new SetupIntent; we only use the key).
+  const r = await fetch('/api/setup-payment', { method: 'POST' });
+  const { publishable_key } = await r.json();
+  if (!publishable_key || !clientSecret) {
+    setTitle('', 'unknown');
+    detailEl.textContent = 'missing parameters';
+    return;
+  }
+
+  const stripe = Stripe(publishable_key);
+  const { setupIntent, error } = await stripe.retrieveSetupIntent(clientSecret);
+  if (error || !setupIntent) {
+    setTitle('', 'error');
+    detailEl.className = 'status-fail';
+    detailEl.textContent = error?.message || 'could not retrieve setup intent';
+    return;
+  }
+
+  switch (setupIntent.status) {
+    case 'succeeded':
+      setTitle('card', 'saved');
+      detailEl.textContent = 'agents can now charge per call';
+      break;
+    case 'processing':
+      setTitle('card', 'processing');
+      detailEl.className = 'status-pending';
+      detailEl.textContent = 'your bank is verifying — refresh in a moment';
+      break;
+    case 'requires_payment_method':
+      setTitle('', 'declined');
+      detailEl.className = 'status-fail';
+      detailEl.textContent = 'card was declined — try another';
+      break;
+    default:
+      setTitle('', 'pending');
+      detailEl.textContent = setupIntent.status;
+  }
 })();
 </script>
 </body>
@@ -3094,6 +3552,11 @@ const server = http.createServer(async (req, res) => {
     return res.end(renderHomepage());
   }
 
+  if (path === "/roster") {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderRoster());
+  }
+
   if (path === "/install") {
     const sessionKey = getCookieValue(req.headers.cookie, "pl_key");
     if (!sessionKey) {
@@ -3150,6 +3613,32 @@ const server = http.createServer(async (req, res) => {
   if (path === "/dashboard") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(renderDashboard());
+  }
+
+  if (path === "/billing/done") {
+    // Post-Stripe-redirect landing. Auth required so a stranger with the
+    // setup_intent_client_secret query param can't snoop the page. The page
+    // itself just retrieves the SetupIntent status client-side and shows it.
+    const sessionKey = getCookieValue(req.headers.cookie, "pl_key");
+    if (!sessionKey) {
+      res.writeHead(302, { Location: "/login?next=/billing/done" });
+      return res.end();
+    }
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderBillingDonePage());
+  }
+
+  if (path === "/billing") {
+    // Pl_key cookie auth (same as /dashboard). The page itself JS-POSTs to
+    // /api/setup-payment to mint a SetupIntent, then hands the client_secret
+    // to Stripe Elements. Card data never hits our server.
+    const sessionKey = getCookieValue(req.headers.cookie, "pl_key");
+    if (!sessionKey) {
+      res.writeHead(302, { Location: "/login?next=/billing" });
+      return res.end();
+    }
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(renderBillingPage());
   }
 
   if (path === "/viz") {
@@ -3236,7 +3725,6 @@ const server = http.createServer(async (req, res) => {
 
   if (path === "/api/providers") return providersHandler(fakeReq, fakeRes);
   if (path === "/api/query") return queryHandler(fakeReq, fakeRes);
-  if (path === "/api/recommend") return recommendHandler(fakeReq, fakeRes);
   if (path === "/api/route") return routeHandler(fakeReq, fakeRes);
   if (path === "/api/route-fetch") return routeFetchHandler(fakeReq, fakeRes);
   if (path === "/api/routing-status")
@@ -3306,6 +3794,7 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ error: "Method not allowed" }));
   }
   if (path === "/api/usage") return usageHandler(fakeReq, fakeRes);
+  if (path === "/api/provision") return provisionHandler(fakeReq, fakeRes);
 
   // ── Admin API ────────────────────────────────────────────────────────────
   const adminPass = process.env.ADMIN_PASSWORD;

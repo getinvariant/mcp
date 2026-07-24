@@ -10,7 +10,7 @@ import { registerCompare } from "./tools/compare.js";
 async function main() {
   if (!config.apiKey) {
     console.error("Error: PL_API_KEY environment variable is required.");
-    console.error("Get your key at https://pclabs.dev/api/mcp");
+    console.error("Get your key at https://getinvariant.com/api/mcp");
     process.exit(1);
   }
 

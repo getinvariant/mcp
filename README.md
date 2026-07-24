@@ -91,14 +91,14 @@ Sign up at the hosted instance. You get one `pl_...` key. That is the only crede
 All clients connect to the same remote endpoint. No cloning, no building, no Node.js required.
 
 ```
-URL:    https://pclabs.dev/api/mcp
+URL:    https://getinvariant.com/api/mcp
 Header: x-pl-key: pl_your_key_here
 ```
 
 #### Claude Code (CLI)
 
 ```bash
-claude mcp add invariant --transport http https://pclabs.dev/api/mcp --header "x-pl-key: pl_your_key_here"
+claude mcp add invariant --transport http https://getinvariant.com/api/mcp --header "x-pl-key: pl_your_key_here"
 ```
 
 #### Claude Desktop
@@ -110,7 +110,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or 
   "mcpServers": {
     "invariant": {
       "type": "http",
-      "url": "https://pclabs.dev/api/mcp",
+      "url": "https://getinvariant.com/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -133,7 +133,7 @@ Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project):
 {
   "mcpServers": {
     "invariant": {
-      "url": "https://pclabs.dev/api/mcp",
+      "url": "https://getinvariant.com/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -152,7 +152,7 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
 {
   "mcpServers": {
     "invariant": {
-      "url": "https://pclabs.dev/api/mcp",
+      "url": "https://getinvariant.com/api/mcp",
       "headers": {
         "x-pl-key": "pl_your_key_here"
       }
@@ -168,7 +168,7 @@ Or via UI: Cascade panel → MCP Servers → Configure.
 1. Open the Cline sidebar
 2. Click the MCP Servers tab (plug icon)
 3. Add Server → HTTP
-4. Paste `https://pclabs.dev/api/mcp` as the URL
+4. Paste `https://getinvariant.com/api/mcp` as the URL
 5. Add header `x-pl-key: pl_your_key_here`
 
 #### Continue.dev
@@ -182,7 +182,7 @@ Edit `~/.continue/config.json`:
       "name": "invariant",
       "transport": {
         "type": "http",
-        "url": "https://pclabs.dev/api/mcp",
+        "url": "https://getinvariant.com/api/mcp",
         "headers": {
           "x-pl-key": "pl_your_key_here"
         }
@@ -199,7 +199,7 @@ Edit `~/.codex/config.toml`:
 ```toml
 [mcp_servers.invariant]
 type = "http"
-url = "https://pclabs.dev/api/mcp"
+url = "https://getinvariant.com/api/mcp"
 
 [mcp_servers.invariant.headers]
 x-pl-key = "pl_your_key_here"
@@ -214,7 +214,7 @@ response = client.responses.create(
     model="codex-mini-latest",
     tools=[{
         "type": "mcp",
-        "server_url": "https://pclabs.dev/api/mcp",
+        "server_url": "https://getinvariant.com/api/mcp",
         "headers": { "x-pl-key": "pl_your_key_here" }
     }],
     input="What crypto prices are available?"
@@ -231,7 +231,7 @@ extensions:
     type: mcp
     enabled: true
     transport: http
-    url: https://pclabs.dev/api/mcp
+    url: https://getinvariant.com/api/mcp
     headers:
       x-pl-key: pl_your_key_here
 ```
@@ -359,7 +359,7 @@ npm run build
       "args": ["/absolute/path/to/invariant/dist/index.js"],
       "env": {
         "PL_API_KEY": "pl_your_key_here",
-        "PL_BACKEND_URL": "https://pclabs.dev/api/mcp"
+        "PL_BACKEND_URL": "https://getinvariant.com/api/mcp"
       }
     }
   }
@@ -371,7 +371,7 @@ MCP client env vars for the stdio path:
 | Variable         | Required | Description                                                 |
 | ---------------- | -------- | ----------------------------------------------------------- |
 | `PL_API_KEY`     | Yes      | Your `pl_` key                                              |
-| `PL_BACKEND_URL` | No       | Override backend URL. Default: `https://pclabs.dev/api/mcp` |
+| `PL_BACKEND_URL` | No       | Override backend URL. Default: `https://getinvariant.com/api/mcp` |
 
 ## Adding a provider
 
