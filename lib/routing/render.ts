@@ -88,16 +88,76 @@ function formatPrice(price: number): string {
   return price.toFixed(6);
 }
 
+function summarizeResult(result: any, symbol: string): string {
+  // finance:price — { price, currency } (legacy)
+  if (result && typeof result.price === "number") {
+    return `${symbol} $${formatPrice(result.price)}`;
+  }
+  // finance:price:stock, finnhub shape — { c, d, dp, h, l, o, pc, t }
+  if (result && typeof result.c === "number") {
+    return `${symbol || "stock"} $${formatPrice(result.c)}`;
+  }
+  // finance:price:stock, alphavantage shape — { "Global Quote": { "05. price", ... } }
+  if (result?.["Global Quote"]?.["05. price"]) {
+    const q = result["Global Quote"];
+    const price = parseFloat(q["05. price"]);
+    const sym = q["01. symbol"] || symbol || "stock";
+    return `${sym} $${formatPrice(price)}`;
+  }
+  // finance:price:crypto, binance shape — [{ symbol, price }, ...]
+  if (
+    Array.isArray(result) &&
+    result[0]?.symbol &&
+    result[0]?.price !== undefined
+  ) {
+    const first = result[0];
+    const more = result.length > 1 ? ` (+${result.length - 1})` : "";
+    return `${first.symbol} $${formatPrice(parseFloat(first.price))}${more}`;
+  }
+  // env:weather, openweather shape — { main: { temp }, weather: [{ description }], name }
+  if (result?.main && typeof result.main.temp === "number") {
+    const temp = `${result.main.temp.toFixed(1)}°C`;
+    const desc = result.weather?.[0]?.description;
+    const place = result.name;
+    return [place, temp, desc].filter(Boolean).join(" · ");
+  }
+  // env:weather, openmeteo shape — { current: { temperature_2m } }
+  if (result?.current && typeof result.current.temperature_2m === "number") {
+    return `${result.current.temperature_2m.toFixed(1)}°C`;
+  }
+  // places:geocode, nominatim shape — [{ display_name }, ...]
+  if (Array.isArray(result) && result[0]?.display_name) {
+    return String(result[0].display_name).slice(0, 60);
+  }
+  // places:geocode, geoapify shape — { features: [{ properties: { formatted } }] }
+  if (result?.features?.[0]?.properties?.formatted) {
+    return String(result.features[0].properties.formatted).slice(0, 60);
+  }
+  // finance:price:crypto, coingecko shape — { bitcoin: { usd: 95000, ... }, ... }
+  if (result && typeof result === "object" && !Array.isArray(result)) {
+    const entries = Object.entries(result) as [string, any][];
+    const firstWithUsd = entries.find(
+      ([, v]) => v && typeof v.usd === "number",
+    );
+    if (firstWithUsd) {
+      const [id, v] = firstWithUsd;
+      const sym = id.toUpperCase();
+      const more = entries.length > 1 ? ` (+${entries.length - 1})` : "";
+      return `${sym} $${formatPrice(v.usd)}${more}`;
+    }
+  }
+  return "ok";
+}
+
 export function renderRoute(out: RouteResponse, symbol: string): string {
   const lines: string[] = [];
   lines.push(getDolphinFrame(out.call_index));
   lines.push(``);
 
   if (out.success) {
-    const price = formatPrice(out.result.price);
-    const currency = String(out.result.currency).toLowerCase();
+    const summary = summarizeResult(out.result, symbol);
     lines.push(
-      `routed → ${out.provider} · ${symbol} $${price} · ${out.latency_ms}ms`,
+      `routed → ${out.provider} · ${summary} · ${out.latency_ms}ms`,
     );
   } else {
     const err = out.result?.error ?? "unknown error";
